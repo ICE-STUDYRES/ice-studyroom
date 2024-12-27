@@ -1,0 +1,42 @@
+# Backend - Gradle
+backend/build/
+backend/.gradle/
+backend/out/
+backend/bin/
+
+# Backend - IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+backend/.settings/
+backend/.classpath
+backend/.project
+.springBeans
+
+# Backend - Logs
+backend/logs/
+*.log
+
+# Backend - Properties (환경 설정)
+backend/src/main/resources/application-*.properties
+backend/src/main/resources/application-*.yml
+!backend/src/main/resources/application.properties
+!backend/src/main/resources/application.yml
+
+# Frontend
+frontend/node_modules/
+frontend/.pnpm-store/
+frontend/dist/
+frontend/build/
+frontend/.next/
+frontend/out/
+frontend/coverage/
+frontend/.env
+frontend/.env.*
+frontend/!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
