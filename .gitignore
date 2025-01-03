@@ -1,3 +1,6 @@
+# 배포 관련 보안 설정
+.env
+
 # Backend - Gradle
 backend/build/
 backend/.gradle/
