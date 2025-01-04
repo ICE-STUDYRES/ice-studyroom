@@ -1,0 +1,379 @@
+/* .page-container {
+    min-height: 100vh;
+    background-color: #ffffff;
+  }
+  
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+  }
+  
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  
+  .back-arrow {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .header-title {
+    font-size: 16px;
+    color: #000;
+  }
+  
+  .logout-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+  }
+  
+  .logout-icon {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .logout-text {
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .divider {
+    height: 2px;
+    background-color: #ff69b4;
+    margin-bottom: 1px;
+  }
+  
+  .nav-tabs {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px 40px;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  .tab-text {
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    padding: 8px 0;
+  }
+  
+  .tab-text.active {
+    color: #000;
+    font-weight: 500;
+  }
+  
+  .room-list {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .room-item {
+    width: 100%;
+    padding: 16px;
+    text-align: left;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    background-color: #fff;
+    font-size: 14px;
+    color: #000;
+  }
+  
+  .room-item:hover {
+    background-color: #fafafa;
+  }
+  
+  .room-item.selected {
+    border-color: #ff69b4;
+  } */
+
+/* RoomSelection.css */
+
+/* RoomSelection.css */
+.page-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background-color: #f9fafb;
+}
+
+/* Header */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.header-title {
+  font-size: 1.125rem;
+  font-weight: 500;
+}
+
+.logout-container {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.logout-text {
+  font-size: 0.875rem;
+}
+
+/* Icons */
+.icon {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #4b5563;
+}
+
+.icon-sm {
+  width: 1rem;
+  height: 1rem;
+  color: #6b7280;
+}
+
+/* Tab Navigation */
+.nav-tabs {
+  display: flex;
+  border-bottom: 1px solid #e5e7eb;
+  background-color: white;
+  position: sticky;
+  top: 3.5rem;
+  z-index: 10;
+}
+
+.tab-item {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  text-align: center;
+  color: #6b7280;
+  position: relative;
+  cursor: pointer;
+}
+
+.tab-item.active {
+  color: #ec4899;
+  font-weight: 500;
+}
+
+.active-indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3rem;
+  height: 2px;
+  background-color: #ec4899;
+  border-radius: 9999px;
+}
+
+/* Selection Banner */
+.selection-banner {
+  background-color: white;
+  border-bottom: 1px solid #e5e7eb;
+  position: sticky;
+  top: 6.5rem;
+  z-index: 10;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.date-time-section {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.building-info,
+.room-info,
+.time-info {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.separator {
+  color: #d1d5db;
+}
+
+.selected-room {
+  font-weight: 500;
+  color: #ec4899;
+}
+
+/* Legend */
+.time-legend {
+  background-color: white;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.legend-dot {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 9999px;
+}
+
+.legend-dot.available {
+  background-color: #fce7f3;
+  border: 1px solid #ec4899;
+}
+
+.legend-dot.selected {
+  background-color: #ec4899;
+}
+
+/* Room List */
+.room-list {
+  flex: 1;
+  overflow: auto;
+  padding: 0.75rem 1rem;
+}
+
+.room-item {
+  margin-bottom: 0.75rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background-color: white;
+  transition: all 0.2s ease-in-out;
+  cursor: pointer;
+}
+
+.room-item:hover {
+  border-color: #fbcfe8;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.room-item.selected {
+  background-color: #fdf2f8;
+  border-color: #ec4899;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.room-content {
+  padding: 1rem;
+}
+
+.room-main-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.room-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.room-number {
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: #111827;
+}
+
+.room-number.selected {
+  color: #ec4899;
+}
+
+.floor-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.selected-badge {
+  background-color: #fce7f3;
+  color: #ec4899;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.room-details {
+  margin-top: 0.5rem;
+}
+
+.facility-info {
+  display: flex;
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+/* Bottom Notice */
+.bottom-notice {
+  padding: 1rem;
+  background-color: white;
+  border-top: 1px solid #e5e7eb;
+}
+
+.notice-content {
+  display: flex;
+  align-items: start;
+  gap: 0.5rem;
+  justify-content: center;
+  text-align: center;
+}
+
+.warning {
+  color: #f59e0b;
+  margin-top: 0.125rem;
+}
+
+.notice-content p {
+  font-size: 0.875rem;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.sub-text {
+  color: #9ca3af;
+}
