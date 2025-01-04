@@ -1,6 +1,6 @@
 import React from "react";
 import "./ReservationStatus.css"; // 스타일링은 별도의 CSS 파일에서 관리
-import backIcon from "../assets/images/back.png"; // back.png 아이콘 파일 import
+import backIcon from "../../assets/images/back.png"; // back.png 아이콘 파일 import
 
 const rooms = [
   {
