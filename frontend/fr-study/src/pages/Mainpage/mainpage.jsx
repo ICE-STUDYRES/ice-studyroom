@@ -1,13 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import loginButtonImage from "../../assets/images/Log in.png";
-import logoutButtonImage from "../../assets/images/Log out.png";
 import xImage from "../../assets/images/X.png";
 import iconImage from "../../assets/images/icon.png";
 import iconxImage from "../../assets/images/iconx.png";
 import alertImage from "../../assets/images/alert.png";
 import { useNavigate } from 'react-router-dom';
-import { X } from 'lucide-react';
-import './mainpage.css';
+import { X, LogOut, LogIn } from 'lucide-react';
+import './Mainpage.css';
+import SigninPopup from './SignInPopup';
 
 const MainPage = () => {
   const [currentDate, setCurrentDate] = useState("");
@@ -18,7 +17,8 @@ const MainPage = () => {
   const [showNotice, setShowNotice] = useState(false);
   const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
-  const navigate = useNavigate();
+  const [showSigninPopup, setShowSigninPopup] = useState(false);
+
 
   useEffect(() => {
     const today = new Date();
@@ -45,6 +45,7 @@ const MainPage = () => {
     fetchQRCode();
   }, [studentId, studentName]);
 
+  const navigate = useNavigate();
   const handleLogin = () => setIsLoggedIn(true);
   const handleLogout = () => setIsLoggedIn(false);
   const handleReservationClick = () => navigate('/reservation/room');
@@ -55,20 +56,26 @@ const MainPage = () => {
   const handleClosePenaltyPopup = () => setShowPenaltyPopup(false);
   const handleQRClick = () => setShowQRModal(true);
   const handleCloseQRModal = () => setShowQRModal(false);
+  const handleLoginClick = () => setShowSigninPopup(true);
+  const handleCloseSigninPopup = () => setShowSigninPopup(false);
+
 
   return (
-    <div className="container relative">
+    <div className="container">
       {isLoggedIn ? (
         <>
+        {/* Header */}
           <div className="headers">
-            <div className="header-content">
-              <h1 className="title">정보통신공학과 스터디룸</h1>
-              <button className="logout-Button" onClick={handleLogout}>
-                <img src={logoutButtonImage} alt="로그아웃 버튼" className="logoutButtonImage" />
-              </button>
+            <div className="header-left">
+              <span className="title">정보통신공학과 스터디룸</span>
+            </div>
+            <div className="logout-container" onClick={handleLogout}>
+              <LogOut className="icon-sm" />
+              <span className="logout-text">로그아웃</span>
             </div>
           </div>
-
+          
+          {/**/}
           <div className="welcome-message">
             <p>"환영합니다! 스터디룸 예약을 확인하고 QR코드를 스캔하여 입장해 주세요."</p>
           </div>
@@ -95,13 +102,20 @@ const MainPage = () => {
       ) : (
         <>
           <div className="headers">
-            <div className="header-content">
-              <h1 className="title">정보통신공학과 스터디룸</h1>
-              <button className="login-Button" onClick={handleLogin}>
-                <img src={loginButtonImage} alt="로그인 버튼" className="loginButtonImage" />
-              </button>
+            <div className="header-left">
+              <span className="title">정보통신공학과 스터디룸</span>
+            </div>
+            <div className="login-container" onClick={handleLoginClick}>
+              <LogIn className="icon-sm" />
+              <span className="login-text">로그인</span>
             </div>
           </div>
+
+          {showSigninPopup && (
+            <div className="signin-popup-container">
+              <SigninPopup onClose={handleCloseSigninPopup} onLogin={handleLogin}/>
+            </div>
+          )}
           
           <div className="welcome-message">
             <p>"환영합니다! 스터디룸 예약을 확인하고 QR코드를 스캔하여 입장해 주세요."</p>
