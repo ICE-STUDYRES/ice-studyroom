@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import { BookingProvider } from './pages/Reservation/BookingContext';
-import MainPage from './pages/Mainpage/mainpage';
+import MainPage from './pages/Mainpage/Mainpage';
 import ReservationStatus from './pages/ReservationStatus/ReservationStatus';
 import TimeSelection from './pages/Reservation/TimeSelection';
 import RoomSelection from './pages/Reservation/RoomSelection';
