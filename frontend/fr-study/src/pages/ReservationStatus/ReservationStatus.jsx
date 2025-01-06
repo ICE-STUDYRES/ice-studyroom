@@ -1,12 +1,12 @@
 import React from "react";
-import "./ReservationStatus.css"; // 스타일링은 별도의 CSS 파일에서 관리
-import backIcon from "../../assets/images/back.png"; // back.png 아이콘 파일 import
+import "./ReservationStatus.css";
+import backIcon from "../../assets/images/back.png";
 
 const rooms = [
   {
     id: "305-1",
     name: "305-1 스터디룸",
-    details: "4인실 | PC, 모니터, 화이트보드",
+    details: "4인실 | PC, 모니터",
     reservations: [],
     availableTimes: [],
   },
@@ -15,7 +15,6 @@ const rooms = [
     name: "305-2 스터디룸",
     details: "4인실 | PC, 모니터",
     reservations: [
-      { time: "09:00-10:00", participants: 3 },
       { time: "11:00-12:00", reserver: "양재원", participants: 2 },
       { time: "16:00-18:00", reserver: "김원빈", participants: 3 },
     ],
@@ -66,7 +65,7 @@ const rooms = [
 
 const ReservationStatus = () => {
   const handleBackClick = () => {
-    window.history.back(); // 이전 페이지로 이동
+    window.history.back();
   };
 
   return (
