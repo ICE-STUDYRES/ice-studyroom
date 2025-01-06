@@ -3,8 +3,6 @@ package com.ice.studyroom.domain.reservation.domain.entity;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
 
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
 import com.ice.studyroom.domain.reservation.dto.request.CreateScheduleRequest;
@@ -17,8 +15,6 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -71,12 +67,7 @@ public class Schedule {
 	@Column(nullable = false)
 	@Builder.Default
 	private LocalDateTime updatedAt = LocalDateTime.now();
-
-	@OneToMany
-	@JoinColumn(name = "schedule_id")
-	@Builder.Default
-	private List<Reservation> reservations = new ArrayList<>();
-
+	
 	public boolean isAvailable() {
 		return status == ScheduleStatus.AVAILABLE;
 	}

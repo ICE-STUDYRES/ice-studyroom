@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.reservation.application;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -29,6 +30,18 @@ public class ReservationService {
 	private final TimeSlotRepository timeSlotRepository;
 	private final RoomRepository roomRepository;
 	private final ScheduleRepository scheduleRepository;
+
+	public List<Reservation> getReservations() {
+		// 오늘 날짜에 해당하는 스케줄만 산출
+		LocalDate today = LocalDate.now();
+		return reservationRepository.findByScheduleDate(today);
+	}
+
+	public List<Schedule> getSchedules() {
+		// 오늘 날짜에 해당하는 스케줄만 산출
+		LocalDate today = LocalDate.now();
+		return scheduleRepository.findByScheduleDate(today);
+	}
 
 	@Transactional
 	public ReservationResponse createReservation(CreateReservationRequest request) {
