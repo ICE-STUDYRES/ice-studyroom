@@ -3,10 +3,11 @@ import xImage from "../../assets/images/X.png";
 import iconImage from "../../assets/images/icon.png";
 import iconxImage from "../../assets/images/iconx.png";
 import alertImage from "../../assets/images/alert.png";
+import logo from "../../assets/images/hufslogo.png";
 import { useNavigate } from 'react-router-dom';
 import { X, LogOut, LogIn } from 'lucide-react';
 import './Mainpage.css';
-import SigninPopup from './SignInPopup';
+import './popup.css';
 
 const MainPage = () => {
   const [currentDate, setCurrentDate] = useState("");
@@ -18,7 +19,7 @@ const MainPage = () => {
   const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
   const [showSigninPopup, setShowSigninPopup] = useState(false);
-
+  const [showSignUpPopup, setShowSignUpPopup] = useState(false);
 
   useEffect(() => {
     const today = new Date();
@@ -47,7 +48,10 @@ const MainPage = () => {
 
   const navigate = useNavigate();
   const handleLogin = () => setIsLoggedIn(true);
-  const handleLogout = () => setIsLoggedIn(false);
+  const handleLogout = () => {
+    setIsLoggedIn(false);
+    setShowSigninPopup(false); // 로그아웃 시 로그인 팝업 비활성화
+  };
   const handleReservationClick = () => navigate('/reservation/room');
   const handleReservationStatusClick = () => navigate('/ReservationStatus');
   const handleNoticeClick = () => setShowNotice(true);
@@ -58,6 +62,11 @@ const MainPage = () => {
   const handleCloseQRModal = () => setShowQRModal(false);
   const handleLoginClick = () => setShowSigninPopup(true);
   const handleCloseSigninPopup = () => setShowSigninPopup(false);
+  const handleSignUpClick = () => {
+    setShowSigninPopup(false); // 로그인 팝업 닫기
+    setShowSignUpPopup(true); // 회원가입 팝업 열기
+  };
+  const handleCloseSignUpPopup = () => setShowSignUpPopup(false);
 
 
   return (
@@ -112,11 +121,47 @@ const MainPage = () => {
           </div>
 
           {showSigninPopup && (
-            <div className="signin-popup-container">
-              <SigninPopup onClose={handleCloseSigninPopup} onLogin={handleLogin}/>
+            <div className="popup-overlay" onClick={handleCloseSigninPopup}>
+              <div className="popup" onClick={(e) => e.stopPropagation()}>
+                <div className="popup-header">
+                  <img src={logo} alt="HUFS Logo" className="popup-logo" />
+                  <button className="popup-close-button" onClick={handleCloseSigninPopup}>×</button>
+                </div>
+                <div className="popup-body">
+                  <input type="email" placeholder="학교 이메일을 입력해주세요" className="popup-input" />
+                  <input type="password" placeholder="비밀번호를 입력해주세요" className="popup-input" />
+                  <div className="popup-options">
+                    <label>
+                      <input type="checkbox" /> 아이디 기억하기
+                    </label>
+                  </div>
+                  <button className="popup-button" onClick={handleLogin}>로그인</button>
+                  <div className="popup-divider">또는</div>
+                  <button className="popup-signup-button" onClick={handleSignUpClick}>회원가입</button>
+                </div>
+              </div>
             </div>
           )}
-          
+
+          {showSignUpPopup && (
+            <div className="popup-overlay" onClick={handleCloseSignUpPopup}>
+              <div className="popup" onClick={(e) => e.stopPropagation()}>
+                <div className="popup-header">
+                  <img src={logo} alt="HUFS Logo" className="popup-logo" />
+                  <button className="popup-close-button" onClick={handleCloseSignUpPopup}>×</button>
+                </div>
+                <div className="popup-body">
+                  <input type="text" placeholder="이름을 입력해주세요" className="popup-input" />
+                  <input type="text" placeholder="학번을 입력해주세요" className="popup-input" />
+                  <input type="email" placeholder="학교 이메일을 입력해주세요" className="popup-input" />
+                  <input type="password" placeholder="비밀번호를 입력해주세요" className="popup-input" />
+                  <input type="password" placeholder="비밀번호 확인" className="popup-input" />
+                  <button className="popup-button">회원가입</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="welcome-message">
             <p>"환영합니다! 스터디룸 예약을 확인하고 QR코드를 스캔하여 입장해 주세요."</p>
           </div>
@@ -182,10 +227,11 @@ const MainPage = () => {
         </div>
       </div>
 
+      {/* Notice Popup */}
       {showNotice && (
         <div className="notice-popup" onClick={handleCloseNotice}>
           <div 
-            className="penalty-content"  //원래 notice-content였는데 왜 안되는지 모르겠음
+            className="notice-content"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
@@ -210,6 +256,7 @@ const MainPage = () => {
         </div>
       )}
 
+      {/* Penalty Popup */}
       {showPenaltyPopup && (
         <div className="penalty-popup" onClick={handleClosePenaltyPopup}>
           <div 
