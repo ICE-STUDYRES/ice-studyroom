@@ -9,7 +9,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ice.studyroom.domain.membership.application.MembershipService;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
+import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberCreateResponse;
+import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 
 import jakarta.validation.Valid;
@@ -26,6 +28,13 @@ public class MembershipController {
 		@Valid @RequestBody MemberCreateRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.createUser(request)));
+			.body(ResponseDto.of(membershipService.createMember(request)));
+	}
+
+	@PostMapping("/login")
+	public ResponseEntity<ResponseDto<MemberLoginResponse>> login(@Valid @RequestBody MemberLoginRequest request) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(membershipService.login(request)));
 	}
 }
