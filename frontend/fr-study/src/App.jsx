@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-
-import MainPage from './pages/Mainpage/mainpage';
+import MainPage from './pages/Mainpage/Mainpage';
 import StudyRoomManage from './pages/Reservation/StudyRoomManage';
 import ReservationStatus from './pages/ReservationStatus/ReservationStatus';
 import StudyRoomBooking from './pages/Reservation/StudyRoomBooking';
@@ -10,7 +9,6 @@ import './main.css';
 
 function App() {
   return (
-
     <Router>
       <Routes>
         <Route path="/" element={<MainPage />} />

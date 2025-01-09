@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { X, XCircle, Clock, UserX, LogOut, LogIn, Home } from 'lucide-react';
-// import xImage from "../../assets/images/X.png";
-// import iconImage from "../../assets/images/icon.png";
-// import iconxImage from "../../assets/images/iconx.png";
 import alertImage from "../../assets/images/alert.png";
 import logo from "../../assets/images/hufslogo.png";
+import { QRCodeCanvas } from 'qrcode.react'; // QRCodeCanvas를 import
 
 const MainPage = () => {
   const [currentDate, setCurrentDate] = useState("");
@@ -28,8 +26,13 @@ const MainPage = () => {
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     const dayOfWeek = days[today.getDay()];
-    
+
     setCurrentDate(`${year}.${month}.${day} (${dayOfWeek})`);
+
+    const storedLoginStatus = localStorage.getItem("isLoggedIn");
+    if (storedLoginStatus === "true") {
+      setIsLoggedIn(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -50,10 +53,12 @@ const MainPage = () => {
   const navigate = useNavigate();
   const handleLogin = () => {
     setIsLoggedIn(true);
+    localStorage.setItem("isLoggedIn", "true"); // 로그인 상태 저장
     setShowSigninPopup(false);
   };
   const handleLogout = () => {
     setIsLoggedIn(false);
+    localStorage.removeItem("isLoggedIn"); // 로그인 상태 제거
     setShowSigninPopup(false);
   };
   const handleCheckIn = () => {
@@ -68,12 +73,30 @@ const MainPage = () => {
     setRoomNumber(e.target.value);
   };
   
-  const handleReservationClick = () => navigate('/reservation/room');
+  const handleReservationClick = () => {
+    if (isLoggedIn) {
+      navigate('/reservation/room');
+    } else {
+      alert('로그인 후 이용 가능합니다.');
+    }
+  };
   const handleReservationStatusClick = () => navigate('/ReservationStatus');
-  const handleReservationManageClick = () => navigate('/reservation/manage');
+  const handleReservationManageClick = () => {
+    if (isLoggedIn) {
+      navigate('/reservation/manage');
+    } else {
+      alert('로그인 후 이용 가능합니다.');
+    }
+  };
   const handleNoticeClick = () => setShowNotice(true);
   const handleCloseNotice = () => setShowNotice(false);
-  const handlePenaltyClick = () => setShowPenaltyPopup(true);
+  const handlePenaltyClick = () => {
+    if (isLoggedIn) {
+      setShowPenaltyPopup(true);
+    } else {
+      alert('로그인 후 이용 가능합니다.');
+    }
+  };
   const handleClosePenaltyPopup = () => setShowPenaltyPopup(false);
   const handleQRClick = () => setShowQRModal(true);
   const handleCloseQRModal = () => setShowQRModal(false);
@@ -87,6 +110,7 @@ const MainPage = () => {
 
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
+
       {/* Header */}
       <div className="bg-white px-4 py-3 flex items-center justify-between border-b">
         <div className="flex items-center gap-2">
@@ -131,7 +155,18 @@ const MainPage = () => {
           </span>
         </div>
         <div className="flex gap-4">
-          <div 
+              <div 
+                className="w-32 h-32 bg-gray-50 rounded-lg flex items-center justify-center"
+                onClick={handleQRClick}
+              >
+                <QRCodeCanvas 
+                  value={`studentId=${studentId}&studentName=${studentName}`} // QR에 포함할 데이터
+                  size={128} // QR 코드 크기
+                  level={"H"} // 오류 복원 수준 (L, M, Q, H 중 선택)
+                  includeMargin={true} // 여백 포함 여부
+                />
+              </div>
+          {/* <div 
             className="w-32 h-32 bg-gray-50 rounded-lg cursor-pointer flex items-center justify-center" 
             onClick={handleQRClick}
           >
@@ -140,7 +175,7 @@ const MainPage = () => {
             ) : (
               <div className="text-gray-500">Loading...</div>
             )}
-          </div>
+          </div> */}
           <div className="flex flex-col gap-2 text-sm text-gray-600">
             <p>예약 날짜: {currentDate}</p>
             <p>방 번호: {roomNumber}</p>
@@ -167,7 +202,6 @@ const MainPage = () => {
           >
             <div className="text-2xl mb-2">📅</div>
             <div className="text-sm font-medium">예약하기</div>
-            <div className="text-xs text-gray-500">{currentDate}</div>
           </button>
           
           <button 
@@ -176,7 +210,6 @@ const MainPage = () => {
           >
             <div className="text-2xl mb-2">✔️</div>
             <div className="text-sm font-medium">예약 현황</div>
-            <div className="text-xs text-gray-500">{currentDate}</div>
           </button>
           
           <button 
@@ -332,11 +365,12 @@ const MainPage = () => {
           >
             {qrCodeUrl && (
             <>
-              <img 
-                src={qrCodeUrl} 
-                alt="QR Code" 
-                className="max-h-full w-auto"
-              />
+              <QRCodeCanvas 
+                  value={`studentId=${studentId}&studentName=${studentName}`} // QR에 포함할 데이터
+                  size={128} // QR 코드 크기
+                  level={"H"} // 오류 복원 수준 (L, M, Q, H 중 선택)
+                  includeMargin={true} // 여백 포함 여부
+                />
               <button 
                 onClick={handleCloseQRModal}
                 className="absolute top-2 right-2 p-2 bg-white rounded-full hover:bg-gray-100"
