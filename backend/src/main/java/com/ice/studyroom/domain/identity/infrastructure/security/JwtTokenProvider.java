@@ -4,6 +4,7 @@ import java.security.Key;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +32,8 @@ import lombok.extern.slf4j.Slf4j;
 public class JwtTokenProvider {
 	private final Key key;
 
-	// application.yml에서 secret 값 가져와서 key에 저장
+	private static final long ACCESS_TOKEN_EXPIRE_TIME = 2 * 60 * 60 * 1000L;        // 2시간
+
 	public JwtTokenProvider(@Value("${jwt.secret}") String secretKey) {
 		byte[] keyBytes = Decoders.BASE64.decode(secretKey);
 		this.key = Keys.hmacShaKeyFor(keyBytes);
@@ -47,7 +49,7 @@ public class JwtTokenProvider {
 		long now = (new Date()).getTime();
 
 		// Access Token 생성
-		Date accessTokenExpiresIn = new Date(now + 86400000);
+		Date accessTokenExpiresIn = new Date(now + ACCESS_TOKEN_EXPIRE_TIME);
 		String accessToken = Jwts.builder()
 			.setSubject(authentication.getName())
 			.claim("auth", authorities)
@@ -56,10 +58,7 @@ public class JwtTokenProvider {
 			.compact();
 
 		// Refresh Token 생성
-		String refreshToken = Jwts.builder()
-			.setExpiration(new Date(now + 86400000))
-			.signWith(key, SignatureAlgorithm.HS256)
-			.compact();
+		String refreshToken = generateRandomRefreshToken();
 
 		return JwtToken.builder()
 			.grantType("Bearer")
@@ -109,17 +108,8 @@ public class JwtTokenProvider {
 		return false;
 	}
 
-	public boolean validateRefreshToken(String token) {
-		try {
-			Jwts.parserBuilder()
-				.setSigningKey(key)
-				.build()
-				.parseClaimsJws(token);
-			return true;
-		} catch (Exception e) {
-			log.info("Invalid Refresh Token", e);
-			return false;
-		}
+	private String generateRandomRefreshToken() {
+		return UUID.randomUUID().toString();
 	}
 
 	public String getUsername(String token) {
@@ -138,5 +128,4 @@ public class JwtTokenProvider {
 			return e.getClaims();
 		}
 	}
-
 }
