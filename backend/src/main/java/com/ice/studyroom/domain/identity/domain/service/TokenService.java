@@ -1,0 +1,79 @@
+package com.ice.studyroom.domain.identity.domain.service;
+
+import java.time.Duration;
+
+import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.stereotype.Service;
+
+import com.ice.studyroom.domain.identity.domain.JwtToken;
+import com.ice.studyroom.domain.identity.exception.InvalidRefreshTokenException;
+import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvider;
+
+import lombok.RequiredArgsConstructor;
+
+@Service
+@RequiredArgsConstructor
+public class TokenService {
+	private final JwtTokenProvider jwtTokenProvider;
+	private final RedisTemplate<String, String> redisTemplate;
+	private static final String REFRESH_TOKEN_PREFIX = "RT:";
+	private static final Duration REFRESH_TOKEN_VALIDITY = Duration.ofDays(7);
+
+	public String extractEmailFromAccessToken(String accessToken) {
+		return jwtTokenProvider.getUsername(accessToken);
+	}
+
+	public void saveRefreshToken(String email, String refreshToken) {
+		String key = REFRESH_TOKEN_PREFIX + email;
+		redisTemplate.opsForValue()
+			.set(key, refreshToken, REFRESH_TOKEN_VALIDITY);
+	}
+
+	/**
+	 * 	RefreshToken은 JWT가 아니기에 여기에 두기는 했는데 잘 모르겠네. 애초에 Refresh Token은 JwtProvider에서 만드니 거기에서 하는게 좋을 것 같을지도
+	 * 	그러면 JwtProvider에서 REDIS_TEMPLATE를 사용해야한다. 너무 많은 책임이 들어가는 것 같네
+	 */
+	private boolean validateRefreshToken(String email, String refreshToken) {
+		if (email == null || refreshToken == null) {
+			return false;
+		}
+
+		String key = REFRESH_TOKEN_PREFIX + email;
+		String savedRefreshToken = redisTemplate.opsForValue().get(key);
+
+		return savedRefreshToken.equals(refreshToken);
+	}
+
+	public JwtToken rotateToken(String email, String refreshToken) {
+		if (!validateRefreshToken(email, refreshToken)) {
+			throw new InvalidRefreshTokenException("유효하지 않은 Refresh Token 입니다.");
+		}
+
+		// 2. 새로운 토큰 쌍 생성
+		// Authentication 객체 생성을 위한 UserDetails 로드
+		UserDetails userDetails = User.builder()
+			.username(email)
+			.password("") // 불필요하지만 필수 필드
+			.roles("USER")
+			.build();
+
+		Authentication authentication = new UsernamePasswordAuthenticationToken(
+			userDetails, "", userDetails.getAuthorities());
+
+		JwtToken newToken = jwtTokenProvider.generateToken(authentication);
+
+		// 3. 새로운 Refresh Token을 Redis에 저장
+		saveRefreshToken(email, newToken.getRefreshToken());
+
+		return newToken;
+	}
+
+	public void deleteToken(String email, String refreshToken) {
+		String key = REFRESH_TOKEN_PREFIX + email;
+		redisTemplate.delete(key);
+	}
+}
