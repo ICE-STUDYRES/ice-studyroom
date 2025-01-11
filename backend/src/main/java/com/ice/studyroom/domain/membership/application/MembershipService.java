@@ -20,8 +20,8 @@ import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepo
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.TokenRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.response.MemberCreateResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
+import com.ice.studyroom.domain.membership.presentation.dto.response.MemberResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,7 +36,7 @@ public class MembershipService {
 	private final TokenService tokenService;
 	private final AuthenticationManager authenticationManager;
 
-	public MemberCreateResponse createMember(MemberCreateRequest request) {
+	public MemberResponse createMember(MemberCreateRequest request) {
 		memberDomainService.validateEmailUniqueness(Email.of(request.email()));
 
 		Member user = Member.builder()
@@ -51,7 +51,7 @@ public class MembershipService {
 
 		memberRepository.save(user);
 
-		return new MemberCreateResponse("success");
+		return MemberResponse.of("success");
 	}
 
 	public MemberLoginResponse login(MemberLoginRequest request) {
@@ -73,5 +73,13 @@ public class MembershipService {
 		JwtToken jwtToken = tokenService.rotateToken(email, request.refreshToken());
 
 		return MemberLoginResponse.of(jwtToken);
+	}
+
+	public MemberResponse logout(TokenRequest request) {
+		String email = tokenService.extractEmailFromAccessToken(request.accessToken());
+
+		tokenService.deleteToken(email, request.refreshToken());
+
+		return MemberResponse.of("success");
 	}
 }
