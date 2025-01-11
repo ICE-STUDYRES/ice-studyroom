@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.ice.studyroom.domain.membership.application.MembershipService;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
+import com.ice.studyroom.domain.membership.presentation.dto.request.TokenRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberCreateResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
@@ -36,5 +37,12 @@ public class MembershipController {
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(membershipService.login(request)));
+	}
+
+	@PostMapping("refresh")
+	public ResponseEntity<ResponseDto<MemberLoginResponse>> refresh(@Valid @RequestBody TokenRequest request) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(membershipService.refresh(request)));
 	}
 }
