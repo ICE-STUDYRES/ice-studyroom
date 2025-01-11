@@ -11,8 +11,8 @@ import com.ice.studyroom.domain.membership.application.MembershipService;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.TokenRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.response.MemberCreateResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
+import com.ice.studyroom.domain.membership.presentation.dto.response.MemberResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 
 import jakarta.validation.Valid;
@@ -25,7 +25,7 @@ public class MembershipController {
 	private final MembershipService membershipService;
 
 	@PostMapping
-	public ResponseEntity<ResponseDto<MemberCreateResponse>> createUser(
+	public ResponseEntity<ResponseDto<MemberResponse>> createUser(
 		@Valid @RequestBody MemberCreateRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
@@ -44,5 +44,12 @@ public class MembershipController {
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(membershipService.refresh(request)));
+	}
+
+	@PostMapping("logout")
+	public ResponseEntity<ResponseDto<MemberResponse>> logout(@Valid @RequestBody TokenRequest request) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(membershipService.logout(request)));
 	}
 }
