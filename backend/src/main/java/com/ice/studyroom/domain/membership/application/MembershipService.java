@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.ice.studyroom.domain.identity.domain.JwtToken;
+import com.ice.studyroom.domain.identity.domain.service.TokenService;
 import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvider;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
@@ -18,6 +19,7 @@ import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
+import com.ice.studyroom.domain.membership.presentation.dto.request.TokenRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberCreateResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
 
@@ -31,6 +33,7 @@ public class MembershipService {
 	private final MemberRepository memberRepository;
 	private final PasswordEncoder passwordEncoder;
 	private final JwtTokenProvider jwtTokenProvider;
+	private final TokenService tokenService;
 	private final AuthenticationManager authenticationManager;
 
 	public MemberCreateResponse createMember(MemberCreateRequest request) {
@@ -57,6 +60,17 @@ public class MembershipService {
 		);
 
 		JwtToken jwtToken = jwtTokenProvider.generateToken(authentication);
+		tokenService.saveRefreshToken(request.email(), jwtToken.getRefreshToken());
+
+		return MemberLoginResponse.of(jwtToken);
+	}
+
+	public MemberLoginResponse refresh(TokenRequest request) {
+		// 이메일 정보 추출
+		String email = tokenService.extractEmailFromAccessToken(request.accessToken());
+
+		// tokenService.validateRefreshToken(email, request.refreshToken());
+		JwtToken jwtToken = tokenService.rotateToken(email, request.refreshToken());
 
 		return MemberLoginResponse.of(jwtToken);
 	}
