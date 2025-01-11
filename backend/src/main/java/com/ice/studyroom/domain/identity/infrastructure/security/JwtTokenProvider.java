@@ -109,6 +109,23 @@ public class JwtTokenProvider {
 		return false;
 	}
 
+	public boolean validateRefreshToken(String token) {
+		try {
+			Jwts.parserBuilder()
+				.setSigningKey(key)
+				.build()
+				.parseClaimsJws(token);
+			return true;
+		} catch (Exception e) {
+			log.info("Invalid Refresh Token", e);
+			return false;
+		}
+	}
+
+	public String getUsername(String token) {
+		return parseClaims(token).getSubject();
+	}
+
 	// accessToken
 	private Claims parseClaims(String accessToken) {
 		try {
