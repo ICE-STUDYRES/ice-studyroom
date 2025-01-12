@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.ice.studyroom.domain.room.dao.RoomTimeSlotRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,8 +17,6 @@ import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.domain.reservation.dto.request.DeleteReservationRequest;
 import com.ice.studyroom.domain.reservation.dto.response.ReservationResponse;
-import com.ice.studyroom.domain.room.dao.RoomRepository;
-import com.ice.studyroom.domain.room.dao.TimeSlotRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -27,8 +26,9 @@ import lombok.RequiredArgsConstructor;
 public class ReservationService {
 
 	private final ReservationRepository reservationRepository;
-	private final TimeSlotRepository timeSlotRepository;
-	private final RoomRepository roomRepository;
+//	private final TimeSlotRepository timeSlotRepository;
+//	private final RoomRepository roomRepository;
+	private final RoomTimeSlotRepository roomTimeSlotRepository;
 	private final ScheduleRepository scheduleRepository;
 
 	public List<Reservation> getReservations() {

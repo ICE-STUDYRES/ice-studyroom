@@ -43,8 +43,8 @@ public class Schedule {
 	@Column(nullable = false)
 	private String roomNumber;
 
-	@Column(name = "time_slot_id", nullable = false)
-	private Long timeSlotId;
+//	@Column(name = "time_slot_id", nullable = false)
+//	private Long timeSlotId;
 
 	@Column(nullable = false)
 	private LocalTime startTime;
@@ -67,7 +67,7 @@ public class Schedule {
 	@Column(nullable = false)
 	@Builder.Default
 	private LocalDateTime updatedAt = LocalDateTime.now();
-	
+
 	public boolean isAvailable() {
 		return status == ScheduleStatus.AVAILABLE;
 	}
