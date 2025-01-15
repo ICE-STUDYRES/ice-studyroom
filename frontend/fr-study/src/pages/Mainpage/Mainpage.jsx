@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { X, XCircle, Clock, UserX, LogOut, LogIn, Home } from 'lucide-react';
 import alertImage from "../../assets/images/alert.png";
 import logo from "../../assets/images/hufslogo.png";
-import { QRCodeCanvas } from 'qrcode.react'; // QRCodeCanvas를 import
+import { QRCodeCanvas } from 'qrcode.react';
+import axios from 'axios'
 
 const MainPage = () => {
   const [currentDate, setCurrentDate] = useState("");
@@ -18,6 +19,20 @@ const MainPage = () => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showSigninPopup, setShowSigninPopup] = useState(false);
   const [showSignUpPopup, setShowSignUpPopup] = useState(false);
+  const [signupForm, setSignupForm] = useState({
+    name: '',
+    studentNum: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [signupError, setSignupError] = useState('');
+  const [loginForm, setLoginForm] = useState({
+    email: '',
+    password: ''
+  });
+  const [loginError, setLoginError] = useState('');
+  const [tokens, setTokens] = useState(null);
 
   useEffect(() => {
     const today = new Date();
@@ -50,29 +65,7 @@ const MainPage = () => {
     fetchQRCode();
   }, [studentId, studentName]);
 
-  const navigate = useNavigate();
-  const handleLogin = () => {
-    setIsLoggedIn(true);
-    localStorage.setItem("isLoggedIn", "true"); // 로그인 상태 저장
-    setShowSigninPopup(false);
-  };
-  const handleLogout = () => {
-    setIsLoggedIn(false);
-    localStorage.removeItem("isLoggedIn"); // 로그인 상태 제거
-    setShowSigninPopup(false);
-  };
-  const handleCheckIn = () => {
-    if (!checkInStatus) {
-      alert(`${roomNumber}번 방에 입실하셨습니다.`);
-    } else {
-      alert(`${roomNumber}번 방에서 퇴실하셨습니다.`);
-    }
-    setCheckInStatus(!checkInStatus);
-  };
-  const handleChangeRoomNumber = (e) => {
-    setRoomNumber(e.target.value);
-  };
-  
+  const navigate = useNavigate();  
   const handleReservationClick = () => {
     if (isLoggedIn) {
       navigate('/reservation/room');
@@ -107,6 +100,165 @@ const MainPage = () => {
     setShowSignUpPopup(true);
   };
   const handleCloseSignUpPopup = () => setShowSignUpPopup(false);
+  const handleSignupInputChange = (e) => {
+    const { name, value } = e.target;
+    setSignupForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+    setSignupError('');
+  
+    if (!signupForm.email.endsWith('@hufs.ac.kr')) {
+      setSignupError('학교 이메일(@hufs.ac.kr)만 사용 가능합니다.');
+      return;
+    }
+  
+    if (signupForm.password !== signupForm.confirmPassword) {
+      setSignupError('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+  
+    try {
+      const response = await axios.post('/api/users', {
+        email: signupForm.email,
+        password: signupForm.password,
+        name: signupForm.name,
+        studentNum: signupForm.studentNum
+      });
+  
+      if (response.data.code === 'S200') {
+        alert('회원가입이 완료되었습니다.');
+        handleCloseSignUpPopup();
+        setShowSigninPopup(true);
+      } else {
+        setSignupError(response.data.message || '회원가입 중 오류가 발생했습니다.');
+      }
+    } catch (error) {
+      console.error('Signup error:', error);
+      setSignupError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    }
+};
+
+  const handleLoginInputChange = (e) => {
+    const { name, value } = e.target;
+    setLoginForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // 로그인 처리
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+  
+    try {
+      // 로그인 요청을 axios를 통해 보내기
+      const response = await axios.post('api/users/login', loginForm, {
+        headers: {
+          'Content-Type': 'application/json' // JSON 데이터로 요청
+        }
+      });
+  
+      // Axios는 자동으로 응답을 JSON으로 파싱하므로, `response.data`를 바로 사용
+      const data = response.data;
+  
+      if (data.code === 'S200') {
+        const newTokens = {
+          accessToken: data.data.accessToken,
+          refreshToken: data.data.refreshToken
+        };
+        setTokens(newTokens);
+        localStorage.setItem('accessToken', newTokens.accessToken);
+        localStorage.setItem('refreshToken', newTokens.refreshToken);
+        localStorage.setItem('isLoggedIn', 'true');
+        setIsLoggedIn(true);
+        setShowSigninPopup(false);
+      } else {
+        setLoginError(data.message || '로그인에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setLoginError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+    }
+  };
+  
+
+  // 로그아웃 핸들러
+  const handleLogout = async () => {
+    if (!tokens || !tokens.accessToken) {
+      console.warn("No tokens available for logout.");
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
+      localStorage.removeItem('isLoggedIn');
+      setTokens({ accessToken: null, refreshToken: null });
+      setIsLoggedIn(false);
+      return;
+    }
+  
+    try {
+      const response = await axios.post('/api/users/logout', {
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+  
+      if (response.data.code === 'S200') {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('isLoggedIn');
+        setTokens({ accessToken: null, refreshToken: null });
+        setIsLoggedIn(false);
+      } else {
+        console.error('Logout failed:', response.data.message);
+      }
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+  
+
+  const refreshTokens = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/api/users/refresh", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          grantType: 'Bearer',
+          accessToken: tokens.accessToken,
+          refreshToken: tokens.refreshToken
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.code === 'S200') {
+        const newTokens = {
+          accessToken: data.data.accessToken,
+          refreshToken: data.data.refreshToken
+        };
+        setTokens(newTokens);
+        localStorage.setItem('accessToken', newTokens.accessToken);
+        localStorage.setItem('refreshToken', newTokens.refreshToken);
+        return newTokens.accessToken;
+      } else {
+        throw new Error('Token refresh failed');
+      }
+    } catch (error) {
+      console.error('Token refresh error:', error);
+      handleLogout();
+      return null;
+    }
+  };
 
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
@@ -144,46 +296,46 @@ const MainPage = () => {
       </div>
 
       {/* QR Section */}
-<div className="px-4 py-4">
-  <div className="w-full rounded-2xl border border-gray-100 bg-white p-4">
-    {isLoggedIn ? (
-      <>
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-lg font-semibold">QR 코드</h3>
-          <span className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm">
-            {checkInStatus}
-          </span>
-        </div>
-        <div className="flex gap-4">
-              <div 
-                className="w-32 h-32 bg-gray-50 rounded-lg flex items-center justify-center"
-                onClick={handleQRClick}
-              >
-                <QRCodeCanvas 
-                  value={`studentId=${studentId}&studentName=${studentName}`} // QR에 포함할 데이터
-                  size={128} // QR 코드 크기
-                  level={"H"} // 오류 복원 수준 (L, M, Q, H 중 선택)
-                  includeMargin={true} // 여백 포함 여부
-                />
+      <div className="px-4 py-4">
+        <div className="w-full rounded-2xl border border-gray-100 bg-white p-4">
+          {isLoggedIn ? (
+            <>
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-lg font-semibold">QR 코드</h3>
+                <span className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm">
+                  {checkInStatus}
+                </span>
               </div>
-          {/* <div 
-            className="w-32 h-32 bg-gray-50 rounded-lg cursor-pointer flex items-center justify-center" 
-            onClick={handleQRClick}
-          >
-            {qrCodeUrl ? (
-              <img src={qrCodeUrl} alt="QR Code" className="w-full h-full object-contain" />
-            ) : (
-              <div className="text-gray-500">Loading...</div>
-            )}
-          </div> */}
-          <div className="flex flex-col gap-2 text-sm text-gray-600">
-            <p>예약 날짜: {currentDate}</p>
-            <p>방 번호: {roomNumber}</p>
-            <p>{studentName}</p>
-            <p>{studentId}</p>
-          </div>
-        </div>
-      </>
+              <div className="flex gap-4">
+                    <div 
+                      className="w-32 h-32 bg-gray-50 rounded-lg flex items-center justify-center"
+                      onClick={handleQRClick}
+                    >
+                      <QRCodeCanvas 
+                        value={`studentId=${studentId}&studentName=${studentName}`} // QR에 포함할 데이터
+                        size={128} // QR 코드 크기
+                        level={"H"} // 오류 복원 수준 (L, M, Q, H 중 선택)
+                        includeMargin={true} // 여백 포함 여부
+                      />
+                    </div>
+                {/* <div 
+                  className="w-32 h-32 bg-gray-50 rounded-lg cursor-pointer flex items-center justify-center" 
+                  onClick={handleQRClick}
+                >
+                  {qrCodeUrl ? (
+                    <img src={qrCodeUrl} alt="QR Code" className="w-full h-full object-contain" />
+                  ) : (
+                    <div className="text-gray-500">Loading...</div>
+                  )}
+                </div> */}
+                <div className="flex flex-col gap-2 text-sm text-gray-600">
+                  <p>예약 날짜: {currentDate}</p>
+                  <p>방 번호: {roomNumber}</p>
+                  <p>{studentName}</p>
+                  <p>{studentId}</p>
+                </div>
+              </div>
+            </>
           ) : (
             <div className="flex justify-center items-center py-8">
               <div className="text-sm text-gray-500">로그인 후 이용해 주세요</div>
@@ -260,54 +412,120 @@ const MainPage = () => {
 
       {/* Login Popup */}
       {showSigninPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseSigninPopup}>
-          <div className="bg-white rounded-lg w-96 p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <img src={logo} alt="HUFS Logo" className="h-12" />
-              <button className="text-2xl" onClick={handleCloseSigninPopup}>×</button>
-            </div>
-            <div className="space-y-4">
-              <input type="email" placeholder="학교 이메일을 입력해주세요" className="w-full p-2 border rounded" />
-              <input type="password" placeholder="비밀번호를 입력해주세요" className="w-full p-2 border rounded" />
-              <div className="flex items-center">
-                <label className="flex items-center">
-                  <input type="checkbox" className="mr-2" />
-                  아이디 기억하기
-                </label>
-              </div>
-              <button className="w-full bg-blue-500 text-white p-2 rounded" onClick={handleLogin}>
-                로그인
-              </button>
-              <div className="text-center text-gray-500">또는</div>
-              <button className="w-full bg-gray-100 text-gray-700 p-2 rounded border" onClick={handleSignUpClick}>
-                회원가입
-              </button>
-            </div>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseSigninPopup}>
+        <div className="bg-white rounded-lg w-96 p-6" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-4">
+            <img src={logo} alt="HUFS Logo" className="h-12" />
+            <button className="text-2xl" onClick={handleCloseSigninPopup}>×</button>
           </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <input
+              type="email"
+              name="email"
+              value={loginForm.email}
+              onChange={handleLoginInputChange}
+              placeholder="학교 이메일을 입력해주세요"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="password"
+              name="password"
+              value={loginForm.password}
+              onChange={handleLoginInputChange}
+              placeholder="비밀번호를 입력해주세요"
+              className="w-full p-2 border rounded"
+              required
+            />
+            {loginError && (
+              <p className="text-red-500 text-sm">{loginError}</p>
+            )}
+            <div className="flex items-center">
+              <label className="flex items-center">
+                <input type="checkbox" className="mr-2" />
+                아이디 기억하기
+              </label>
+            </div>
+            <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
+              로그인
+            </button>
+            <div className="text-center text-gray-500">또는</div>
+            <button
+              type="button"
+              className="w-full bg-gray-100 text-gray-700 p-2 rounded border"
+              onClick={handleSignUpClick}
+            >
+              회원가입
+            </button>
+          </form>
         </div>
-      )}
+      </div>
+    )}
 
       {/* Sign Up Popup */}
       {showSignUpPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseSignUpPopup}>
-          <div className="bg-white rounded-lg w-96 p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <img src={logo} alt="HUFS Logo" className="h-12" />
-              <button className="text-2xl" onClick={handleCloseSignUpPopup}>×</button>
-            </div>
-            <div className="space-y-4">
-              <input type="text" placeholder="이름을 입력해주세요" className="w-full p-2 border rounded" />
-              <input type="text" placeholder="학번을 입력해주세요" className="w-full p-2 border rounded" />
-              <input type="email" placeholder="학교 이메일을 입력해주세요" className="w-full p-2 border rounded" />
-              <input type="password" placeholder="비밀번호를 입력해주세요" className="w-full p-2 border rounded" />
-              <input type="password" placeholder="비밀번호 확인" className="w-full p-2 border rounded" />
-              <button className="w-full bg-blue-500 text-white p-2 rounded">
-                회원가입
-              </button>
-            </div>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseSignUpPopup}>
+        <div className="bg-white rounded-lg w-96 p-6" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-4">
+            <img src={logo} alt="HUFS Logo" className="h-12" />
+            <button className="text-2xl" onClick={handleCloseSignUpPopup}>×</button>
           </div>
+          <form onSubmit={handleSignup} className="space-y-4">
+            <input
+              type="text"
+              name="name"
+              value={signupForm.name}
+              onChange={handleSignupInputChange}
+              placeholder="이름을 입력해주세요"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="text"
+              name="studentNum"
+              value={signupForm.studentNum}
+              onChange={handleSignupInputChange}
+              placeholder="학번을 입력해주세요"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="email"
+              name="email"
+              value={signupForm.email}
+              onChange={handleSignupInputChange}
+              placeholder="학교 이메일을 입력해주세요"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="password"
+              name="password"
+              value={signupForm.password}
+              onChange={handleSignupInputChange}
+              placeholder="비밀번호를 입력해주세요"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="password"
+              name="confirmPassword"
+              value={signupForm.confirmPassword}
+              onChange={handleSignupInputChange}
+              placeholder="비밀번호 확인"
+              className="w-full p-2 border rounded"
+              required
+            />
+            {signupError && (
+              <p className="text-red-500 text-sm">{signupError}</p>
+            )}
+            <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
+              회원가입
+            </button>
+          </form>
         </div>
-      )}
+      </div>
+    )}
 
       {/* Notice Popup */}
       {showNotice && (
