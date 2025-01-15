@@ -4,6 +4,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -40,16 +41,20 @@ public class MembershipController {
 	}
 
 	@PostMapping("refresh")
-	public ResponseEntity<ResponseDto<MemberLoginResponse>> refresh(@Valid @RequestBody TokenRequest request) {
+	public ResponseEntity<ResponseDto<MemberLoginResponse>> refresh(
+		@RequestHeader("Authorization") String authorizationHeader,
+		@Valid @RequestBody TokenRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.refresh(request)));
+			.body(ResponseDto.of(membershipService.refresh(authorizationHeader, request)));
 	}
 
 	@PostMapping("logout")
-	public ResponseEntity<ResponseDto<MemberResponse>> logout(@Valid @RequestBody TokenRequest request) {
+	public ResponseEntity<ResponseDto<MemberResponse>> logout(
+		@RequestHeader("Authorization") String authorizationHeader,
+		@Valid @RequestBody TokenRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.logout(request)));
+			.body(ResponseDto.of(membershipService.logout(authorizationHeader, request)));
 	}
 }

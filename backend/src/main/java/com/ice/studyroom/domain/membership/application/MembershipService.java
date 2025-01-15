@@ -65,9 +65,10 @@ public class MembershipService {
 		return MemberLoginResponse.of(jwtToken);
 	}
 
-	public MemberLoginResponse refresh(TokenRequest request) {
+	public MemberLoginResponse refresh(String authorizationHeader, TokenRequest request) {
 		// 이메일 정보 추출
-		String email = tokenService.extractEmailFromAccessToken(request.accessToken());
+		String accessToken = authorizationHeader.replace("Bearer ", "");
+		String email = tokenService.extractEmailFromAccessToken(accessToken);
 
 		// tokenService.validateRefreshToken(email, request.refreshToken());
 		JwtToken jwtToken = tokenService.rotateToken(email, request.refreshToken());
@@ -75,8 +76,9 @@ public class MembershipService {
 		return MemberLoginResponse.of(jwtToken);
 	}
 
-	public MemberResponse logout(TokenRequest request) {
-		String email = tokenService.extractEmailFromAccessToken(request.accessToken());
+	public MemberResponse logout(String authorizationHeader, TokenRequest request) {
+		String accessToken = authorizationHeader.replace("Bearer ", "");
+		String email = tokenService.extractEmailFromAccessToken(accessToken);
 
 		tokenService.deleteToken(email, request.refreshToken());
 
