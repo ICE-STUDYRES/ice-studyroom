@@ -66,19 +66,15 @@ public class MembershipService {
 	}
 
 	public MemberLoginResponse refresh(String authorizationHeader, TokenRequest request) {
-		// 이메일 정보 추출
-		String accessToken = authorizationHeader.replace("Bearer ", "");
-		String email = tokenService.extractEmailFromAccessToken(accessToken);
+		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		// tokenService.validateRefreshToken(email, request.refreshToken());
 		JwtToken jwtToken = tokenService.rotateToken(email, request.refreshToken());
 
 		return MemberLoginResponse.of(jwtToken);
 	}
 
 	public MemberResponse logout(String authorizationHeader, TokenRequest request) {
-		String accessToken = authorizationHeader.replace("Bearer ", "");
-		String email = tokenService.extractEmailFromAccessToken(accessToken);
+		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		tokenService.deleteToken(email, request.refreshToken());
 
