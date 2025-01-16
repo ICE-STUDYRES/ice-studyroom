@@ -36,6 +36,7 @@ public class SecurityConfig {
 			.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers("/api/reservation/**").permitAll()
 				.requestMatchers("/api/users/**").permitAll()
+				.requestMatchers("/api/email/**").permitAll()  // 이메일 전송 API 경로 추가
 				.anyRequest().authenticated()
 			)
 			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
