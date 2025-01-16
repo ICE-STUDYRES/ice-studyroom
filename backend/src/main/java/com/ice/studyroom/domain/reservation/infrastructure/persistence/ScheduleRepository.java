@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.dao;
+package com.ice.studyroom.domain.reservation.infrastructure.persistence;
 
 import java.time.LocalDate;
 import java.util.List;
