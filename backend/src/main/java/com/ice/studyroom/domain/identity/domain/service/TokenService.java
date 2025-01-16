@@ -23,7 +23,8 @@ public class TokenService {
 	private static final String REFRESH_TOKEN_PREFIX = "RT:";
 	private static final Duration REFRESH_TOKEN_VALIDITY = Duration.ofDays(7);
 
-	public String extractEmailFromAccessToken(String accessToken) {
+	public String extractEmailFromAccessToken(String authorizationHeader) {
+		String accessToken = authorizationHeader.replace("Bearer ", "");
 		return jwtTokenProvider.getUsername(accessToken);
 	}
 

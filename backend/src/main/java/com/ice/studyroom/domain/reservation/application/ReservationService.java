@@ -9,15 +9,14 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ice.studyroom.domain.reservation.dao.ReservationRepository;
-import com.ice.studyroom.domain.reservation.dao.ScheduleRepository;
+import com.ice.studyroom.domain.identity.domain.service.TokenService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
-import com.ice.studyroom.domain.reservation.dto.request.CreateReservationRequest;
-import com.ice.studyroom.domain.reservation.dto.request.DeleteReservationRequest;
-import com.ice.studyroom.domain.reservation.dto.response.ReservationResponse;
-import com.ice.studyroom.domain.room.dao.RoomRepository;
-import com.ice.studyroom.domain.room.dao.TimeSlotRepository;
+import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
+import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
+import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.ReservationResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,25 +25,22 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class ReservationService {
 
+	private final TokenService tokenService;
 	private final ReservationRepository reservationRepository;
-	private final TimeSlotRepository timeSlotRepository;
-	private final RoomRepository roomRepository;
 	private final ScheduleRepository scheduleRepository;
 
-	public List<Reservation> getReservations() {
-		// 오늘 날짜에 해당하는 스케줄만 산출
-		LocalDate today = LocalDate.now();
-		return reservationRepository.findByScheduleDate(today);
+	public List<Reservation> getMyReservation(String authorization) {
+		String email = tokenService.extractEmailFromAccessToken(authorization);
+		return reservationRepository.findByUserEmail(email);
 	}
 
-	public List<Schedule> getSchedules() {
-		// 오늘 날짜에 해당하는 스케줄만 산출
+	public List<Schedule> getSchedule() {
 		LocalDate today = LocalDate.now();
 		return scheduleRepository.findByScheduleDate(today);
 	}
 
 	@Transactional
-	public ReservationResponse createReservation(CreateReservationRequest request) {
+	public ReservationResponse createReservation(String authorizationHeader, CreateReservationRequest request) {
 		/*
 		신청 시간이 1시간-2시간인지 유효성 검증
 		 */
@@ -61,7 +57,8 @@ public class ReservationService {
 		List<Schedule> schedules = findSchedules(request.getScheduleId());
 		validateSchedulesAvailable(schedules);
 
-		Reservation reservation = Reservation.from(schedules, request);
+		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		Reservation reservation = Reservation.from(schedules, request, email);
 
 		/*
 		연속된 스케줄인지 확인하는 로직,

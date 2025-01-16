@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.dto.request;
+package com.ice.studyroom.domain.reservation.presentation.dto.request;
 
 import java.time.LocalTime;
 
@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CreateReservationRequest {
-	private Long userId;
 	private Long[] scheduleId;
 	private String userName;
 	private String roomNumber;
