@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.api;
+package com.ice.studyroom.domain.reservation.presentation;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -15,7 +15,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.ice.studyroom.domain.reservation.dto.request.CreateReservationRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -33,7 +33,6 @@ class ReservationControllerTest {
 	void createReservation_Success() throws Exception {
 		// given
 		CreateReservationRequest request = CreateReservationRequest.builder()
-			.userId(1L)
 			.scheduleId(new Long[] {1L, 9L})
 			.userName("도성현")
 			.roomNumber("409-2")
