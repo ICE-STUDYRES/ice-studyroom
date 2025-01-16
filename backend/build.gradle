@@ -59,7 +59,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.mockito:mockito-core'
     implementation 'me.paulschwarz:spring-dotenv:4.0.0'
-    // 이메일 전송
+    //이메일 전송
     implementation 'org.springframework.boot:spring-boot-starter-mail'
 }
 
