@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.dto.response;
+package com.ice.studyroom.domain.reservation.presentation.dto.response;
 
 import java.time.LocalDate;
 import java.time.LocalTime;

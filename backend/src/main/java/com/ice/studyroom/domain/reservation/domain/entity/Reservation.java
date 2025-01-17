@@ -6,7 +6,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
-import com.ice.studyroom.domain.reservation.dto.request.CreateReservationRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -41,7 +41,7 @@ public class Reservation {
 	private Long secondScheduleId;
 
 	@Column(nullable = false)
-	private Long userId;
+	private String userEmail;
 
 	@Column(nullable = false)
 	private String userName;
@@ -86,7 +86,7 @@ public class Reservation {
 			.id(this.id)
 			.firstScheduleId(this.firstScheduleId)
 			.secondScheduleId(this.secondScheduleId)
-			.userId(this.userId)
+			.userEmail(this.userEmail)
 			.userName(this.userName)
 			.scheduleDate(this.scheduleDate)
 			.roomNumber(this.roomNumber)
@@ -105,7 +105,7 @@ public class Reservation {
 		return Reservation.builder()
 			.id(this.id)
 			.firstScheduleId(this.firstScheduleId)
-			.secondScheduleId(this.secondScheduleId).userId(this.userId)
+			.secondScheduleId(this.secondScheduleId).userEmail(this.userEmail)
 			.userName(this.userName)
 			.scheduleDate(this.scheduleDate)
 			.roomNumber(this.roomNumber)
@@ -124,7 +124,7 @@ public class Reservation {
 		return Reservation.builder()
 			.id(this.id)
 			.firstScheduleId(this.firstScheduleId)
-			.secondScheduleId(this.secondScheduleId).userId(this.userId)
+			.secondScheduleId(this.secondScheduleId).userEmail(this.userEmail)
 			.userName(this.userName)
 			.scheduleDate(this.scheduleDate)
 			.roomNumber(this.roomNumber)
@@ -138,7 +138,7 @@ public class Reservation {
 			.build();
 	}
 
-	public static Reservation from(List<Schedule> schedules, CreateReservationRequest request) {
+	public static Reservation from(List<Schedule> schedules, CreateReservationRequest request, String email) {
 		Schedule firstSchedule = schedules.get(0);
 		Schedule secondSchedule = schedules.size() > 1 ? schedules.get(1) : null;
 		System.out.println("Reservation.from() ID =" + firstSchedule.getId());
@@ -146,7 +146,7 @@ public class Reservation {
 		return Reservation.builder()
 			.firstScheduleId(firstSchedule.getId())
 			.secondScheduleId(secondSchedule != null ? secondSchedule.getId() : null)
-			.userId(request.getUserId())
+			.userEmail(email)
 			.userName(request.getUserName())
 			.scheduleDate(firstSchedule.getScheduleDate())
 			.roomNumber(firstSchedule.getRoomNumber())

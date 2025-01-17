@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.dto.request;
+package com.ice.studyroom.domain.reservation.presentation.dto.request;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;

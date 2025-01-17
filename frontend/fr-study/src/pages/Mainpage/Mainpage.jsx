@@ -223,12 +223,12 @@ const MainPage = () => {
           accessToken: data.data.accessToken,
           refreshToken: data.data.refreshToken
         };
+
         // 토큰 정보를 콘솔에 출력
         console.log('Login Tokens:', {
           accessToken: newTokens.accessToken,
           refreshToken: newTokens.refreshToken
         });
-        
         setTokens(newTokens);
         localStorage.setItem('accessToken', newTokens.accessToken);
         localStorage.setItem('refreshToken', newTokens.refreshToken);
@@ -242,7 +242,9 @@ const MainPage = () => {
       console.error('Login error:', error);
       setLoginError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     }
+
 };
+
 
   // 로그아웃 핸들러
   const handleLogout = async () => {
