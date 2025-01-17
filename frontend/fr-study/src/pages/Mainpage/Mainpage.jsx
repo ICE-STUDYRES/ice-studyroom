@@ -65,6 +65,59 @@ const MainPage = () => {
     fetchQRCode();
   }, [studentId, studentName]);
 
+  useEffect(() => {
+    // 요청 인터셉터
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => Promise.reject(error)
+    );
+  
+    // 응답 인터셉터
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response, // 정상 응답
+      async (error) => {
+        const originalRequest = error.config;
+  
+        // 401 에러이고 아직 재시도하지 않은 경우
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true; // 재시도 플래그 설정
+          console.log('🔄 액세스 토큰 만료, 갱신 시도 중...');
+  
+          try {
+            const newAccessToken = await refreshTokens(); // 토큰 갱신 시도
+  
+            if (newAccessToken) {
+              console.log('✅ 액세스 토큰 갱신 성공');
+              originalRequest.headers.Authorization = `Bearer ${newAccessToken}`; // 새로운 토큰 추가
+              return axios(originalRequest); // 실패했던 요청 재시도
+            } else {
+              console.log('❌ 토큰 갱신 실패 - 로그아웃 처리');
+              handleLogout(); // 로그아웃 처리
+              return Promise.reject(error);
+            }
+          } catch (refreshError) {
+            console.log('❌ 토큰 갱신 중 에러:', refreshError.message);
+            handleLogout();
+            return Promise.reject(refreshError);
+          }
+        }
+  
+        return Promise.reject(error); // 다른 에러는 그대로 반환
+      }
+    );
+  
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+      axios.interceptors.response.eject(responseInterceptor);
+    };
+  }, []);
+  
   const navigate = useNavigate();  
   const handleReservationClick = () => {
     if (isLoggedIn) {
@@ -157,14 +210,12 @@ const MainPage = () => {
     setLoginError('');
   
     try {
-      // 로그인 요청을 axios를 통해 보내기
       const response = await axios.post('api/users/login', loginForm, {
         headers: {
-          'Content-Type': 'application/json' // JSON 데이터로 요청
+          'Content-Type': 'application/json'
         }
       });
   
-      // Axios는 자동으로 응답을 JSON으로 파싱하므로, `response.data`를 바로 사용
       const data = response.data;
   
       if (data.code === 'S200') {
@@ -172,6 +223,12 @@ const MainPage = () => {
           accessToken: data.data.accessToken,
           refreshToken: data.data.refreshToken
         };
+        // 토큰 정보를 콘솔에 출력
+        console.log('Login Tokens:', {
+          accessToken: newTokens.accessToken,
+          refreshToken: newTokens.refreshToken
+        });
+        
         setTokens(newTokens);
         localStorage.setItem('accessToken', newTokens.accessToken);
         localStorage.setItem('refreshToken', newTokens.refreshToken);
@@ -185,81 +242,100 @@ const MainPage = () => {
       console.error('Login error:', error);
       setLoginError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
     }
-  };
-  
+};
 
   // 로그아웃 핸들러
   const handleLogout = async () => {
     if (!tokens || !tokens.accessToken) {
       console.warn("No tokens available for logout.");
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('isLoggedIn');
-      setTokens({ accessToken: null, refreshToken: null });
-      setIsLoggedIn(false);
+      clearAuthData();
       return;
     }
   
     try {
-      const response = await axios.post('/api/users/logout', {
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken
-      }, {
-        headers: {
-          'Content-Type': 'application/json'
+      const response = await axios.post(
+        '/api/users/logout',
+        {
+          refreshToken: tokens.refreshToken, // 요청 본문
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${tokens.accessToken}`, // 명세에 맞게 수정
+            'Content-Type': 'application/json',
+          },
         }
-      });
+      );
   
       if (response.data.code === 'S200') {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('isLoggedIn');
-        setTokens({ accessToken: null, refreshToken: null });
-        setIsLoggedIn(false);
+        clearAuthData();
       } else {
         console.error('Logout failed:', response.data.message);
+        clearAuthData();
       }
     } catch (error) {
       console.error('Logout error:', error);
+      clearAuthData();
     }
   };
   
+  // 인증 관련 데이터를 정리하는 헬퍼 함수
+  const clearAuthData = () => {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    localStorage.removeItem('isLoggedIn');
+    setTokens({ accessToken: null, refreshToken: null });
+    setIsLoggedIn(false);
+  };
 
   const refreshTokens = async () => {
     try {
-      const response = await fetch("http://localhost:8080/api/users/refresh", {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          grantType: 'Bearer',
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.code === 'S200') {
-        const newTokens = {
-          accessToken: data.data.accessToken,
-          refreshToken: data.data.refreshToken
-        };
-        setTokens(newTokens);
-        localStorage.setItem('accessToken', newTokens.accessToken);
-        localStorage.setItem('refreshToken', newTokens.refreshToken);
-        return newTokens.accessToken;
+      console.log('📤 토큰 갱신 요청 전송 중...');
+      const currentAccessToken = localStorage.getItem('accessToken');
+      const currentRefreshToken = localStorage.getItem('refreshToken');
+  
+      if (!currentAccessToken || !currentRefreshToken) {
+        throw new Error('토큰이 존재하지 않습니다.');
+      }
+  
+      const response = await axios.post('/api/users/refresh', 
+        { refreshToken: currentRefreshToken },
+        {
+          headers: {
+            'Authorization': `Bearer ${currentAccessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+  
+      const { code, data, message } = response.data;
+  
+      if (code === 'S200' && data) {
+        const { accessToken, refreshToken } = data;
+  
+        // 새로운 토큰 저장
+        localStorage.setItem('accessToken', accessToken);
+        localStorage.setItem('refreshToken', refreshToken);
+        setTokens({ accessToken, refreshToken }); // 상태 업데이트
+  
+        // 새로 발급받은 토큰 출력
+        console.log('✅ 새로 발급된 AccessToken:', accessToken);
+        console.log('✅ 새로 발급된 RefreshToken:', refreshToken);
+  
+        return accessToken; // 새로 발급된 AccessToken 반환
       } else {
-        throw new Error('Token refresh failed');
+        console.log('❌ 갱신 실패 - 서버 응답:', code, message);
+        throw new Error('토큰 갱신 실패');
       }
     } catch (error) {
-      console.error('Token refresh error:', error);
+      console.log('❌ 토큰 갱신 에러:', error.message);
+      if (error.response?.data) {
+        console.log('서버 에러 응답:', error.response.data);
+      }
       handleLogout();
       return null;
     }
-  };
-
+  };  
+  
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
 
@@ -318,16 +394,6 @@ const MainPage = () => {
                         includeMargin={true} // 여백 포함 여부
                       />
                     </div>
-                {/* <div 
-                  className="w-32 h-32 bg-gray-50 rounded-lg cursor-pointer flex items-center justify-center" 
-                  onClick={handleQRClick}
-                >
-                  {qrCodeUrl ? (
-                    <img src={qrCodeUrl} alt="QR Code" className="w-full h-full object-contain" />
-                  ) : (
-                    <div className="text-gray-500">Loading...</div>
-                  )}
-                </div> */}
                 <div className="flex flex-col gap-2 text-sm text-gray-600">
                   <p>예약 날짜: {currentDate}</p>
                   <p>방 번호: {roomNumber}</p>
