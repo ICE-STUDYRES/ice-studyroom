@@ -19,7 +19,6 @@ import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
-import com.ice.studyroom.domain.reservation.presentation.dto.response.ReservationResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
@@ -64,7 +63,7 @@ public class ReservationController {
 	@Operation(summary = "스터디룸 예약", description = "스터디룸을 예약합니다.")
 	@ApiResponse(responseCode = "201", description = "스터디룸 예약 성공")
 	@PostMapping("/reservations")
-	public ResponseEntity<ResponseDto<ReservationResponse>> createReservation(
+	public ResponseEntity<ResponseDto<String>> createReservation(
 		@RequestHeader("Authorization") String authorizationHeader,
 		@Valid @RequestBody CreateReservationRequest request
 	) {
