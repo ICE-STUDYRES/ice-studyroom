@@ -3,20 +3,26 @@ package com.ice.studyroom.domain.reservation.application;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
+import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.domain.membership.domain.vo.Email;
+import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
-import com.ice.studyroom.domain.reservation.presentation.dto.response.ReservationResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 public class ReservationService {
 
 	private final TokenService tokenService;
+	private final MemberRepository memberRepository;
 	private final ReservationRepository reservationRepository;
 	private final ScheduleRepository scheduleRepository;
 
@@ -40,45 +47,61 @@ public class ReservationService {
 	}
 
 	@Transactional
-	public ReservationResponse createReservation(String authorizationHeader, CreateReservationRequest request) {
-		/*
-		신청 시간이 1시간-2시간인지 유효성 검증
-		 */
-		request.validateScheduleIds();
-
-		/*
-		TODO: 사용자 관련 사항을 확인한 예정인 부분
-		추후에는 JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인하고 예약을 취소할 예정
-		*/
-
-		/*
-		예약이 가능한 스케줄인지 확인
-		 */
-		List<Schedule> schedules = findSchedules(request.getScheduleId());
+	public String createReservation(String authorizationHeader, CreateReservationRequest request) {
+		// 예약 가능 여부 확인
+		List<Schedule> schedules = findSchedules(request.scheduleId());
 		validateSchedulesAvailable(schedules);
 
-		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		Reservation reservation = Reservation.from(schedules, request, email);
+		// JWT에서 예약자 이메일 추출
+		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		/*
-		연속된 스케줄인지 확인하는 로직,
-		연속된 스케줄: 연속된 시간 & 같은 방
-		자체 필드 내의 데이터 유효성 검증은 TDA 원칙 적용
-		 */
-		if (request.isConsecutiveReservation()) {
-			// 연속 시간 혹은 같은 방이 아닐 경우 오류 발생
-			validateConsecutiveSchedules(request);
+		// 예약자(User) 확인
+		memberRepository.findByEmail(Email.of(reserverEmail))
+			.orElseThrow(() -> new IllegalArgumentException("예약자 이메일이 존재하지 않습니다: " + reserverEmail));
+
+		// 중복된 이메일 검사 (예약자 포함)
+		Set<String> uniqueEmails = new HashSet<>();
+		uniqueEmails.add(reserverEmail); // 예약자 이메일 포함
+
+		// 참여자 리스트 추가 (중복 검사)
+		List<Member> participants = new ArrayList<>();
+		if (!ObjectUtils.isEmpty(request.participantEmail())) {
+			for (String email : request.participantEmail()) {
+				System.out.println("email = " + email);
+				if (!uniqueEmails.add(email)) {
+					throw new IllegalArgumentException("중복된 참여자 이메일이 존재합니다: " + email);
+				}
+				Member participant = memberRepository.findByEmail(Email.of(email))
+					.orElseThrow(() -> new IllegalArgumentException("참여자 이메일이 존재하지 않습니다: " + email));
+				participants.add(participant);
+			}
+		}
+		System.out.println("uniqueEmails = " + uniqueEmails);
+
+		// 최소 예약 인원(minRes) 검사 (예약자 + 참여자 수 체크)
+		int totalParticipants = uniqueEmails.size(); // 예약자 + 참여자 수
+		int minRes = schedules.get(0).getMinRes(); // 모든 schedule의 minRes는 동일하다고 가정
+		if (totalParticipants < minRes) {
+			throw new IllegalArgumentException(
+				"최소 예약 인원 조건을 만족하지 않습니다. (필요 인원: " + minRes + ", 현재 인원: " + totalParticipants + ")");
 		}
 
-		schedules.forEach(schedule -> {
-			schedule.reserve();
-		});
+		// 예약 리스트 생성
+		List<Reservation> reservations = new ArrayList<>();
+		reservations.add(Reservation.from(schedules, request, reserverEmail)); // 예약자 추가
 
-		// 예약 생성 및 저장
-		scheduleRepository.saveAll(schedules);
-		reservationRepository.save(reservation);
+		// 참여자 예약 추가
+		for (String participant : request.participantEmail()) {
+			reservations.add(Reservation.from(schedules, request, participant));
+		}
 
-		return ReservationResponse.of(reservation);
+		// 예약 저장
+		reservationRepository.saveAll(reservations);
+		// 응답 변환 후 반환
+		// return reservations.stream()
+		// 	.map(ReservationResponse::of)
+		// 	.collect(Collectors.toList());
+		return "Success";
 	}
 
 	@Transactional
@@ -124,14 +147,15 @@ public class ReservationService {
 	private List<Schedule> findSchedules(Long[] scheduleIds) {
 		return Arrays.stream(scheduleIds)
 			.map(id -> scheduleRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스케줄입니다.")))
+				.filter(schedule -> schedule.getStatus() == ScheduleStatus.AVAILABLE) // AVAILABLE 상태 체크
+				.orElseThrow(() -> new IllegalArgumentException("존재하지 않거나 사용 불가능한 스케줄입니다.")))
 			.collect(Collectors.toList());
 	}
 
 	private void validateConsecutiveSchedules(CreateReservationRequest request) {
-		Schedule firstSchedule = scheduleRepository.findById(request.getScheduleId()[0])
+		Schedule firstSchedule = scheduleRepository.findById(request.scheduleId()[0])
 			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스케줄입니다."));
-		Schedule secondSchedule = scheduleRepository.findById(request.getScheduleId()[1])
+		Schedule secondSchedule = scheduleRepository.findById(request.scheduleId()[1])
 			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스케줄입니다."));
 
 		// 같은 방인지 확인

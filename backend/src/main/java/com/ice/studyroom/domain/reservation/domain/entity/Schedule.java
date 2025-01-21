@@ -52,6 +52,9 @@ public class Schedule {
 	@Column(nullable = false)
 	private LocalTime endTime;
 
+	@Column(name = "min_res", nullable = false)
+	private Integer minRes;
+
 	@Column(nullable = false)
 	private Integer capacity;
 
