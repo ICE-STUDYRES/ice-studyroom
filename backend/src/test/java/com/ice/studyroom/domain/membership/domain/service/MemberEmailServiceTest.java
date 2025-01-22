@@ -1,0 +1,116 @@
+package com.ice.studyroom.domain.membership.domain.service;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
+
+import java.time.Duration;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.service.EmailService;
+import com.ice.studyroom.global.service.RedisService;
+import com.ice.studyroom.global.type.StatusCode;
+
+@ExtendWith(MockitoExtension.class)
+class MemberEmailServiceTest {
+
+	@InjectMocks
+	private MemberEmailService memberEmailService; // 테스트할 실제 객체
+
+	@Mock
+	private RedisService redisService; // Mock 객체
+
+	@Mock
+	private EmailService emailService; // Mock 객체=
+
+	@Test
+	@DisplayName("이메일 전송이 성공했을 경우")
+	void testSendCodeToEmail() {
+		String email = "test@example.com";
+		when(redisService.exists(email)).thenReturn(false); // Redis에 키가 없다고 가정
+		doNothing().when(redisService).save(anyString(), anyString(), eq(Duration.ofMinutes(5)));
+		doNothing().when(emailService).sendEmail(anyString(), anyString(), anyString());
+
+		memberEmailService.sendCodeToEmail(email);
+		// Assert
+		verify(redisService, times(1)).save(eq(email), anyString(), eq(Duration.ofMinutes(5)));
+		verify(emailService, times(1)).sendEmail(eq(email), anyString(), anyString());
+	}
+
+	@Test
+	@DisplayName("이미 인증 메일이 발송되었으면 에러를 처리해야한다.")
+	void testSendCodeToEmail_Failure_EmailAlreadySent() {
+		String email = "test@example.com";
+		when(redisService.exists(email)).thenReturn(true); // Redis에 키가 있다고 가정
+
+		BusinessException exception = assertThrows(BusinessException.class, () -> {
+			memberEmailService.sendCodeToEmail(email);
+		});
+
+		assertEquals("인증 메일이 이미 발송되었습니다.", exception.getMessage());
+		verify(redisService, never()).save(anyString(), anyString(), eq(Duration.ofMinutes(5))); // save는 호출되지 않아야 함
+		verify(emailService, never()).sendEmail(anyString(), anyString(), anyString()); // 메일 발송도 호출되지 않아야 함
+	}
+
+	@Test
+	@DisplayName("인증 코드가 일치할 경우, 인증이 성공적으로 완료되어야 한다.")
+	void testVerifiedCode_Success() {
+		String email = "test@example.com";
+		String validCode = "123456";
+
+		when(redisService.exists(email)).thenReturn(true);
+		when(redisService.get(email)).thenReturn(validCode);
+
+		boolean result = memberEmailService.verifiedCode(email, validCode);
+
+		assertTrue(result);
+		verify(redisService, times(1)).exists(email);
+		verify(redisService, times(1)).get(email);
+	}
+
+	@Test
+	@DisplayName("인증 코드가 불일치 할 경우, 인증이 실패해야 한다.")
+	void testVerifiedCode_Fail() {
+		String email = "test@example.com";
+		String validCode = "123456";
+		String wrongCode = "567890";
+
+		when(redisService.exists(email)).thenReturn(true);
+		when(redisService.get(email)).thenReturn(wrongCode);
+
+		BusinessException exception = assertThrows(BusinessException.class, () -> {
+			memberEmailService.verifiedCode(email, validCode);
+		});
+
+		assertEquals(StatusCode.INVALID_VERIFICATION_CODE, exception.getStatusCode());
+		assertEquals("유효하지 않은 인증코드입니다.", exception.getMessage());
+
+		verify(redisService, times(1)).exists(email);
+		verify(redisService, times(1)).get(email);
+	}
+
+	@Test
+	@DisplayName("인증코드가 만료되었을 경우")
+	void testVerifiedCode_Failure_CodeNotFound() {
+		String email = "test@example.com";
+		String authCode = "123456";
+
+		when(redisService.exists(email)).thenReturn(false);
+
+		BusinessException exception = assertThrows(BusinessException.class, () -> {
+			memberEmailService.verifiedCode(email, authCode);
+		});
+
+		assertEquals(StatusCode.INVALID_VERIFICATION_CODE, exception.getStatusCode());
+		assertEquals("유효하지 않은 인증코드입니다.", exception.getMessage());
+
+		verify(redisService, times(1)).exists(email);
+		verify(redisService, never()).get(email);
+	}
+}
