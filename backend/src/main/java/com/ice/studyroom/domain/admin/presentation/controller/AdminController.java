@@ -2,8 +2,8 @@ package com.ice.studyroom.domain.admin.presentation.controller;
 
 
 import com.ice.studyroom.domain.admin.application.AdminService;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminCreateReserveRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.response.AdminCreateReserveResponse;
+import com.ice.studyroom.domain.admin.presentation.dto.request.AdminCreateOccupyRequest;
+import com.ice.studyroom.domain.admin.presentation.dto.response.AdminCreateOccupyResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,13 +21,13 @@ public class AdminController {
 
 	private final AdminService adminService;
 
-	@PostMapping("/markSchedule")
-	public ResponseEntity<ResponseDto<AdminCreateReserveResponse>> adminMarkSchedule(
-		@Valid @RequestBody AdminCreateReserveRequest request
+	@PostMapping("/preOccupy")
+	public ResponseEntity<ResponseDto<AdminCreateOccupyResponse>> adminOccupySchedule(
+		@Valid @RequestBody AdminCreateOccupyRequest request
 	) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(adminService.adminReserveRoom(request)));
+			.body(ResponseDto.of(adminService.adminOccupyRoom(request)));
 
 		/*
 		이후 버전 생각한거니 무시해주세요.
