@@ -1,12 +1,8 @@
 package com.ice.studyroom.domain.admin.presentation.dto.request;
 
-import com.ice.studyroom.domain.room_timeslot.domain.type.DayOfWeekStatus;
-
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalTime;
-
-public record AdminCreateReserveRequest(
+public record AdminCreateOccupyRequest(
 //	@NotNull(message = "방번호는 필수입니다")
 //	String roomNumber,
 //	@NotNull(message = "시작시간은 필수입니다.")
@@ -21,4 +17,3 @@ public record AdminCreateReserveRequest(
 	Long roomTimeSlotId
 ) {
 }
-
