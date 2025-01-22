@@ -12,14 +12,17 @@ public enum StatusCode {
 
 	// Client Errors
 	BAD_REQUEST(400, "C400", "Bad Request"),
+	INVALID_VERIFICATION_CODE(400, "C401", "유효하지 않은 인증코드입니다."),
 	UNAUTHORIZED(401, "C401", "Unauthorized"),
 	FORBIDDEN(403, "C403", "Forbidden"),
 	NOT_FOUND(404, "C404", "Not Found"),
+	CONFLICT(409, "B409", "Conflict"),
 
-	// Business Errors
+	// Business Errors,
 	INVALID_INPUT(400, "B400", "Invalid Input Data"),
 	DUPLICATE_ENTRY(400, "B401", "Duplicate Entry"),
 	INSUFFICIENT_BALANCE(400, "B402", "Insufficient Balance"),
+	DUPLICATE_REQUEST(429, "B429", "Duplicate Request"),
 
 	// Server Errors
 	INTERNAL_ERROR(500, "E500", "Internal Server Error"),
