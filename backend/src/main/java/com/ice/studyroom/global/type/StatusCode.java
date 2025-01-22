@@ -12,7 +12,7 @@ public enum StatusCode {
 
 	// Client Errors
 	BAD_REQUEST(400, "C400", "Bad Request"),
-	INVALID_VERIFICATION_CODE(400, "C401", "유효하지 않은 인증코드입니다."),
+	INVALID_VERIFICATION_CODE(400, "C400", "유효하지 않은 인증코드입니다."),
 	UNAUTHORIZED(401, "C401", "Unauthorized"),
 	FORBIDDEN(403, "C403", "Forbidden"),
 	NOT_FOUND(404, "C404", "Not Found"),

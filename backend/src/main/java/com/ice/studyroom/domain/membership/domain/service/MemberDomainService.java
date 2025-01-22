@@ -16,7 +16,7 @@ public class MemberDomainService {
 
 	public void validateEmailUniqueness(Email email) {
 		if (memberRepository.existsByEmail(email)) {
-			throw new BusinessException(StatusCode.DUPLICATE_REQUEST, "이미 사용 중인 이메일입니다.");
+			throw new BusinessException(StatusCode.CONFLICT, "이미 사용 중인 이메일입니다.");
 		}
 	}
 }
