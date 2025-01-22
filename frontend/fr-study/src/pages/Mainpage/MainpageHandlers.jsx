@@ -6,7 +6,7 @@ export const useMainpageHandlers = () => {
     const [currentDate, setCurrentDate] = useState("");
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [roomNumber, setRoomNumber] = useState("305-1");
-    const [checkInStatus, setCheckInStatus] = useState("입실");
+    const [checkInStatus, setCheckInStatus] = useState("예약완료");
     const [studentId] = useState("201902149");
     const [studentName] = useState("양재원");
     const [qrCodeUrl, setQrCodeUrl] = useState(null);
@@ -29,7 +29,11 @@ export const useMainpageHandlers = () => {
     });
     const [loginError, setLoginError] = useState('');
     const [tokens, setTokens] = useState(null);
-  
+    const [isVerificationSent, setIsVerificationSent] = useState(false);
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
+    const [verificationMessage, setVerificationMessage] = useState('');
+    const [verificationSuccess, setVerificationSuccess] = useState(false);
+    
     useEffect(() => {
       const today = new Date();
       const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -122,6 +126,7 @@ export const useMainpageHandlers = () => {
         alert('로그인 후 이용 가능합니다.');
       }
     };
+    const handleMyReservationStatusClick = () => navigate('/MyReservationStatus');
     const handleReservationStatusClick = () => navigate('/ReservationStatus');
     const handleReservationManageClick = () => {
       if (isLoggedIn) {
@@ -332,6 +337,18 @@ export const useMainpageHandlers = () => {
         return null;
       }
     };
+    const handleSendVerification = () => {
+      // 인증번호 전송 로직
+      setIsVerificationSent(true);
+    };
+    
+    const handleVerifyCode = () => {
+      // 인증번호 확인 로직
+      // 성공시:
+      setIsEmailVerified(true);
+      setVerificationSuccess(true);
+      setVerificationMessage('이메일 인증이 완료되었습니다.');
+    };
 
   return {
     isLoggedIn,
@@ -348,12 +365,14 @@ export const useMainpageHandlers = () => {
     signupError,
     loginForm,
     loginError,
+    isEmailVerified,verificationMessage,verificationSuccess,isVerificationSent,
     handleLogin,
     handleLoginClick,
     handleLoginInputChange,
     handleLogout,
     handleReservationClick,
     handleReservationStatusClick,
+    handleMyReservationStatusClick,
     handleReservationManageClick,
     handleNoticeClick,
     handleCloseNotice,
@@ -366,5 +385,7 @@ export const useMainpageHandlers = () => {
     handleSignupInputChange,
     handleSignup,
     handleSignUpClick,
+    handleSendVerification,
+    handleVerifyCode,
   };
 };
