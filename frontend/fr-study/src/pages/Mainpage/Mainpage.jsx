@@ -1,47 +1,22 @@
-import React, { useState, useEffect } from 'react';
-import { X, XCircle, Clock, UserX, LogOut, LogIn, Home } from 'lucide-react';
+import { X, XCircle, Clock, UserX, LogOut, LogIn, Home, ChevronRight } from 'lucide-react';
 import alertImage from "../../assets/images/alert.png";
 import logo from "../../assets/images/hufslogo.png";
 import { QRCodeCanvas } from 'qrcode.react';
 import { useMainpageHandlers } from './MainpageHandlers';
 
-const MainPageUI = () => {
+const MainPage = () => {
     const {
-        studentId,
-        studentName,
-        isLoggedIn,
-        currentDate,
-        roomNumber,
-        checkInStatus,
-        qrCodeUrl,
-        showNotice,
-        showPenaltyPopup,
-        showQRModal,
-        showSigninPopup,
-        showSignUpPopup,
-        signupForm,
-        signupError,
-        loginForm,
-        loginError,
-        handleLogin,
-        handleLoginClick,
-        handleLoginInputChange,
-        handleLogout,
-        handleReservationClick,
-        handleReservationStatusClick,
-        handleReservationManageClick,
-        handleNoticeClick,
-        handleCloseNotice,
-        handlePenaltyClick,
-        handleClosePenaltyPopup,
-        handleQRClick,
-        handleCloseQRModal,
-        handleCloseSigninPopup,
-        handleCloseSignUpPopup,
-        handleSignupInputChange,
-        handleSignup,
-        handleSignUpClick,
+        studentId,studentName,isLoggedIn,currentDate,roomNumber,checkInStatus,qrCodeUrl,showNotice,
+        showPenaltyPopup,showQRModal,showSigninPopup,showSignUpPopup,signupForm,signupError,
+        loginForm,loginError,isVerificationSent,isEmailVerified,verificationMessage,verificationSuccess,
+        handleLogin,handleLoginClick,handleLoginInputChange,handleLogout,handleReservationClick,
+        handleReservationStatusClick,handleMyReservationStatusClick,handleReservationManageClick,
+        handleNoticeClick,handleCloseNotice,handlePenaltyClick,handleClosePenaltyPopup,handleQRClick,handleCloseQRModal,
+        handleCloseSigninPopup,handleCloseSignUpPopup,handleSignupInputChange,handleSignup,handleSignUpClick,
+        handleSendVerification,handleVerifyCode,
       } = useMainpageHandlers();
+
+      
   
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
@@ -78,40 +53,49 @@ const MainPageUI = () => {
         </div>
       </div>
 
-      {/* QR Section */}
+      {/* Modified QR Section to Reservation Check */}
       <div className="px-4 py-4">
         <div className="w-full rounded-2xl border border-gray-100 bg-white p-4">
           {isLoggedIn ? (
             <>
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-semibold">QR 코드</h3>
+                <h3 className="text-lg font-semibold">내 예약 현황</h3>
                 <span className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm">
                   {checkInStatus}
                 </span>
               </div>
-              <div className="flex gap-4">
-                    <div 
-                      className="w-32 h-32 bg-gray-50 rounded-lg flex items-center justify-center"
-                      onClick={handleQRClick}
-                    >
-                      <QRCodeCanvas 
-                        value={`studentId=${studentId}&studentName=${studentName}`} // QR에 포함할 데이터
-                        size={128} // QR 코드 크기
-                        level={"H"} // 오류 복원 수준 (L, M, Q, H 중 선택)
-                        includeMargin={true} // 여백 포함 여부
-                      />
-                    </div>
-                <div className="flex flex-col gap-2 text-sm text-gray-600">
-                  <p>예약 날짜: {currentDate}</p>
-                  <p>방 번호: {roomNumber}</p>
-                  <p>{studentName}</p>
-                  <p>{studentId}</p>
-                </div>
-              </div>
+              <button 
+                onClick={handleMyReservationStatusClick}
+                className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex flex-col gap-2 w-full">
+                                    <div className="text-xs text-gray-500">
+                                    <table className="w-full text-left text-sm text-gray-600">
+                                      <tbody>
+                                        <tr>
+                                          <td className="font-medium w-20">최근 예약:</td>
+                                          <td>{currentDate}</td>
+                                          </tr>
+                                          <tr>
+                                            <td className="font-medium w-20">스터디룸:</td>
+                                            <td>{roomNumber}호</td>
+                                          </tr>
+                                        </tbody>
+                                      </table>
+                                    </div>
+                                </div>
+                <ChevronRight className="w-5 h-5 text-gray-400" />
+              </button>
             </>
           ) : (
-            <div className="flex justify-center items-center py-8">
-              <div className="text-sm text-gray-500">로그인 후 이용해 주세요</div>
+            <div className="flex flex-col items-center py-8 gap-4">
+              <div className="text-sm text-gray-500">로그인 후 예약 현황을 확인할 수 있습니다</div>
+              <button 
+                onClick={handleLoginClick}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors"
+              >
+                로그인하기
+              </button>
             </div>
           )}
         </div>
@@ -134,7 +118,7 @@ const MainPageUI = () => {
             onClick={handleReservationStatusClick}
           >
             <div className="text-2xl mb-2">✔️</div>
-            <div className="text-sm font-medium">예약 현황</div>
+            <div className="text-sm font-medium">전체 예약 현황</div>
           </button>
           
           <button 
@@ -197,7 +181,7 @@ const MainPageUI = () => {
               name="email"
               value={loginForm.email}
               onChange={handleLoginInputChange}
-              placeholder="학교 이메일을 입력해주세요"
+              placeholder="이메일을 입력해주세요"
               className="w-full p-2 border rounded"
               required
             />
@@ -236,69 +220,110 @@ const MainPageUI = () => {
     )}
 
       {/* Sign Up Popup */}
-      {showSignUpPopup && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseSignUpPopup}>
-        <div className="bg-white rounded-lg w-96 p-6" onClick={e => e.stopPropagation()}>
-          <div className="flex justify-between items-center mb-4">
-            <img src={logo} alt="HUFS Logo" className="h-12" />
-            <button className="text-2xl" onClick={handleCloseSignUpPopup}>×</button>
-          </div>
-          <form onSubmit={handleSignup} className="space-y-4">
-            <input
-              type="text"
-              name="name"
-              value={signupForm.name}
-              onChange={handleSignupInputChange}
-              placeholder="이름을 입력해주세요"
-              className="w-full p-2 border rounded"
-              required
-            />
-            <input
-              type="text"
-              name="studentNum"
-              value={signupForm.studentNum}
-              onChange={handleSignupInputChange}
-              placeholder="학번을 입력해주세요"
-              className="w-full p-2 border rounded"
-              required
-            />
+{showSignUpPopup && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseSignUpPopup}>
+    <div className="bg-white rounded-lg w-96 p-6" onClick={e => e.stopPropagation()}>
+      <div className="flex justify-between items-center mb-4">
+        <img src={logo} alt="HUFS Logo" className="h-12" />
+        <button className="text-2xl" onClick={handleCloseSignUpPopup}>×</button>
+      </div>
+      <form onSubmit={handleSignup} className="space-y-4">
+        <input
+          type="text"
+          name="name"
+          value={signupForm.name}
+          onChange={handleSignupInputChange}
+          placeholder="이름을 입력해주세요"
+          className="w-full p-2 border rounded"
+          required
+        />
+        <input
+          type="text"
+          name="studentNum"
+          value={signupForm.studentNum}
+          onChange={handleSignupInputChange}
+          placeholder="학번을 입력해주세요"
+          className="w-full p-2 border rounded"
+          required
+        />
+        <div className="space-y-2">
+          <div className="flex gap-2">
             <input
               type="email"
               name="email"
               value={signupForm.email}
               onChange={handleSignupInputChange}
-              placeholder="학교 이메일을 입력해주세요"
-              className="w-full p-2 border rounded"
+              placeholder="이메일을 입력해주세요"
+              className="flex-1 p-2 border rounded"
               required
             />
-            <input
-              type="password"
-              name="password"
-              value={signupForm.password}
-              onChange={handleSignupInputChange}
-              placeholder="비밀번호를 입력해주세요"
-              className="w-full p-2 border rounded"
-              required
-            />
-            <input
-              type="password"
-              name="confirmPassword"
-              value={signupForm.confirmPassword}
-              onChange={handleSignupInputChange}
-              placeholder="비밀번호 확인"
-              className="w-full p-2 border rounded"
-              required
-            />
-            {signupError && (
-              <p className="text-red-500 text-sm">{signupError}</p>
-            )}
-            <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
-              회원가입
+            <button
+              type="button"
+              onClick={handleSendVerification}
+              className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm whitespace-nowrap"
+            >
+              인증번호 전송
             </button>
-          </form>
+          </div>
+          {isVerificationSent && (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                name="verificationCode"
+                value={signupForm.verificationCode}
+                onChange={handleSignupInputChange}
+                placeholder="인증번호 6자리 입력"
+                className="flex-1 p-2 border rounded"
+                maxLength={6}
+                required
+              />
+              <button
+                type="button"
+                onClick={handleVerifyCode}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm whitespace-nowrap"
+              >
+                인증확인
+              </button>
+            </div>
+          )}
+          {verificationMessage && (
+            <p className={`text-sm ${verificationSuccess ? 'text-green-500' : 'text-red-500'}`}>
+              {verificationMessage}
+            </p>
+          )}
         </div>
-      </div>
-    )}
+        <input
+          type="password"
+          name="password"
+          value={signupForm.password}
+          onChange={handleSignupInputChange}
+          placeholder="비밀번호를 입력해주세요"
+          className="w-full p-2 border rounded"
+          required
+        />
+        <input
+          type="password"
+          name="confirmPassword"
+          value={signupForm.confirmPassword}
+          onChange={handleSignupInputChange}
+          placeholder="비밀번호 확인"
+          className="w-full p-2 border rounded"
+          required
+        />
+        {signupError && (
+          <p className="text-red-500 text-sm">{signupError}</p>
+        )}
+        <button 
+          type="submit" 
+          className="w-full bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
+          disabled={!isEmailVerified}
+        >
+          회원가입
+        </button>
+      </form>
+    </div>
+  </div>
+)}
 
       {/* Notice Popup */}
       {showNotice && (
@@ -377,4 +402,4 @@ const MainPageUI = () => {
   );
 };
 
-export default MainPageUI;
+export default MainPage;
