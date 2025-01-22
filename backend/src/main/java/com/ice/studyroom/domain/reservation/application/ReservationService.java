@@ -97,6 +97,12 @@ public class ReservationService {
 
 		// 예약 저장
 		reservationRepository.saveAll(reservations);
+
+		for (Schedule schedule : schedules) {
+			schedule.reserve();
+		}
+
+		scheduleRepository.saveAll(schedules);
 		// 응답 변환 후 반환
 		// return reservations.stream()
 		// 	.map(ReservationResponse::of)
