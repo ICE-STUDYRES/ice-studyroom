@@ -14,8 +14,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.ice.studyroom.domain.membership.application.EmailVerificationService;
 import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.service.CacheService;
 import com.ice.studyroom.global.service.EmailService;
-import com.ice.studyroom.global.service.RedisService;
 import com.ice.studyroom.global.type.StatusCode;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,7 +25,7 @@ class EmailVerificationServiceTest {
 	private EmailVerificationService emailVerificationService;
 
 	@Mock
-	private RedisService redisService; // Mock 객체
+	private CacheService cacheService; // Mock 객체
 
 	@Mock
 	private EmailService emailService; // Mock 객체=
@@ -34,13 +34,13 @@ class EmailVerificationServiceTest {
 	@DisplayName("이메일 전송이 성공했을 경우")
 	void testSendCodeToEmail() {
 		String email = "test@example.com";
-		when(redisService.exists(email)).thenReturn(false); // Redis에 키가 없다고 가정
-		doNothing().when(redisService).save(anyString(), anyString(), eq(Duration.ofMinutes(5)));
+		when(cacheService.exists(email)).thenReturn(false); // Redis에 키가 없다고 가정
+		doNothing().when(cacheService).save(anyString(), anyString(), eq(Duration.ofMinutes(5)));
 		doNothing().when(emailService).sendEmail(anyString(), anyString(), anyString());
 
 		emailVerificationService.sendCodeToEmail(email);
 		// Assert
-		verify(redisService, times(1)).save(eq(email), anyString(), eq(Duration.ofMinutes(5)));
+		verify(cacheService, times(1)).save(eq(email), anyString(), eq(Duration.ofMinutes(5)));
 		verify(emailService, times(1)).sendEmail(eq(email), anyString(), anyString());
 	}
 
@@ -48,14 +48,14 @@ class EmailVerificationServiceTest {
 	@DisplayName("이미 인증 메일이 발송되었으면 에러를 처리해야한다.")
 	void testSendCodeToEmail_Failure_EmailAlreadySent() {
 		String email = "test@example.com";
-		when(redisService.exists(email)).thenReturn(true); // Redis에 키가 있다고 가정
+		when(cacheService.exists(email)).thenReturn(true); // Redis에 키가 있다고 가정
 
 		BusinessException exception = assertThrows(BusinessException.class, () -> {
 			emailVerificationService.sendCodeToEmail(email);
 		});
 
 		assertEquals("인증 메일이 이미 발송되었습니다.", exception.getMessage());
-		verify(redisService, never()).save(anyString(), anyString(), eq(Duration.ofMinutes(5))); // save는 호출되지 않아야 함
+		verify(cacheService, never()).save(anyString(), anyString(), eq(Duration.ofMinutes(5))); // save는 호출되지 않아야 함
 		verify(emailService, never()).sendEmail(anyString(), anyString(), anyString()); // 메일 발송도 호출되지 않아야 함
 	}
 
@@ -65,13 +65,13 @@ class EmailVerificationServiceTest {
 		String email = "test@example.com";
 		String validCode = "123456";
 
-		when(redisService.exists(email)).thenReturn(true);
-		when(redisService.get(email)).thenReturn(validCode);
+		when(cacheService.exists(email)).thenReturn(true);
+		when(cacheService.get(email)).thenReturn(validCode);
 
 		emailVerificationService.verifiedCode(email, validCode);
 
-		verify(redisService, times(1)).exists(email);
-		verify(redisService, times(1)).get(email);
+		verify(cacheService, times(1)).exists(email);
+		verify(cacheService, times(1)).get(email);
 	}
 
 	@Test
@@ -81,8 +81,8 @@ class EmailVerificationServiceTest {
 		String validCode = "123456";
 		String wrongCode = "567890";
 
-		when(redisService.exists(email)).thenReturn(true);
-		when(redisService.get(email)).thenReturn(wrongCode);
+		when(cacheService.exists(email)).thenReturn(true);
+		when(cacheService.get(email)).thenReturn(wrongCode);
 
 		BusinessException exception = assertThrows(BusinessException.class, () -> {
 			emailVerificationService.verifiedCode(email, validCode);
@@ -91,8 +91,8 @@ class EmailVerificationServiceTest {
 		assertEquals(StatusCode.INVALID_VERIFICATION_CODE, exception.getStatusCode());
 		assertEquals("유효하지 않은 인증코드입니다.", exception.getMessage());
 
-		verify(redisService, times(1)).exists(email);
-		verify(redisService, times(1)).get(email);
+		verify(cacheService, times(1)).exists(email);
+		verify(cacheService, times(1)).get(email);
 	}
 
 	@Test
@@ -101,7 +101,7 @@ class EmailVerificationServiceTest {
 		String email = "test@example.com";
 		String authCode = "123456";
 
-		when(redisService.exists(email)).thenReturn(false);
+		when(cacheService.exists(email)).thenReturn(false);
 
 		BusinessException exception = assertThrows(BusinessException.class, () -> {
 			emailVerificationService.verifiedCode(email, authCode);
@@ -110,7 +110,7 @@ class EmailVerificationServiceTest {
 		assertEquals(StatusCode.INVALID_VERIFICATION_CODE, exception.getStatusCode());
 		assertEquals("유효하지 않은 인증코드입니다.", exception.getMessage());
 
-		verify(redisService, times(1)).exists(email);
-		verify(redisService, never()).get(email);
+		verify(cacheService, times(1)).exists(email);
+		verify(cacheService, never()).get(email);
 	}
 }

@@ -9,13 +9,13 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-public class RedisService {
+public class RedisService implements CacheService{
 	private final RedisTemplate<String, String> redisTemplate;
 
 	public void save(String key, String value, Duration duration) {
 		redisTemplate.opsForValue().set(key, value, duration);
 	}
-	
+
 	public String get(String key) {
 		return redisTemplate.opsForValue().get(key);
 	}

@@ -6,6 +6,7 @@ import java.time.Duration;
 import org.springframework.stereotype.Service;
 
 import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.service.CacheService;
 import com.ice.studyroom.global.service.EmailService;
 import com.ice.studyroom.global.service.RedisService;
 import com.ice.studyroom.global.type.StatusCode;
@@ -18,11 +19,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class EmailVerificationService {
 	private final EmailService emailService;
-	private final RedisService redisService;
+	private final CacheService cacheService;
 	private final Duration VERIFICATION_CODE_VALIDITY = Duration.ofMinutes(5);
 
 	public void sendCodeToEmail(String email) {
-		if (redisService.exists(email)) {
+		if (cacheService.exists(email)) {
 			throw new BusinessException(StatusCode.DUPLICATE_REQUEST, "인증 메일이 이미 발송되었습니다.");
 		}
 
@@ -30,7 +31,7 @@ public class EmailVerificationService {
 		String authCode = generateVerificationCode();
 		String body = buildVerificationEmailBody(authCode);
 		try {
-			redisService.save(email, authCode, VERIFICATION_CODE_VALIDITY);
+			cacheService.save(email, authCode, VERIFICATION_CODE_VALIDITY);
 			emailService.sendEmail(email, title, body);
 		} catch (Exception e) {
 			log.error("인증 메일 전송 실패 {}: {}", email, e.getMessage());
@@ -60,9 +61,9 @@ public class EmailVerificationService {
 	}
 
 	public void verifiedCode(String email, String authCode) {
-		if (!redisService.exists(email) || !redisService.get(email).equals(authCode)) {
+		if (!cacheService.exists(email) || !cacheService.get(email).equals(authCode)) {
 			throw new BusinessException(StatusCode.INVALID_VERIFICATION_CODE, "유효하지 않은 인증코드입니다.");
 		}
-		redisService.save(email, authCode, VERIFICATION_CODE_VALIDITY);
+		cacheService.save(email, authCode, VERIFICATION_CODE_VALIDITY);
 	}
 }
