@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ice.studyroom.domain.identity.domain.JwtToken;
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
+import com.ice.studyroom.domain.identity.infrastructure.email.EmailVerificationService;
 import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvider;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;

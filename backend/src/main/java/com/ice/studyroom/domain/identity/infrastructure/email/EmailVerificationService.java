@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.membership.application;
+package com.ice.studyroom.domain.identity.infrastructure.email;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.CacheService;
 import com.ice.studyroom.global.service.EmailService;
-import com.ice.studyroom.global.service.RedisService;
 import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
