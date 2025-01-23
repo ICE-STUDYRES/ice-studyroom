@@ -28,13 +28,26 @@ public class MemberEmailService {
 
 		String title = "[ICE-STUDYRES] 이메일 인증 번호";
 		String authCode = generateVerificationCode();
+		String body = buildVerificationEmailBody(authCode);
 		try {
 			redisService.save(email, authCode, VERIFICATION_CODE_VALIDITY);
-			emailService.sendEmail(email, title, authCode);
+			emailService.sendEmail(email, title, body);
 		} catch (Exception e) {
 			log.error("인증 메일 전송 실패 {}: {}", email, e.getMessage());
 			throw new BusinessException(StatusCode.INTERNAL_ERROR, "인증 메일 전송 중 오류가 발생했습니다.");
 		}
+	}
+
+	private String buildVerificationEmailBody(String authCode) {
+		return String.format(
+			"<html><body>" +
+				"<h2>이메일 인증 번호</h2>" +
+				"<p>아래 인증 번호를 입력하여 이메일 인증을 완료하세요.</p>" +
+				"<h1 style='color:blue;'>%s</h1>" +
+				"<p>감사합니다.</p>" +
+				"</body></html>",
+			authCode
+		);
 	}
 
 	private String generateVerificationCode() {
@@ -46,10 +59,10 @@ public class MemberEmailService {
 		return code.toString();
 	}
 
-	public boolean verifiedCode(String email, String authCode) {
+	public void verifiedCode(String email, String authCode) {
 		if (!redisService.exists(email) || !redisService.get(email).equals(authCode)) {
 			throw new BusinessException(StatusCode.INVALID_VERIFICATION_CODE, "유효하지 않은 인증코드입니다.");
 		}
-		return true;
+		redisService.save(email, authCode, VERIFICATION_CODE_VALIDITY);
 	}
 }
