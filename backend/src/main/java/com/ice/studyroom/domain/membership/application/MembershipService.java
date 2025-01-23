@@ -39,7 +39,7 @@ public class MembershipService {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final TokenService tokenService;
 	private final AuthenticationManager authenticationManager;
-	private final EmailVerificationService memberEmailService;
+	private final EmailVerificationService emailVerificationService;
 
 	public MemberResponse createMember(MemberCreateRequest request) {
 		memberDomainService.validateEmailUniqueness(Email.of(request.email()));
@@ -88,12 +88,12 @@ public class MembershipService {
 
 	public MemberEmailResponse sendMail(EmailVerificationRequest request) {
 		memberDomainService.validateEmailUniqueness(Email.of(request.email()));
-		memberEmailService.sendCodeToEmail(request.email());
+		emailVerificationService.sendCodeToEmail(request.email());
 		return MemberEmailResponse.of("인증 메일이 전송되었습니다.");
 	}
 
 	public MemberEmailResponse checkEmailVerification(MemberEmailVerificationRequest request) {
-		memberEmailService.verifiedCode(request.email(), request.code());
+		emailVerificationService.verifiedCode(request.email(), request.code());
 		return MemberEmailResponse.of("인증이 완료되었습니다.");
 	}
 }
