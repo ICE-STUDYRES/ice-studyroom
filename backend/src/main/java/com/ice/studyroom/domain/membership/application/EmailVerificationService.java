@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.membership.domain.service;
+package com.ice.studyroom.domain.membership.application;
 
 import java.security.SecureRandom;
 import java.time.Duration;
@@ -16,17 +16,17 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class MemberEmailService {
+public class EmailVerificationService {
 	private final EmailService emailService;
 	private final RedisService redisService;
-	private static final Duration VERIFICATION_CODE_VALIDITY = Duration.ofMinutes(5);
+	private final Duration VERIFICATION_CODE_VALIDITY = Duration.ofMinutes(5);
 
 	public void sendCodeToEmail(String email) {
 		if (redisService.exists(email)) {
 			throw new BusinessException(StatusCode.DUPLICATE_REQUEST, "인증 메일이 이미 발송되었습니다.");
 		}
 
-		String title = "[ICE-STUDYRES] 이메일 인증 번호";
+		String title = "[ICE-STUDYRES] 이메일 인증 코드입니다.";
 		String authCode = generateVerificationCode();
 		String body = buildVerificationEmailBody(authCode);
 		try {

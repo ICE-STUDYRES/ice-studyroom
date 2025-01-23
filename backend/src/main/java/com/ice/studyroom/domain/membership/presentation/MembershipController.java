@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ice.studyroom.domain.membership.application.MembershipService;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.MemberEmailRequest;
+import com.ice.studyroom.domain.membership.presentation.dto.request.EmailVerificationRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberEmailVerificationRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.TokenRequest;
@@ -63,7 +63,7 @@ public class MembershipController {
 
 	@PostMapping("/email-verification")
 	public ResponseEntity<ResponseDto<MemberEmailResponse>> sendEmail(
-		@Valid @RequestBody MemberEmailRequest request) {
+		@Valid @RequestBody EmailVerificationRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(membershipService.sendMail(request)));

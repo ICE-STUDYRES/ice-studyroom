@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.membership.domain.service;
+package com.ice.studyroom.domain.membership.infrastructure.email;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -12,16 +12,17 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.ice.studyroom.domain.membership.application.EmailVerificationService;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.EmailService;
 import com.ice.studyroom.global.service.RedisService;
 import com.ice.studyroom.global.type.StatusCode;
 
 @ExtendWith(MockitoExtension.class)
-class MemberEmailServiceTest {
+class EmailVerificationServiceTest {
 
 	@InjectMocks
-	private MemberEmailService memberEmailService; // 테스트할 실제 객체
+	private EmailVerificationService emailVerificationService;
 
 	@Mock
 	private RedisService redisService; // Mock 객체
@@ -37,7 +38,7 @@ class MemberEmailServiceTest {
 		doNothing().when(redisService).save(anyString(), anyString(), eq(Duration.ofMinutes(5)));
 		doNothing().when(emailService).sendEmail(anyString(), anyString(), anyString());
 
-		memberEmailService.sendCodeToEmail(email);
+		emailVerificationService.sendCodeToEmail(email);
 		// Assert
 		verify(redisService, times(1)).save(eq(email), anyString(), eq(Duration.ofMinutes(5)));
 		verify(emailService, times(1)).sendEmail(eq(email), anyString(), anyString());
@@ -50,7 +51,7 @@ class MemberEmailServiceTest {
 		when(redisService.exists(email)).thenReturn(true); // Redis에 키가 있다고 가정
 
 		BusinessException exception = assertThrows(BusinessException.class, () -> {
-			memberEmailService.sendCodeToEmail(email);
+			emailVerificationService.sendCodeToEmail(email);
 		});
 
 		assertEquals("인증 메일이 이미 발송되었습니다.", exception.getMessage());
@@ -67,9 +68,8 @@ class MemberEmailServiceTest {
 		when(redisService.exists(email)).thenReturn(true);
 		when(redisService.get(email)).thenReturn(validCode);
 
-		boolean result = memberEmailService.verifiedCode(email, validCode);
+		emailVerificationService.verifiedCode(email, validCode);
 
-		assertTrue(result);
 		verify(redisService, times(1)).exists(email);
 		verify(redisService, times(1)).get(email);
 	}
@@ -85,7 +85,7 @@ class MemberEmailServiceTest {
 		when(redisService.get(email)).thenReturn(wrongCode);
 
 		BusinessException exception = assertThrows(BusinessException.class, () -> {
-			memberEmailService.verifiedCode(email, validCode);
+			emailVerificationService.verifiedCode(email, validCode);
 		});
 
 		assertEquals(StatusCode.INVALID_VERIFICATION_CODE, exception.getStatusCode());
@@ -104,7 +104,7 @@ class MemberEmailServiceTest {
 		when(redisService.exists(email)).thenReturn(false);
 
 		BusinessException exception = assertThrows(BusinessException.class, () -> {
-			memberEmailService.verifiedCode(email, authCode);
+			emailVerificationService.verifiedCode(email, authCode);
 		});
 
 		assertEquals(StatusCode.INVALID_VERIFICATION_CODE, exception.getStatusCode());
