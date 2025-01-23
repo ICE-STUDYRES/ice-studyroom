@@ -37,14 +37,11 @@ public class Schedule {
 	@Column(nullable = false)
 	private LocalDate scheduleDate;
 
-	@Column(name = "room_id", nullable = false)
-	private Long roomId;
-
 	@Column(nullable = false)
 	private String roomNumber;
 
-	@Column(name = "time_slot_id", nullable = false)
-	private Long timeSlotId;
+	@Column(name = "room_time_slot_id", nullable = false)
+	private Long roomTimeSlotId;
 
 	@Column(nullable = false)
 	private LocalTime startTime;
