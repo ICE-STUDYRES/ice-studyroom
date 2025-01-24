@@ -16,8 +16,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import com.ice.studyroom.domain.identity.domain.JwtToken;
-import com.ice.studyroom.global.exception.BusinessException;
-import com.ice.studyroom.global.type.StatusCode;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -100,17 +98,14 @@ public class JwtTokenProvider {
 			return true;
 		} catch (SecurityException | MalformedJwtException e) {
 			log.info("Invalid JWT Token", e);
-			throw new BusinessException(StatusCode.BAD_REQUEST,"잘못된 JWT 토큰입니다.");
 		} catch (ExpiredJwtException e) {
 			log.info("Expired JWT Token", e);
-			throw new BusinessException(StatusCode.EXPIRED_TOKEN,"만료된 JWT 토큰입니다.");
 		} catch (UnsupportedJwtException e) {
 			log.info("Unsupported JWT Token", e);
-			throw new BusinessException(StatusCode.UNSUPPORTED_TOKEN,"지원하지 않는 JWT 토큰입니다.");
 		} catch (IllegalArgumentException e) {
 			log.info("JWT claims string is empty.", e);
-			throw new BusinessException(StatusCode.INVALID_VERIFICATION_CODE, "JWT 토큰의 클레임이 비어 있습니다.");
 		}
+		return false;
 	}
 
 	private String generateRandomRefreshToken() {
