@@ -21,7 +21,7 @@ public class AdminController {
 
 	private final AdminService adminService;
 
-	@PostMapping("/preOccupy")
+	@PostMapping("/room-time-slots/occupy")
 	public ResponseEntity<ResponseDto<AdminCreateOccupyResponse>> adminOccupySchedule(
 			@Valid @RequestBody AdminCreateOccupyRequest request
 	) {
@@ -31,7 +31,7 @@ public class AdminController {
 	}
 
 	//예약된 방 ID 확인
-	@GetMapping("/getReservedRooms")
+	@GetMapping("/room-time-slots/occupy")
 	public ResponseEntity<ResponseDto<List<Long>>> getReservedRooms() {
 		List<Long> reservedRooms = adminService.getReservedRoomIds();
 		return ResponseEntity
@@ -40,7 +40,7 @@ public class AdminController {
 	}
 
 	//특정 방의 상태를 AVAILABLE로 변경
-	@PostMapping("/deleteOccupy")
+	@DeleteMapping("/room-time-slots/occupy")
 	public ResponseEntity<ResponseDto<AdminDeleteOccupyResponse>> adminFreeOccupy(
 		@Valid @RequestBody AdminCreateOccupyRequest request
 	){
