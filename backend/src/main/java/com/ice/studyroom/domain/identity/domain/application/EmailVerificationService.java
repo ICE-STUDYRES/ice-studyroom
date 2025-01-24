@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.identity.infrastructure.email;
+package com.ice.studyroom.domain.identity.domain.application;
 
 import java.security.SecureRandom;
 
