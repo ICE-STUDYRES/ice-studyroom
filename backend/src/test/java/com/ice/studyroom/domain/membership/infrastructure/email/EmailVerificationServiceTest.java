@@ -13,7 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.ice.studyroom.domain.identity.domain.service.VerificationCodeCacheService;
-import com.ice.studyroom.domain.identity.infrastructure.email.EmailVerificationService;
+import com.ice.studyroom.domain.identity.domain.application.EmailVerificationService;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.CacheService;
 import com.ice.studyroom.global.service.EmailService;

@@ -3,6 +3,7 @@ package com.ice.studyroom.domain.membership.domain.service;
 import org.springframework.stereotype.Service;
 
 import com.ice.studyroom.domain.identity.domain.service.VerificationCodeCacheService;
+import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.global.exception.BusinessException;
@@ -20,6 +21,12 @@ public class MemberDomainService {
 		if (memberRepository.existsByEmail(email)) {
 			throw new BusinessException(StatusCode.CONFLICT, "이미 사용 중인 이메일입니다.");
 		}
+	}
+
+	public String getUserNameByEmail(Email email) {
+		return memberRepository.findByEmail(email)
+			.map(Member::getName)
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"해당 이메일을 가진 유저는 존재하지 않습니다."));
 	}
 
 	public void checkVerification(boolean isAuthenticated){

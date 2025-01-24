@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import com.ice.studyroom.domain.identity.domain.JwtToken;
 import com.ice.studyroom.domain.identity.exception.InvalidRefreshTokenException;
 import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvider;
-import com.ice.studyroom.global.service.RedisService;
+import com.ice.studyroom.global.service.CacheService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TokenService {
 	private final JwtTokenProvider jwtTokenProvider;
-	private final RedisService redisService;
+	private final CacheService cacheService;
 	private static final String REFRESH_TOKEN_PREFIX = "RT:";
 	private static final Duration REFRESH_TOKEN_VALIDITY = Duration.ofDays(7);
 
@@ -30,7 +30,7 @@ public class TokenService {
 
 	public void saveRefreshToken(String email, String refreshToken) {
 		String key = REFRESH_TOKEN_PREFIX + email;
-		redisService.save(key, refreshToken, REFRESH_TOKEN_VALIDITY);
+		cacheService.save(key, refreshToken, REFRESH_TOKEN_VALIDITY);
 	}
 
 	/**
@@ -43,7 +43,7 @@ public class TokenService {
 		}
 
 		String key = REFRESH_TOKEN_PREFIX + email;
-		String savedRefreshToken = redisService.get(key);
+		String savedRefreshToken = cacheService.get(key);
 
 		return savedRefreshToken.equals(refreshToken);
 	}
@@ -74,6 +74,6 @@ public class TokenService {
 
 	public void deleteToken(String email, String refreshToken) {
 		String key = REFRESH_TOKEN_PREFIX + email;
-		redisService.delete(key);
+		cacheService.delete(key);
 	}
 }
