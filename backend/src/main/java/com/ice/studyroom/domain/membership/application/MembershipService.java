@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ice.studyroom.domain.identity.domain.JwtToken;
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
+import com.ice.studyroom.domain.identity.domain.service.VerificationCodeCacheService;
 import com.ice.studyroom.domain.identity.infrastructure.email.EmailVerificationService;
 import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvider;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
@@ -26,6 +27,8 @@ import com.ice.studyroom.domain.membership.presentation.dto.request.TokenRequest
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberEmailResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberResponse;
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -39,10 +42,12 @@ public class MembershipService {
 	private final JwtTokenProvider jwtTokenProvider;
 	private final TokenService tokenService;
 	private final AuthenticationManager authenticationManager;
-	private final EmailVerificationService memberEmailService;
+	private final EmailVerificationService emailVerificationService;
 
 	public MemberResponse createMember(MemberCreateRequest request) {
 		memberDomainService.validateEmailUniqueness(Email.of(request.email()));
+		memberDomainService.checkVerification(request.isAuthenticated());
+		memberDomainService.validateVerificationCode(request.email(), request.authenticationCode());
 
 		Member user = Member.builder()
 			.email(Email.of(request.email()))
@@ -88,12 +93,12 @@ public class MembershipService {
 
 	public MemberEmailResponse sendMail(EmailVerificationRequest request) {
 		memberDomainService.validateEmailUniqueness(Email.of(request.email()));
-		memberEmailService.sendCodeToEmail(request.email());
+		emailVerificationService.sendCodeToEmail(request.email());
 		return MemberEmailResponse.of("인증 메일이 전송되었습니다.");
 	}
 
 	public MemberEmailResponse checkEmailVerification(MemberEmailVerificationRequest request) {
-		memberEmailService.verifiedCode(request.email(), request.code());
+		emailVerificationService.verifiedCode(request.email(), request.code());
 		return MemberEmailResponse.of("인증이 완료되었습니다.");
 	}
 }

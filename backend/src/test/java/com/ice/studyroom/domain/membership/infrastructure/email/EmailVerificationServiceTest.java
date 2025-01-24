@@ -5,13 +5,14 @@ import static org.mockito.Mockito.*;
 
 import java.time.Duration;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.ice.studyroom.domain.identity.domain.service.VerificationCodeCacheService;
 import com.ice.studyroom.domain.identity.infrastructure.email.EmailVerificationService;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.CacheService;
@@ -21,14 +22,18 @@ import com.ice.studyroom.global.type.StatusCode;
 @ExtendWith(MockitoExtension.class)
 class EmailVerificationServiceTest {
 
-	@InjectMocks
 	private EmailVerificationService emailVerificationService;
 
 	@Mock
-	private CacheService cacheService; // Mock 객체
+	private EmailService emailService;
 
 	@Mock
-	private EmailService emailService; // Mock 객체=
+	private CacheService cacheService;
+
+	@BeforeEach
+	void beforeEach(){
+		emailVerificationService = new EmailVerificationService(emailService, new VerificationCodeCacheService(cacheService));
+	}
 
 	@Test
 	@DisplayName("이메일 전송이 성공했을 경우")
