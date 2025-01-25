@@ -47,9 +47,6 @@ public class RoomTimeSlot extends BaseTimeEntity {
 	@Column(name = "min_res", nullable = false)
 	private int minRes;
 
-	//	@Column(name = "is_active", nullable = false)
-	//	private boolean isActive;
-
 	@Column(name = "start_time", nullable = false)
 	private LocalTime startTime;
 
@@ -78,7 +75,6 @@ public class RoomTimeSlot extends BaseTimeEntity {
 		this.roomType = roomType;
 		this.capacity = capacity;
 		this.minRes = minRes;
-		//this.isActive = true;
 		this.startTime = startTime;
 		this.endTime = endTime;
 		this.dayOfWeek = dayOfWeek;
