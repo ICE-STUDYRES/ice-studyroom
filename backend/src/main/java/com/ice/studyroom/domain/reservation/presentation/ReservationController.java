@@ -53,6 +53,16 @@ public class ReservationController {
 			.body(ResponseDto.of(reservationService.getMyReservation(authorizationHeader)));
 	}
 
+	@GetMapping("/reservations/my/{resId}")
+	public ResponseEntity<ResponseDto<String>> getMyReservationQrCode(
+		@PathVariable String resId,
+		@RequestHeader("Authorization") String authorizationHeader
+	) {
+		return ResponseEntity
+			.status(StatusCode.OK.getStatus())
+			.body(ResponseDto.of(reservationService.getMyReservationQrCode(resId, authorizationHeader)));
+	}
+
 	@GetMapping("/schedules")
 	public ResponseEntity<ResponseDto<List<Schedule>>> getSchedule() {
 		return ResponseEntity

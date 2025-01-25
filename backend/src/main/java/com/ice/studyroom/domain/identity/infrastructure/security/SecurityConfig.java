@@ -34,7 +34,7 @@ public class SecurityConfig {
 			.sessionManagement(sessionManagement ->
 				sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorize -> authorize
-				.requestMatchers("/api/reservation/**").permitAll()
+				.requestMatchers("/api/reservations/**").permitAll()
 				.requestMatchers("/api/schedules/**").permitAll()
 				.requestMatchers("/api/users/**").permitAll()
 				.requestMatchers("/api/email/**").permitAll()  // 이메일 전송 API 경로 추가
