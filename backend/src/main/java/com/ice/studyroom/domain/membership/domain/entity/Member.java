@@ -61,6 +61,9 @@ public class Member {
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
 
+	@Column(name = "penalty_count", nullable = false)
+	private Long penaltyCount;
+
 	@Builder
 	public Member(Email email, String password, String name, String studentNum, List<String> roles) {
 		this.email = email;
@@ -70,5 +73,6 @@ public class Member {
 		this.roles = roles != null ? roles : new ArrayList<>();
 		this.createdAt = LocalDateTime.now();
 		this.updatedAt = LocalDateTime.now();
+		this.penaltyCount = 0L;
 	}
 }
