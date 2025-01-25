@@ -16,6 +16,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import com.ice.studyroom.domain.identity.domain.JwtToken;
+import com.ice.studyroom.domain.identity.exception.InvalidJwtException;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -33,6 +34,7 @@ public class JwtTokenProvider {
 	private final Key key;
 
 	private static final long ACCESS_TOKEN_EXPIRE_TIME = 2 * 60 * 60 * 1000L;        // 2시간
+	// private static final long ACCESS_TOKEN_EXPIRE_TIME = 10 * 1000L;        // 10 초
 
 	public JwtTokenProvider(@Value("${jwt.secret}") String secretKey) {
 		byte[] keyBytes = Decoders.BASE64.decode(secretKey);
@@ -89,23 +91,25 @@ public class JwtTokenProvider {
 	}
 
 	// 토큰 정보를 검증하는 메서드
-	public boolean validateToken(String token) {
+	public void validateToken(String token) {
 		try {
 			Jwts.parserBuilder()
 				.setSigningKey(key)
 				.build()
 				.parseClaimsJws(token);
-			return true;
 		} catch (SecurityException | MalformedJwtException e) {
 			log.info("Invalid JWT Token", e);
+			throw new InvalidJwtException("Invalid JWT token", e);
 		} catch (ExpiredJwtException e) {
 			log.info("Expired JWT Token", e);
+			throw e;
 		} catch (UnsupportedJwtException e) {
 			log.info("Unsupported JWT Token", e);
+			throw new InvalidJwtException("Unsupported JWT token", e);
 		} catch (IllegalArgumentException e) {
 			log.info("JWT claims string is empty.", e);
+			throw new InvalidJwtException("JWT claims string is empty", e);
 		}
-		return false;
 	}
 
 	private String generateRandomRefreshToken() {
@@ -125,7 +129,8 @@ public class JwtTokenProvider {
 				.parseClaimsJws(accessToken)
 				.getBody();
 		} catch (ExpiredJwtException e) {
-			return e.getClaims();
+			log.info("Expired JWT Token", e);
+			throw e;
 		}
 	}
 }

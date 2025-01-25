@@ -2,6 +2,8 @@ package com.ice.studyroom.domain.membership.presentation;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -9,13 +11,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ice.studyroom.domain.membership.application.MembershipService;
-import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.EmailVerificationRequest;
+import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberEmailVerificationRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.TokenRequest;
+import com.ice.studyroom.domain.membership.presentation.dto.request.UpdatePasswordRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberEmailResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
+import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLookupResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 
@@ -36,8 +40,17 @@ public class MembershipController {
 			.body(ResponseDto.of(membershipService.createMember(request)));
 	}
 
+	@GetMapping
+	public ResponseEntity<ResponseDto<MemberLookupResponse>> getUser(
+		@RequestHeader("Authorization") String authorizationHeader) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(membershipService.lookUpMember(authorizationHeader)));
+	}
+
 	@PostMapping("/login")
-	public ResponseEntity<ResponseDto<MemberLoginResponse>> login(@Valid @RequestBody MemberLoginRequest request) {
+	public ResponseEntity<ResponseDto<MemberLoginResponse>> login(
+		@Valid @RequestBody MemberLoginRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(membershipService.login(request)));
@@ -59,6 +72,15 @@ public class MembershipController {
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(membershipService.logout(authorizationHeader, request)));
+	}
+
+	@PatchMapping("/password")
+	public ResponseEntity<ResponseDto<String>> updatePassword(
+		@RequestHeader("Authorization") String authorizationHeader,
+		@Valid @RequestBody UpdatePasswordRequest request) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(membershipService.updatePassword(authorizationHeader, request)));
 	}
 
 	@PostMapping("/email-verification")
