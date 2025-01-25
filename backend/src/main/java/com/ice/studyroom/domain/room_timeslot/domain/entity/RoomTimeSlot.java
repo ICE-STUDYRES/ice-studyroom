@@ -1,14 +1,26 @@
 package com.ice.studyroom.domain.room_timeslot.domain.entity;
 
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
 import com.ice.studyroom.domain.room_timeslot.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.room_timeslot.domain.type.RoomTimeSlotStatus;
 import com.ice.studyroom.domain.room_timeslot.domain.type.RoomType;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
-import jakarta.persistence.*;
-import lombok.*;
 
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "room_time_slot")
@@ -35,8 +47,8 @@ public class RoomTimeSlot extends BaseTimeEntity {
 	@Column(name = "min_res", nullable = false)
 	private int minRes;
 
-//	@Column(name = "is_active", nullable = false)
-//	private boolean isActive;
+	//	@Column(name = "is_active", nullable = false)
+	//	private boolean isActive;
 
 	@Column(name = "start_time", nullable = false)
 	private LocalTime startTime;
@@ -60,13 +72,14 @@ public class RoomTimeSlot extends BaseTimeEntity {
 	private LocalDateTime updatedAt;
 
 	@Builder
-	public RoomTimeSlot(String roomNumber, RoomType roomType, int capacity, int minRes, LocalTime startTime, LocalTime endTime, DayOfWeekStatus dayOfWeek) {
+	public RoomTimeSlot(String roomNumber, RoomType roomType, int capacity, int minRes, LocalTime startTime,
+		LocalTime endTime, DayOfWeekStatus dayOfWeek) {
 		this.roomNumber = roomNumber;
 		this.roomType = roomType;
 		this.capacity = capacity;
 		this.minRes = minRes;
 		//this.isActive = true;
-		this.startTime  = startTime;
+		this.startTime = startTime;
 		this.endTime = endTime;
 		this.dayOfWeek = dayOfWeek;
 		this.createdAt = LocalDateTime.now();
