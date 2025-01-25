@@ -14,7 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class QRCodeService {
 	private final StringRedisTemplate redisTemplate;
 	private final ObjectMapper objectMapper;
-	private static final long EXPIRATION_TIME = 30; // QR 코드 유효기간 (30분)
+	private static final long EXPIRATION_TIME = 15 * 60 * 60; // QR 코드 유효기간 (15시간)
 
 	public QRCodeService(StringRedisTemplate redisTemplate, ObjectMapper objectMapper) {
 		this.redisTemplate = redisTemplate;
