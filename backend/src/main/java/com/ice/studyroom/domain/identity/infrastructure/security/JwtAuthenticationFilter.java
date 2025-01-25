@@ -7,11 +7,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.util.StringUtils;
 import org.springframework.web.filter.GenericFilterBean;
 
+import com.ice.studyroom.domain.identity.exception.InvalidJwtException;
+
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor
@@ -22,15 +26,32 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
 		IOException,
 		ServletException {
+
+		HttpServletRequest httpRequest = (HttpServletRequest)request;
+		HttpServletResponse httpResponse = (HttpServletResponse)response;
+
 		// 1. Request Header에서 JWT 토큰 추출
 		String token = resolveToken((HttpServletRequest)request);
 
 		// 2. validateToken으로 토큰 유효성 검사
-		if (token != null && jwtTokenProvider.validateToken(token)) {
-			// 토큰이 유효할 경우 토큰에서 Authentication 객체를 가지고 와서 SecurityContext에 저장
-			Authentication authentication = jwtTokenProvider.getAuthentication(token);
-			SecurityContextHolder.getContext().setAuthentication(authentication);
+		if (token != null) {
+			try {
+				jwtTokenProvider.validateToken(token); // 유효성 검사에서 예외 발생 시 catch로 이동
+
+				Authentication authentication = jwtTokenProvider.getAuthentication(token);
+				SecurityContextHolder.getContext().setAuthentication(authentication);
+			} catch (ExpiredJwtException e) {
+				setUnauthorizedResponse(httpResponse, "E401", "JWT token expired");
+				return;
+			} catch (InvalidJwtException e) {
+				setUnauthorizedResponse(httpResponse, "E401", "Invalid JWT token");
+				return;
+			} catch (RuntimeException e) {
+				setUnauthorizedResponse(httpResponse, "E500", "Authentication error");
+				return;
+			}
 		}
+
 		chain.doFilter(request, response);
 	}
 
@@ -41,5 +62,27 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
 			return bearerToken.substring(7);
 		}
 		return null;
+	}
+
+	private void setUnauthorizedResponse(HttpServletResponse response, String code, String message) throws IOException {
+		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+		response.setContentType("application/json");
+		response.setCharacterEncoding("UTF-8");
+
+		String jsonResponse = String.format(
+			"{" +
+				"\"code\": \"%s\"," +
+				"\"message\": \"%s\"," +
+				"\"data\": null," +
+				"\"errors\": null," +
+				"\"timestamp\": \"%s\"" +
+				"}",
+			code,
+			message,
+			java.time.LocalDateTime.now()
+		);
+
+		response.getWriter().write(jsonResponse);
+		response.getWriter().flush();
 	}
 }
