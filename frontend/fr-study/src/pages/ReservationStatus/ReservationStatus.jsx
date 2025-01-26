@@ -20,10 +20,6 @@ const ReservationStatus = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showAllSchedules, setShowAllSchedules] = useState(false);
-  const [myReservations, setMyReservations] = useState([]);
-  const [myReservationsLoading, setMyReservationsLoading] = useState(true);
-  const [myReservationsError, setMyReservationsError] = useState(null);
   const {handleLogout} = useMainpageHandlers();
 
   const handleLogoutClick = async () => {
@@ -59,23 +55,32 @@ const ReservationStatus = () => {
   };
 
   const mapSchedulesToRooms = (scheduleData) => {
-    const mappedRooms = rooms.map(room => {
-      const roomSchedules = scheduleData.filter(
-        schedule => schedule.roomNumber === room.id
-      ).map(schedule => ({
-        time: `${schedule.startTime.slice(0, 5)}-${schedule.endTime.slice(0, 5)}`,
-        reserver: schedule.status === 'RESERVED' ? '예약됨' : '가능',
-        participants: schedule.capacity,
-        status: schedule.status,
-        available: schedule.available
-      }));
-
+    const mappedRooms = rooms.map((room) => {
+      const roomSchedules = scheduleData
+        .filter(
+          (schedule) => schedule.roomNumber === room.id && schedule.status === "RESERVED"
+        )
+        .map((schedule) => {
+          const participantCount = (schedule.participantEmail?.length || 0) + 1; // 참가자 수 계산
+          console.log(
+            `Room: ${room.id}, Participants: ${
+              schedule.participantEmail?.length || 0
+            }, Total (including reserver): ${participantCount}`
+          ); // 콘솔 출력
+          return {
+            time: `${schedule.startTime.slice(0, 5)}-${schedule.endTime.slice(0, 5)}`,
+            reserver: "예약됨",
+            participants: participantCount, // 참가자 수
+            status: schedule.status,
+            available: schedule.available,
+          };
+        });
+  
       return {
         ...room,
-        reservations: roomSchedules
+        reservations: roomSchedules,
       };
     });
-
     setSchedules(mappedRooms);
   };
 
@@ -87,11 +92,6 @@ const ReservationStatus = () => {
     const dayOfWeek = days[date.getDay()];
     
     return `${year}.${month}.${day} (${dayOfWeek})`;
-  };
-
-  const formatReservationDate = (dateString) => {
-    const date = new Date(dateString);
-    return formatDate(date);
   };
 
   const today = new Date();
@@ -139,24 +139,25 @@ const ReservationStatus = () => {
       {/* Room List */}
       <div className="px-4 overflow-y-auto" style={{ height: 'calc(100vh - 130px)' }}>
         <div className="py-4 space-y-3">
-          {rooms.map((room) => (
+          {schedules.map((room) => (
             <div
               key={room.id}
               className="w-full rounded-2xl border border-gray-100 bg-white"
             >
               <div className="p-4">
+                {/* 방 이름 및 기본 정보 */}
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg font-bold text-slate-900">{room.name}</span>
                   <span className="text-sm text-gray-500 font-medium">{room.location}</span>
                 </div>
-                
+
                 <div className="flex flex-wrap items-center gap-2 mb-3">
                   <span className="flex items-center gap-1 px-2 py-1 bg-gray-50 rounded-lg text-sm text-gray-600">
                     <Users className="w-4 h-4" />
                     {room.capacity}인실
                   </span>
                   {room.facilities.map((facility, index) => (
-                    <span 
+                    <span
                       key={index}
                       className="px-2 py-1 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg"
                     >
@@ -165,18 +166,15 @@ const ReservationStatus = () => {
                   ))}
                 </div>
 
+                {/* 예약 정보 */}
                 <div className="space-y-2">
-                  {loading ? (
-                    <p className="text-sm text-gray-500">로딩 중...</p>
-                  ) : error ? (
-                    <p className="text-sm text-red-500">오류가 발생했습니다.</p>
-                  ) : room.reservations && room.reservations.length > 0 ? (
+                  {room.reservations && room.reservations.length > 0 ? (
                     <>
-                      {(expandedRooms[room.id] 
-                        ? room.reservations 
-                        : room.reservations.slice(0, MAX_VISIBLE_RESERVATIONS)
+                      {(expandedRooms[room.id]
+                        ? room.reservations // 확장된 경우 전체 예약 표시
+                        : room.reservations.slice(0, MAX_VISIBLE_RESERVATIONS) // 기본은 최대 2개만 표시
                       ).map((res, index) => (
-                        <div 
+                        <div
                           key={index}
                           className={`flex items-center gap-3 text-sm ${
                             res.status === 'RESERVED' ? 'text-gray-900' : 'text-green-600'
@@ -184,12 +182,11 @@ const ReservationStatus = () => {
                         >
                           <Clock className="w-4 h-4 text-gray-400" />
                           <span>{res.time}</span>
-                          <span>
-                            {res.status === 'RESERVED' ? '예약됨' : '예약 가능'} / {res.participants}명
-                          </span>
+                          <span>{res.reserver} / {res.participants}명</span>
                         </div>
                       ))}
-                      
+
+                      {/* 더보기 / 접기 버튼 */}
                       {room.reservations.length > MAX_VISIBLE_RESERVATIONS && (
                         <button
                           onClick={() => toggleRoomExpansion(room.id)}
@@ -216,58 +213,6 @@ const ReservationStatus = () => {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Buttons Section */}
-        <div className="mt-8 mb-20 space-y-3">
-          <button
-            onClick={() => setShowAllSchedules(!showAllSchedules)}
-            className="w-full py-2 px-4 bg-white rounded-lg border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            {showAllSchedules ? "전체 스케줄 숨기기" : "전체 스케줄 보기"}
-          </button>
-          
-          {/* All Schedules Section */}
-          {showAllSchedules && (
-            <div className="mt-4">
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="text-lg font-semibold mb-4">전체 예약 현황</h3>
-                {loading ? (
-                  <p className="text-sm text-gray-500">로딩 중...</p>
-                ) : error ? (
-                  <p className="text-sm text-red-500">오류가 발생했습니다.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {schedules.map((room) => (
-                      <div key={room.id} className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0">
-                        <h4 className="font-medium mb-2">{room.name} ({room.location})</h4>
-                        <div className="space-y-2">
-                          {room.reservations.length > 0 ? (
-                            room.reservations.map((res, index) => (
-                              <div 
-                                key={index}
-                                className={`flex items-center gap-3 text-sm ${
-                                  res.status === 'RESERVED' ? 'text-gray-900' : 'text-green-600'
-                                }`}
-                              >
-                                <Clock className="w-4 h-4 text-gray-400" />
-                                <span>{res.time}</span>
-                                <span>
-                                  {res.status === 'RESERVED' ? '예약됨' : '예약 가능'} / {res.participants}명
-                                </span>
-                              </div>
-                            ))
-                          ) : (
-                            <p className="text-sm text-gray-500">예약된 정보가 없습니다.</p>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
