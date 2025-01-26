@@ -61,7 +61,7 @@ public class ReservationService {
 		List<Schedule> schedules = findSchedules(request.getScheduleId());
 		validateSchedulesAvailable(schedules);
 
-		Reservation reservation = Reservation.from(schedules, request);
+		Reservation reservation = Reservation.from(schedules, request, request.getUserEmail());
 
 		/*
 		연속된 스케줄인지 확인하는 로직,
