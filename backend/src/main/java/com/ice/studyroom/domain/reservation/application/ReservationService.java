@@ -3,8 +3,10 @@ package com.ice.studyroom.domain.reservation.application;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -12,7 +14,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
+import com.ice.studyroom.domain.identity.domain.service.QRCodeService;
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
+import com.ice.studyroom.domain.identity.infrastructure.security.QRCodeUtil;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
@@ -31,14 +35,22 @@ import lombok.RequiredArgsConstructor;
 @Transactional(readOnly = true)
 public class ReservationService {
 
+	private final QRCodeUtil qrCodeUtil;
 	private final TokenService tokenService;
 	private final MemberRepository memberRepository;
 	private final ReservationRepository reservationRepository;
 	private final ScheduleRepository scheduleRepository;
+	private final QRCodeService qrCodeService;
 
-	public List<Reservation> getMyReservation(String authorization) {
-		String email = tokenService.extractEmailFromAccessToken(authorization);
+	public List<Reservation> getMyReservation(String authorizationHeader) {
+		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 		return reservationRepository.findByUserEmail(email);
+	}
+
+	public String getMyReservationQrCode(String resId, String authorizationHeader) {
+		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		String qrKey = qrCodeService.concatEmailResId(email, resId);
+		return qrCodeService.getQRCode(qrKey);
 	}
 
 	public List<Schedule> getSchedule() {
@@ -67,7 +79,6 @@ public class ReservationService {
 		List<Member> participants = new ArrayList<>();
 		if (!ObjectUtils.isEmpty(request.participantEmail())) {
 			for (String email : request.participantEmail()) {
-				System.out.println("email = " + email);
 				if (!uniqueEmails.add(email)) {
 					throw new IllegalArgumentException("중복된 참여자 이메일이 존재합니다: " + email);
 				}
@@ -76,7 +87,6 @@ public class ReservationService {
 				participants.add(participant);
 			}
 		}
-		System.out.println("uniqueEmails = " + uniqueEmails);
 
 		// 최소 예약 인원(minRes) 검사 (예약자 + 참여자 수 체크)
 		int totalParticipants = uniqueEmails.size(); // 예약자 + 참여자 수
@@ -88,13 +98,21 @@ public class ReservationService {
 
 		// 예약 리스트 생성
 		List<Reservation> reservations = new ArrayList<>();
-		reservations.add(Reservation.from(schedules, request, reserverEmail)); // 예약자 추가
+		Map<String, String> qrCodeMap = new HashMap<>();
 
 		// 참여자 예약 추가
-		for (String participant : request.participantEmail()) {
-			reservations.add(Reservation.from(schedules, request, participant));
-		}
+		for (String email : uniqueEmails) {
+			Reservation reservation = Reservation.from(schedules, request, email);
+			reservations.add(reservation);
+			reservationRepository.save(reservation);
 
+			// 🔹 QR 코드 생성 (예약 ID + 이메일 조합)
+			String qrCodeBase64 = qrCodeUtil.generateQRCode(email, reservation.getId().toString());
+			qrCodeService.saveQRCode(email, reservation.getId().toString(), request.scheduleId().toString(),
+				qrCodeBase64);
+
+			qrCodeMap.put(email, qrCodeBase64);
+		}
 		// 예약 저장
 		reservationRepository.saveAll(reservations);
 
