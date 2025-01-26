@@ -61,8 +61,8 @@ public class Member {
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
 
-	@Column(name = "penalty_count", nullable = false)
-	private Long penaltyCount;
+	@Column(name = "isPenalty", nullable = false)
+	private boolean isPenalty;
 
 	@Builder
 	public Member(Email email, String password, String name, String studentNum, List<String> roles) {
@@ -73,6 +73,10 @@ public class Member {
 		this.roles = roles != null ? roles : new ArrayList<>();
 		this.createdAt = LocalDateTime.now();
 		this.updatedAt = LocalDateTime.now();
-		this.penaltyCount = 0L;
+		this.isPenalty = false;
+	}
+
+	public void updatePenalty(boolean isPenalty) {
+		this.isPenalty = isPenalty;
 	}
 }
