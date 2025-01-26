@@ -92,6 +92,7 @@ public class Member {
 			.roles(List.of("ROLE_USER"))
 			.createdAt(LocalDateTime.now())
 			.updatedAt(LocalDateTime.now())
+			.isPenalty(false)
 			.build();
 	}
 
