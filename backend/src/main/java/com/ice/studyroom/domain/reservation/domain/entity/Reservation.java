@@ -22,6 +22,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.temporal.ChronoUnit;
+
 @Entity
 @Table(name = "reservation")
 @Getter
@@ -45,6 +47,9 @@ public class Reservation {
 
 	@Column(nullable = false)
 	private String userName;
+
+	@Column(nullable = false)
+	private String userEmail;
 
 	@Column(nullable = false)
 	private LocalDate scheduleDate;
@@ -86,7 +91,7 @@ public class Reservation {
 			.id(this.id)
 			.firstScheduleId(this.firstScheduleId)
 			.secondScheduleId(this.secondScheduleId)
-			.userId(this.userId)
+			.userEmail(this.userEmail)
 			.userName(this.userName)
 			.scheduleDate(this.scheduleDate)
 			.roomNumber(this.roomNumber)
@@ -105,7 +110,7 @@ public class Reservation {
 		return Reservation.builder()
 			.id(this.id)
 			.firstScheduleId(this.firstScheduleId)
-			.secondScheduleId(this.secondScheduleId).userId(this.userId)
+			.secondScheduleId(this.secondScheduleId).userEmail(this.userEmail)
 			.userName(this.userName)
 			.scheduleDate(this.scheduleDate)
 			.roomNumber(this.roomNumber)
@@ -124,7 +129,7 @@ public class Reservation {
 		return Reservation.builder()
 			.id(this.id)
 			.firstScheduleId(this.firstScheduleId)
-			.secondScheduleId(this.secondScheduleId).userId(this.userId)
+			.secondScheduleId(this.secondScheduleId).userEmail(this.userEmail)
 			.userName(this.userName)
 			.scheduleDate(this.scheduleDate)
 			.roomNumber(this.roomNumber)
@@ -138,7 +143,7 @@ public class Reservation {
 			.build();
 	}
 
-	public static Reservation from(List<Schedule> schedules, CreateReservationRequest request) {
+	public static Reservation from(List<Schedule> schedules, CreateReservationRequest request, String email) {
 		Schedule firstSchedule = schedules.get(0);
 		Schedule secondSchedule = schedules.size() > 1 ? schedules.get(1) : null;
 		System.out.println("Reservation.from() ID =" + firstSchedule.getId());
@@ -146,7 +151,7 @@ public class Reservation {
 		return Reservation.builder()
 			.firstScheduleId(firstSchedule.getId())
 			.secondScheduleId(secondSchedule != null ? secondSchedule.getId() : null)
-			.userId(request.getUserId())
+			.userEmail(email)
 			.userName(request.getUserName())
 			.scheduleDate(firstSchedule.getScheduleDate())
 			.roomNumber(firstSchedule.getRoomNumber())
@@ -154,5 +159,23 @@ public class Reservation {
 			.endTime(secondSchedule != null ? secondSchedule.getEndTime() : firstSchedule.getEndTime())
 			.status(ReservationStatus.RESERVED)
 			.build();
+	}
+
+	// 예약 시작 알림 조건 확인
+	public boolean isStartReminderTime(LocalTime currentTime) {
+		return currentTime.truncatedTo(ChronoUnit.MINUTES)
+			.equals(this.startTime.minusMinutes(30).truncatedTo(ChronoUnit.MINUTES));
+	}
+
+	// 예약 종료 알림 조건 확인
+	public boolean isEndReminderTime(LocalTime currentTime) {
+		return currentTime.truncatedTo(ChronoUnit.MINUTES)
+			.equals(this.endTime.minusMinutes(10).truncatedTo(ChronoUnit.MINUTES));
+	}
+
+
+	// 사용자 이메일 반환
+	public String getUserEmail() {
+		return this.userEmail; // userEmail 필드로 수정 필요
 	}
 }
