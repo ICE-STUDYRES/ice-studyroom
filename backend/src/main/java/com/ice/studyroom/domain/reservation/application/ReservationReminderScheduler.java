@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
-import com.ice.studyroom.domain.reservation.dao.ReservationRepository;
+import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.global.service.EmailService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 

@@ -2,7 +2,6 @@ package com.ice.studyroom.domain.identity.domain.service;
 
 import java.time.Duration;
 
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.User;
@@ -12,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.ice.studyroom.domain.identity.domain.JwtToken;
 import com.ice.studyroom.domain.identity.exception.InvalidRefreshTokenException;
 import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvider;
+import com.ice.studyroom.global.service.CacheService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,18 +19,18 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TokenService {
 	private final JwtTokenProvider jwtTokenProvider;
-	private final RedisTemplate<String, String> redisTemplate;
+	private final CacheService cacheService;
 	private static final String REFRESH_TOKEN_PREFIX = "RT:";
 	private static final Duration REFRESH_TOKEN_VALIDITY = Duration.ofDays(7);
 
-	public String extractEmailFromAccessToken(String accessToken) {
+	public String extractEmailFromAccessToken(String authorizationHeader) {
+		String accessToken = authorizationHeader.replace("Bearer ", "");
 		return jwtTokenProvider.getUsername(accessToken);
 	}
 
 	public void saveRefreshToken(String email, String refreshToken) {
 		String key = REFRESH_TOKEN_PREFIX + email;
-		redisTemplate.opsForValue()
-			.set(key, refreshToken, REFRESH_TOKEN_VALIDITY);
+		cacheService.save(key, refreshToken, REFRESH_TOKEN_VALIDITY);
 	}
 
 	/**
@@ -43,7 +43,7 @@ public class TokenService {
 		}
 
 		String key = REFRESH_TOKEN_PREFIX + email;
-		String savedRefreshToken = redisTemplate.opsForValue().get(key);
+		String savedRefreshToken = cacheService.get(key);
 
 		return savedRefreshToken.equals(refreshToken);
 	}
@@ -74,6 +74,6 @@ public class TokenService {
 
 	public void deleteToken(String email, String refreshToken) {
 		String key = REFRESH_TOKEN_PREFIX + email;
-		redisTemplate.delete(key);
+		cacheService.delete(key);
 	}
 }

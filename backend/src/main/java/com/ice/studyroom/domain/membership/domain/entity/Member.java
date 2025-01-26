@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
+
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 
 import jakarta.persistence.CollectionTable;
@@ -61,6 +63,9 @@ public class Member {
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
 
+	@Column(name = "isPenalty", nullable = false)
+	private boolean isPenalty;
+
 	@Builder
 	public Member(Email email, String password, String name, String studentNum, List<String> roles) {
 		this.email = email;
@@ -70,5 +75,32 @@ public class Member {
 		this.roles = roles != null ? roles : new ArrayList<>();
 		this.createdAt = LocalDateTime.now();
 		this.updatedAt = LocalDateTime.now();
+		this.isPenalty = false;
+	}
+
+	public void updatePenalty(boolean isPenalty) {
+		this.isPenalty = isPenalty;
+	}
+
+	public static Member create(Email email, String name, String rawPassword, String studentNum,
+		PasswordEncoder passwordEncoder) {
+		return Member.builder()
+			.email(email)
+			.name(name)
+			.password(passwordEncoder.encode(rawPassword)) // 비밀번호 해싱
+			.studentNum(studentNum)
+			.roles(List.of("ROLE_USER"))
+			.createdAt(LocalDateTime.now())
+			.updatedAt(LocalDateTime.now())
+			.isPenalty(false)
+			.build();
+	}
+
+	public void changePassword(String encodedPassword) {
+		this.password = encodedPassword;
+	}
+
+	public boolean isPasswordValid(String rawPassword, PasswordEncoder passwordEncoder) {
+		return passwordEncoder.matches(rawPassword, this.password);
 	}
 }

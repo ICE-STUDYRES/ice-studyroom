@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
-import com.ice.studyroom.domain.reservation.dto.request.CreateScheduleRequest;
-import com.ice.studyroom.domain.reservation.dto.response.ScheduleResponse;
+import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateScheduleRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.ScheduleResponse;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -37,20 +37,20 @@ public class Schedule {
 	@Column(nullable = false)
 	private LocalDate scheduleDate;
 
-	@Column(name = "room_id", nullable = false)
-	private Long roomId;
-
 	@Column(nullable = false)
 	private String roomNumber;
 
-	@Column(name = "time_slot_id", nullable = false)
-	private Long timeSlotId;
+	@Column(name = "room_time_slot_id", nullable = false)
+	private Long roomTimeSlotId;
 
 	@Column(nullable = false)
 	private LocalTime startTime;
 
 	@Column(nullable = false)
 	private LocalTime endTime;
+
+	@Column(name = "min_res", nullable = false)
+	private Integer minRes;
 
 	@Column(nullable = false)
 	private Integer capacity;
@@ -67,7 +67,7 @@ public class Schedule {
 	@Column(nullable = false)
 	@Builder.Default
 	private LocalDateTime updatedAt = LocalDateTime.now();
-	
+
 	public boolean isAvailable() {
 		return status == ScheduleStatus.AVAILABLE;
 	}

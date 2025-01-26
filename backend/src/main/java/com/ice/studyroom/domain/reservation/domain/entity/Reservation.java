@@ -6,7 +6,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
-import com.ice.studyroom.domain.reservation.dto.request.CreateReservationRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -43,13 +43,10 @@ public class Reservation {
 	private Long secondScheduleId;
 
 	@Column(nullable = false)
-	private Long userId;
+	private String userEmail;
 
 	@Column(nullable = false)
 	private String userName;
-
-	@Column(nullable = false)
-	private String userEmail;
 
 	@Column(nullable = false)
 	private LocalDate scheduleDate;
@@ -146,13 +143,11 @@ public class Reservation {
 	public static Reservation from(List<Schedule> schedules, CreateReservationRequest request, String email) {
 		Schedule firstSchedule = schedules.get(0);
 		Schedule secondSchedule = schedules.size() > 1 ? schedules.get(1) : null;
-		System.out.println("Reservation.from() ID =" + firstSchedule.getId());
-		System.out.println("Reservation.from() =" + firstSchedule.getStartTime());
 		return Reservation.builder()
 			.firstScheduleId(firstSchedule.getId())
 			.secondScheduleId(secondSchedule != null ? secondSchedule.getId() : null)
 			.userEmail(email)
-			.userName(request.getUserName())
+			.userName("고민 중 수정 예정")
 			.scheduleDate(firstSchedule.getScheduleDate())
 			.roomNumber(firstSchedule.getRoomNumber())
 			.startTime(firstSchedule.getStartTime())
