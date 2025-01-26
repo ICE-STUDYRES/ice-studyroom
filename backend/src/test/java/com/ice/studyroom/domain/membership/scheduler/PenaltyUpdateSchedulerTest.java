@@ -1,4 +1,101 @@
-import static org.junit.jupiter.api.Assertions.*;
+package com.ice.studyroom.domain.membership.scheduler;
+
+import static org.assertj.core.api.AssertionsForClassTypes.*;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Rollback;
+
+import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.domain.membership.domain.entity.Penalty;
+import com.ice.studyroom.domain.membership.domain.vo.Email;
+import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
+import com.ice.studyroom.domain.membership.infrastructure.persistence.PenaltyRepository;
+
+import jakarta.transaction.Transactional;
+
+@SpringBootTest
+@Transactional
+@Rollback
 class PenaltyUpdateSchedulerTest {
 
+	@Autowired
+	private MemberRepository memberRepository;
+
+	@Autowired
+	private PenaltyRepository penaltyRepository;
+
+	@Autowired
+	private PenaltyUpdateScheduler penaltyUpdateScheduler;
+
+	@Test
+	void testUpdatePenaltyCounts() {
+		// 1. 테스트 데이터를 생성
+		Member member1 = Member.builder()
+			.email(new Email("test1@hufs.ac.kr"))
+			.name("User1")
+			.password("password1")
+			.studentNum("12345")
+			.roles(List.of("ROLE_USER"))
+			.createdAt(LocalDateTime.now())
+			.updatedAt(LocalDateTime.now())
+			.isPenalty(false)
+			.build();
+
+		Member member2 = Member.builder()
+			.email(new Email("test2@hufs.ac.kr"))
+			.name("User2")
+			.password("password2")
+			.studentNum("67890")
+			.roles(List.of("ROLE_USER"))
+			.createdAt(LocalDateTime.now())
+			.updatedAt(LocalDateTime.now())
+			.isPenalty(false)
+			.build();
+
+		memberRepository.saveAll(List.of(member1, member2));
+
+		Penalty penalty1 = Penalty.builder()
+			.member(member1)
+			.reason("Test Penalty 1")
+			.penaltyStart(LocalDateTime.now().minusDays(1))
+			.penaltyEnd(LocalDateTime.now().plusDays(1))
+			.isCanceled(false)
+			.build();
+
+		Penalty penalty2 = Penalty.builder()
+			.member(member1)
+			.reason("Test Penalty 2")
+			.penaltyStart(LocalDateTime.now().minusDays(2))
+			.penaltyEnd(LocalDateTime.now().plusDays(2))
+			.isCanceled(false)
+			.build();
+
+		Penalty penalty3 = Penalty.builder()
+			.member(member2)
+			.reason("Test Penalty 3")
+			.penaltyStart(LocalDateTime.now().minusDays(1))
+			.penaltyEnd(LocalDateTime.now().minusHours(1)) // 만료된 패널티
+			.isCanceled(false)
+			.build();
+
+		penaltyRepository.saveAll(List.of(penalty1, penalty2, penalty3));
+
+		// 2. 스케줄러 실행
+		penaltyUpdateScheduler.updatePenaltyCounts();
+
+		// 3. 검증
+		Member updatedMember1 = memberRepository.findById(member1.getId()).orElseThrow();
+		Member updatedMember2 = memberRepository.findById(member2.getId()).orElseThrow();
+
+		// Member1은 유효한 패널티가 2개 이상이므로 isPenalty = true
+		assertThat(updatedMember1.isPenalty()).isTrue();
+
+		// Member2는 유효한 패널티가 없으므로 isPenalty = false
+		assertThat(updatedMember2.isPenalty()).isFalse();
+	}
 }
