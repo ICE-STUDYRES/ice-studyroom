@@ -59,8 +59,9 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
     testImplementation 'org.mockito:mockito-core'
     implementation 'me.paulschwarz:spring-dotenv:4.0.0'
-    //이메일 전송
     implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'com.google.zxing:core:3.5.2'
+    implementation 'com.google.zxing:javase:3.5.2'
 }
 
 tasks.named('test') {
