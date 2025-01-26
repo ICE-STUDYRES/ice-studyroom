@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CreateReservationRequest {
-	private Long userId;
+	private String userEmail;  // 타입을 String으로 변경
 	private Long[] scheduleId;
 	private String userName;
 	private String roomNumber;
