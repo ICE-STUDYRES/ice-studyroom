@@ -14,7 +14,7 @@ public class Email implements Serializable {
 	@Column(name = "email")
 	private String value;
 
-	private Email(String value) {
+	public Email(String value) {
 		this.value = value;
 	}
 
