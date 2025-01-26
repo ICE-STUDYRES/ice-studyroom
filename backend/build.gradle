@@ -62,6 +62,9 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-mail'
     implementation 'com.google.zxing:core:3.5.2'
     implementation 'com.google.zxing:javase:3.5.2'
+    implementation 'com.h2database:h2'
+    //이메일 전송
+    implementation 'org.springframework.boot:spring-boot-starter-mail'\
 }
 
 tasks.named('test') {

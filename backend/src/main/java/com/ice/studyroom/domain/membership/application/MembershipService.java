@@ -32,7 +32,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MembershipService {
 	private final MemberDomainService memberDomainService;
-	private final MemberRepository memberRepository;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final TokenService tokenService;
 	private final AuthenticationManager authenticationManager;
@@ -44,6 +43,8 @@ public class MembershipService {
 	}
 
 	public MemberLoginResponse login(MemberLoginRequest request) {
+		memberDomainService.checkMemberPenalty(request.email());
+
 		Authentication authentication = authenticationManager.authenticate(
 			new UsernamePasswordAuthenticationToken(request.email(), request.password())
 		);

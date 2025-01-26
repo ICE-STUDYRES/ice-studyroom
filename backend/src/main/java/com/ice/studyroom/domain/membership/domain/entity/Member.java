@@ -63,6 +63,9 @@ public class Member {
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
 
+	@Column(name = "isPenalty", nullable = false)
+	private boolean isPenalty;
+
 	@Builder
 	public Member(Email email, String password, String name, String studentNum, List<String> roles) {
 		this.email = email;
@@ -72,6 +75,11 @@ public class Member {
 		this.roles = roles != null ? roles : new ArrayList<>();
 		this.createdAt = LocalDateTime.now();
 		this.updatedAt = LocalDateTime.now();
+		this.isPenalty = false;
+	}
+
+	public void updatePenalty(boolean isPenalty) {
+		this.isPenalty = isPenalty;
 	}
 
 	public static Member create(Email email, String name, String rawPassword, String studentNum,
@@ -84,6 +92,7 @@ public class Member {
 			.roles(List.of("ROLE_USER"))
 			.createdAt(LocalDateTime.now())
 			.updatedAt(LocalDateTime.now())
+			.isPenalty(false)
 			.build();
 	}
 
