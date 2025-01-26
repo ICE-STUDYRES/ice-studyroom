@@ -40,7 +40,11 @@ public class ReservationReminderScheduler {
 
 			for (Reservation reservation : startReservations) {
 				if (reservation.getStartTime().equals(oneHourLater)) { // 정확히 현재 +1시간만 시작 알림
-					sendReminderEmail(reservation, "시작 알림");
+					try {
+						sendReminderEmail(reservation, "시작 알림");
+					} catch (Exception e) {
+						System.out.println(e.getMessage());
+					}
 				}
 			}
 		}
