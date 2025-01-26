@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -32,6 +33,7 @@ class MembershipServiceTest {
 	private MemberRepository memberRepository;
 
 	@Test
+	@DisplayName("패널티가 적용된 유저는 로그인 불가")
 	void givenPenaltyMember_whenLogin_thenThrowsException() {
 		// Given (패널티가 있는 유저)
 		Member member = Member.builder()

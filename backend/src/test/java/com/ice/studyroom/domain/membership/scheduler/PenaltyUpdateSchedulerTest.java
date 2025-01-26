@@ -5,6 +5,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -33,6 +34,7 @@ class PenaltyUpdateSchedulerTest {
 	private PenaltyUpdateScheduler penaltyUpdateScheduler;
 
 	@Test
+	@DisplayName("패널티 스케줄러를 통해 Member의 패널티 여부가 갱신되어야한다.")
 	void testUpdatePenaltyCounts() {
 		// 1. 테스트 데이터를 생성
 		Member member1 = Member.builder()
@@ -62,7 +64,6 @@ class PenaltyUpdateSchedulerTest {
 		Penalty penalty1 = Penalty.builder()
 			.member(member1)
 			.reason("Test Penalty 1")
-			.penaltyStart(LocalDateTime.now().minusDays(1))
 			.penaltyEnd(LocalDateTime.now().plusDays(1))
 			.isCanceled(false)
 			.build();
@@ -70,7 +71,6 @@ class PenaltyUpdateSchedulerTest {
 		Penalty penalty2 = Penalty.builder()
 			.member(member1)
 			.reason("Test Penalty 2")
-			.penaltyStart(LocalDateTime.now().minusDays(2))
 			.penaltyEnd(LocalDateTime.now().plusDays(2))
 			.isCanceled(false)
 			.build();
@@ -78,7 +78,6 @@ class PenaltyUpdateSchedulerTest {
 		Penalty penalty3 = Penalty.builder()
 			.member(member2)
 			.reason("Test Penalty 3")
-			.penaltyStart(LocalDateTime.now().minusDays(1))
 			.penaltyEnd(LocalDateTime.now().minusHours(1)) // 만료된 패널티
 			.isCanceled(false)
 			.build();

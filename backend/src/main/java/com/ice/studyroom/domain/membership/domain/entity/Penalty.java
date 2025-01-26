@@ -38,9 +38,6 @@ public class Penalty extends BaseTimeEntity {
 	@Column(name = "reason", nullable = false)
 	private String reason;
 
-	@Column(name = "penalty_start", nullable = false)
-	private LocalDateTime penaltyStart;
-
 	@Column(name = "penalty_end", nullable = false)
 	private LocalDateTime penaltyEnd;
 
@@ -49,10 +46,9 @@ public class Penalty extends BaseTimeEntity {
 	private boolean isCanceled;
 
 	@Builder
-	public Penalty(Member member, String reason, LocalDateTime penaltyStart, LocalDateTime penaltyEnd) {
+	public Penalty(Member member, String reason, LocalDateTime penaltyEnd) {
 		this.member = member;
 		this.reason = reason;
-		this.penaltyStart = penaltyStart;
 		this.penaltyEnd = penaltyEnd;
 		this.isCanceled = false;
 	}
