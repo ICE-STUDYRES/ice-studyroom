@@ -3,8 +3,11 @@ package com.ice.studyroom.domain.admin.presentation.controller;
 
 import com.ice.studyroom.domain.admin.application.AdminService;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminCreateOccupyRequest;
+import com.ice.studyroom.domain.admin.presentation.dto.request.AdminPenaltyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminCreateOccupyResponse;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminDeleteOccupyResponse;
+import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyControlResponse;
+import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyRecordResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -65,5 +68,32 @@ public class AdminController {
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(adminService.adminDeleteOccupy(request)));
+	}
+
+	@GetMapping("/penalty/reasons")
+	public ResponseEntity<ResponseDto<List<AdminPenaltyRecordResponse>>> adminGetPenaltyRecords(
+		@Valid @RequestBody AdminPenaltyRequest request
+	) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(adminService.adminGetPenaltyRecords(request), "성공적으로 패널티 이유 목록을 반환했습니다."));
+	}
+
+	@PutMapping("/penalty/add")
+	public ResponseEntity<ResponseDto<AdminPenaltyControlResponse>> adminAddPenalties(
+		@Valid @RequestBody AdminPenaltyRequest request
+	) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(adminService.adminAddPenalty(request), "관리자가 성공적으로 패널티 횟수를 증가시켰습니다."));
+	}
+
+	@PutMapping("/penalty/minus")
+	public ResponseEntity<ResponseDto<AdminPenaltyControlResponse>> adminMinusPenalties(
+		@Valid @RequestBody AdminPenaltyRequest request
+	) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(adminService.adminSubtractPenalty(request), "관리자가 성공적으로 패널티 횟수를 차감시켰습니다."));
 	}
 }

@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.room_timeslot.domain.type;
+package com.ice.studyroom.domain.admin.domain.type;
 
 public enum RoomTimeSlotStatus {
 	AVAILABLE,

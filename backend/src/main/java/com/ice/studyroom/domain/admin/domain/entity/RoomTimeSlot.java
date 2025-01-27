@@ -1,11 +1,11 @@
-package com.ice.studyroom.domain.room_timeslot.domain.entity;
+package com.ice.studyroom.domain.admin.domain.entity;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
-import com.ice.studyroom.domain.room_timeslot.domain.type.DayOfWeekStatus;
-import com.ice.studyroom.domain.room_timeslot.domain.type.RoomTimeSlotStatus;
-import com.ice.studyroom.domain.room_timeslot.domain.type.RoomType;
+import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
+import com.ice.studyroom.domain.admin.domain.type.RoomTimeSlotStatus;
+import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 
 import jakarta.persistence.Column;
