@@ -6,6 +6,9 @@ import com.ice.studyroom.domain.admin.presentation.dto.request.AdminCreateOccupy
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminCreateOccupyResponse;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminDeleteOccupyResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
+
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -21,6 +24,12 @@ public class AdminController {
 
 	private final AdminService adminService;
 
+	@Operation(
+		summary = "방 시간대를 점유 상태로 설정",
+		description = "관리자가 특정 스터디룸의 특정 시간대를 점유 상태(예약 불가)로 설정합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "방 점유 상태 설정 성공")
+	@ApiResponse(responseCode = "500", description = "점유 상태 설정 실패")
 	@PostMapping("/room-time-slots/occupy")
 	public ResponseEntity<ResponseDto<AdminCreateOccupyResponse>> adminOccupySchedule(
 			@Valid @RequestBody AdminCreateOccupyRequest request
@@ -30,7 +39,11 @@ public class AdminController {
 				.body(ResponseDto.of(adminService.adminOccupyRoom(request)));
 	}
 
-	//예약된 방 ID 확인
+	@Operation(
+		summary = "예약된 방 ID 조회",
+		description = "현재 예약된 스터디룸의 ID 목록을 반환합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "예약된 방 ID 조회 성공")
 	@GetMapping("/room-time-slots/occupy")
 	public ResponseEntity<ResponseDto<List<Long>>> getReservedRooms() {
 		List<Long> reservedRooms = adminService.getReservedRoomIds();
@@ -39,7 +52,12 @@ public class AdminController {
 			.body(ResponseDto.of(reservedRooms, "예약된 방들의 id가 성공적으로 반환되었습니다."));
 	}
 
-	//특정 방의 상태를 AVAILABLE로 변경
+	@Operation(
+		summary = "방 시간대 점유 해제",
+		description = "관리자가 특정 스터디룸의 점유 상태를 해제(사용 가능 상태)로 변경합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "점유 상태 해제 성공")
+	@ApiResponse(responseCode = "500", description = "점유 상태 해제 실패")
 	@DeleteMapping("/room-time-slots/occupy")
 	public ResponseEntity<ResponseDto<AdminDeleteOccupyResponse>> adminFreeOccupy(
 		@Valid @RequestBody AdminCreateOccupyRequest request

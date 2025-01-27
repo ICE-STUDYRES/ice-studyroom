@@ -31,7 +31,10 @@ import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api")
-@Tag(name = "Study Room", description = "스터디룸 API")
+@Tag(
+	name = "Study Room",
+	description = "스터디룸 예약 및 관리 API. 예약 생성, 조회, 취소 등의 기능을 제공합니다."
+)
 @RequiredArgsConstructor
 public class ReservationController {
 
@@ -44,6 +47,9 @@ public class ReservationController {
 	 * exception handler 전역 처리로 수정 예정
 	 */
 	@ExceptionHandler(BusinessException.class)
+	@Operation(summary = "내 예약 정보 조회", description = "현재 사용자의 예약 정보를 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "예약 정보 조회 성공")
+	@ApiResponse(responseCode = "500", description = "예약 정보 조회 실패")
 	@GetMapping("/reservations/my")
 	public ResponseEntity<ResponseDto<List<Reservation>>> getMyReservation(
 		@RequestHeader("Authorization") String authorizationHeader
@@ -53,6 +59,9 @@ public class ReservationController {
 			.body(ResponseDto.of(reservationService.getMyReservation(authorizationHeader)));
 	}
 
+	@Operation(summary = "예약 QR 코드 조회", description = "특정 예약의 QR 코드를 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "QR 코드 조회 성공")
+	@ApiResponse(responseCode = "500", description = "QR 코드 조회 실패")
 	@GetMapping("/reservations/my/{resId}")
 	public ResponseEntity<ResponseDto<String>> getMyReservationQrCode(
 		@PathVariable String resId,
@@ -63,6 +72,9 @@ public class ReservationController {
 			.body(ResponseDto.of(reservationService.getMyReservationQrCode(resId, authorizationHeader)));
 	}
 
+	@Operation(summary = "스터디룸 일정 조회", description = "스터디룸 예약 가능한 일정을 조회합니다.")
+	@ApiResponse(responseCode = "200", description = "스터디룸 일정 조회 성공")
+	@ApiResponse(responseCode = "500", description = "스터디룸 일정 조회 실패")
 	@GetMapping("/schedules")
 	public ResponseEntity<ResponseDto<List<Schedule>>> getSchedule() {
 		return ResponseEntity
@@ -72,6 +84,7 @@ public class ReservationController {
 
 	@Operation(summary = "스터디룸 예약", description = "스터디룸을 예약합니다.")
 	@ApiResponse(responseCode = "201", description = "스터디룸 예약 성공")
+	@ApiResponse(responseCode = "500", description = "스터디룸 예약 실패")
 	@PostMapping("/reservations")
 	public ResponseEntity<ResponseDto<String>> createReservation(
 		@RequestHeader("Authorization") String authorizationHeader,
@@ -84,6 +97,8 @@ public class ReservationController {
 
 	// 예약 취소 시 본인 인증이 필요하다.
 	@Operation(summary = "예약 취소", description = "예약을 취소합니다.")
+	@ApiResponse(responseCode = "200", description = "예약 취소 성공")
+	@ApiResponse(responseCode = "500", description = "예약 취소 실패")
 	@DeleteMapping("/reservations/{id}")
 	public ResponseEntity<ResponseDto<Void>> deleteReservation(@PathVariable Long id) {
 		DeleteReservationRequest request = DeleteReservationRequest.builder()
