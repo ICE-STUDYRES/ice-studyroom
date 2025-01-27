@@ -46,6 +46,7 @@ class PenaltyUpdateSchedulerTest {
 			.createdAt(LocalDateTime.now())
 			.updatedAt(LocalDateTime.now())
 			.isPenalty(false)
+			.penaltyCount(0)
 			.build();
 
 		Member member2 = Member.builder()
@@ -57,6 +58,7 @@ class PenaltyUpdateSchedulerTest {
 			.createdAt(LocalDateTime.now())
 			.updatedAt(LocalDateTime.now())
 			.isPenalty(false)
+			.penaltyCount(0)
 			.build();
 
 		memberRepository.saveAll(List.of(member1, member2));
