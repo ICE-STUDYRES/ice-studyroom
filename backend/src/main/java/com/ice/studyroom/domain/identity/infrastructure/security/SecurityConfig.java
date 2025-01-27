@@ -34,11 +34,20 @@ public class SecurityConfig {
 			.sessionManagement(sessionManagement ->
 				sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorize -> authorize
-				.requestMatchers("/api/reservations/**").permitAll()
-				.requestMatchers("/api/schedules/**").permitAll()
-				.requestMatchers("/api/users/**").permitAll()
-				.requestMatchers("/api/email/**").permitAll()  // 이메일 전송 API 경로 추가
-				.requestMatchers("/api/admin/**").permitAll() // 관리자 예약 API 경로
+				.requestMatchers(
+					"/api/reservations/**",
+					"/api/schedules/**",
+					"/api/users/**",
+					"/api/email/**",  // 이메일 전송 API 경로
+					"/api/admin/**"   // 관리자 예약 API 경로
+				).permitAll()
+				// Swagger 관련 경로 허용
+				.requestMatchers(
+					"/swagger-ui.html",
+					"/swagger-ui/**",
+					"/v3/api-docs/**",
+					"/webjars/**"
+				).permitAll()
 				.anyRequest().authenticated()
 			)
 			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
