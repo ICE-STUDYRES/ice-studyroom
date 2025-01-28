@@ -22,6 +22,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.time.temporal.ChronoUnit;
+
 @Entity
 @Table(name = "reservation")
 @Getter
@@ -152,5 +154,23 @@ public class Reservation {
 			.endTime(secondSchedule != null ? secondSchedule.getEndTime() : firstSchedule.getEndTime())
 			.status(ReservationStatus.RESERVED)
 			.build();
+	}
+
+	// 예약 시작 알림 조건 확인
+	public boolean isStartReminderTime(LocalTime currentTime) {
+		return currentTime.truncatedTo(ChronoUnit.MINUTES)
+			.equals(this.startTime.minusMinutes(30).truncatedTo(ChronoUnit.MINUTES));
+	}
+
+	// 예약 종료 알림 조건 확인
+	public boolean isEndReminderTime(LocalTime currentTime) {
+		return currentTime.truncatedTo(ChronoUnit.MINUTES)
+			.equals(this.endTime.minusMinutes(10).truncatedTo(ChronoUnit.MINUTES));
+	}
+
+
+	// 사용자 이메일 반환
+	public String getUserEmail() {
+		return this.userEmail; // userEmail 필드로 수정 필요
 	}
 }
