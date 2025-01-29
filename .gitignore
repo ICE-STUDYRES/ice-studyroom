@@ -1,5 +1,6 @@
 # 배포 관련 보안 설정
 .env
+IceStudyRoom.pem
 
 # Backend - Gradle
 backend/build/
