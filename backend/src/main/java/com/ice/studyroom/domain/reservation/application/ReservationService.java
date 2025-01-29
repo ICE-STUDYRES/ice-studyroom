@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,6 +28,7 @@ import com.ice.studyroom.domain.reservation.infrastructure.persistence.Reservati
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -42,9 +44,15 @@ public class ReservationService {
 	private final ScheduleRepository scheduleRepository;
 	private final QRCodeService qrCodeService;
 
-	public List<Reservation> getMyReservation(String authorizationHeader) {
+	public List<Reservation> getMyAllReservation(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 		return reservationRepository.findByUserEmail(email);
+	}
+
+	public Optional<GetMostRecentReservationResponse> getMyMostRecentReservation(String authorizationHeader) {
+		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		return reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(email)
+			.map(GetMostRecentReservationResponse::from);
 	}
 
 	public String getMyReservationQrCode(String resId, String authorizationHeader) {
