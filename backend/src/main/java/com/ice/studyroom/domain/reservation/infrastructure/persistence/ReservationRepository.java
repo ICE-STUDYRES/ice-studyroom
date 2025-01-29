@@ -2,6 +2,7 @@ package com.ice.studyroom.domain.reservation.infrastructure.persistence;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,4 +12,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 	List<Reservation> findByScheduleDate(LocalDate date);
 
 	List<Reservation> findByUserEmail(String email);
+
+	Optional<Reservation> findFirstByUserEmailOrderByCreatedAtDesc(String email);
 }

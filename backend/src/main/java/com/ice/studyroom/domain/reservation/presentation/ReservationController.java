@@ -1,6 +1,7 @@
 package com.ice.studyroom.domain.reservation.presentation;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
@@ -56,7 +58,20 @@ public class ReservationController {
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.getMyReservation(authorizationHeader)));
+			.body(ResponseDto.of(reservationService.getMyAllReservation(authorizationHeader)));
+	}
+
+	@GetMapping("/reservations/my/latest")
+	public ResponseEntity<ResponseDto<GetMostRecentReservationResponse>> getMyMostRecentReservation(
+		@RequestHeader("Authorization") String authorizationHeader
+	) {
+		Optional<GetMostRecentReservationResponse> reservation = reservationService.getMyMostRecentReservation(
+			authorizationHeader);
+
+		return ResponseEntity.ok(ResponseDto.of(
+			reservation.orElse(null),
+			reservation.isPresent() ? "예약 조회 성공" : "최근 예약 내역이 없습니다."
+		));
 	}
 
 	@Operation(summary = "예약 QR 코드 조회", description = "특정 예약의 QR 코드를 조회합니다.")
