@@ -30,8 +30,12 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
 		HttpServletRequest httpRequest = (HttpServletRequest)request;
 		HttpServletResponse httpResponse = (HttpServletResponse)response;
 
+		String requestURI = httpRequest.getRequestURI();
+		boolean isRefreshTokenRequest = "/api/users/refresh".equals(requestURI);
+
 		// 1. Request Header에서 JWT 토큰 추출
 		String token = resolveToken((HttpServletRequest)request);
+
 
 		// 2. validateToken으로 토큰 유효성 검사
 		if (token != null) {
@@ -41,6 +45,11 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
 				Authentication authentication = jwtTokenProvider.getAuthentication(token);
 				SecurityContextHolder.getContext().setAuthentication(authentication);
 			} catch (ExpiredJwtException e) {
+				if (isRefreshTokenRequest) {
+					// 리프레시 토큰 요청이면 Access Token 만료 예외를 허용
+					chain.doFilter(request, response);
+					return;
+				}
 				setUnauthorizedResponse(httpResponse, "E401", "JWT token expired");
 				return;
 			} catch (InvalidJwtException e) {
