@@ -130,7 +130,7 @@ public class JwtTokenProvider {
 				.getBody();
 		} catch (ExpiredJwtException e) {
 			log.info("Expired JWT Token", e);
-			throw e;
+			return e.getClaims();
 		}
 	}
 }
