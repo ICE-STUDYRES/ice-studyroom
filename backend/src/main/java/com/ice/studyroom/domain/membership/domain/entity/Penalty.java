@@ -2,10 +2,14 @@ package com.ice.studyroom.domain.membership.domain.entity;
 
 import java.time.LocalDateTime;
 
+import com.ice.studyroom.domain.membership.domain.type.PenaltyStatus;
+import com.ice.studyroom.domain.membership.domain.type.PenaltyReasonType;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -35,21 +39,22 @@ public class Penalty extends BaseTimeEntity {
 	@JoinColumn(name = "member_id", nullable = false)
 	private Member member;
 
+	@Enumerated(EnumType.STRING)
 	@Column(name = "reason", nullable = false)
-	private String reason;
+	private PenaltyReasonType reason;
 
 	@Column(name = "penalty_end", nullable = false)
 	private LocalDateTime penaltyEnd;
 
-	//패널티 무효 속성
-	@Column(name = "is_canceled", nullable = false)
-	private boolean isCanceled;
+	@Enumerated(EnumType.STRING)
+	@Column(name = "status", nullable = false)
+	@Builder.Default
+	private PenaltyStatus status = PenaltyStatus.VALID;
 
 	@Builder
-	public Penalty(Member member, String reason, LocalDateTime penaltyEnd) {
+	public Penalty(Member member, PenaltyReasonType reason, LocalDateTime penaltyEnd) {
 		this.member = member;
 		this.reason = reason;
 		this.penaltyEnd = penaltyEnd;
-		this.isCanceled = false;
 	}
 }
