@@ -8,6 +8,6 @@ import java.util.List;
 import java.util.Optional;
 
 public interface PenaltyRepository extends JpaRepository<Penalty, Long> {
-	Long countByMemberIdAndPenaltyEndAfter(Long memberId, LocalDateTime currentTime);
+	Optional<Penalty> findTopByMemberIdAndPenaltyEndAfterOrderByPenaltyEndDesc(Long memberId, LocalDateTime currentTime);
 	List<Penalty> findByMemberIdAndPenaltyEndAfter(Long memberId, LocalDateTime currentTime);
 }
