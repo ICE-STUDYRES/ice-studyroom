@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateScheduleRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.ScheduleResponse;
@@ -34,6 +35,10 @@ public class Schedule {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	@Enumerated(EnumType.STRING)
+	@Column(nullable = false)
+	private RoomType roomType;
+
 	@Column(nullable = false)
 	private LocalDate scheduleDate;
 
@@ -48,6 +53,9 @@ public class Schedule {
 
 	@Column(nullable = false)
 	private LocalTime endTime;
+
+	@Column(nullable = false)
+	private Integer currentRes;
 
 	@Column(name = "min_res", nullable = false)
 	private Integer minRes;
@@ -70,6 +78,10 @@ public class Schedule {
 
 	public boolean isAvailable() {
 		return status == ScheduleStatus.AVAILABLE;
+	}
+
+	public boolean isCurrentResLessThanCapacity() {
+		return currentRes < capacity;
 	}
 
 	public void reserve() {
