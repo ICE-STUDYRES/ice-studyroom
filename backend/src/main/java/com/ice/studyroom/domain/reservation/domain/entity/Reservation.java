@@ -138,14 +138,14 @@ public class Reservation {
 			.build();
 	}
 
-	public static Reservation from(List<Schedule> schedules, CreateReservationRequest request, String email) {
+	public static Reservation from(List<Schedule> schedules, String email, String userName) {
 		Schedule firstSchedule = schedules.get(0);
 		Schedule secondSchedule = schedules.size() > 1 ? schedules.get(1) : null;
 		return Reservation.builder()
 			.firstScheduleId(firstSchedule.getId())
 			.secondScheduleId(secondSchedule != null ? secondSchedule.getId() : null)
 			.userEmail(email)
-			.userName("고민 중 수정 예정")
+			.userName(userName)
 			.scheduleDate(firstSchedule.getScheduleDate())
 			.roomNumber(firstSchedule.getRoomNumber())
 			.startTime(firstSchedule.getStartTime())

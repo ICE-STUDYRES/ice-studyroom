@@ -107,7 +107,7 @@ public class ReservationController {
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.createReservation(authorizationHeader, request)));
+			.body(ResponseDto.of(reservationService.createGroupReservation(authorizationHeader, request)));
 	}
 
 	// 예약 취소 시 본인 인증이 필요하다.

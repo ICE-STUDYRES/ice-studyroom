@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
+import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.domain.identity.domain.service.QRCodeService;
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
 import com.ice.studyroom.domain.identity.infrastructure.security.QRCodeUtil;
@@ -66,25 +67,45 @@ public class ReservationService {
 		return scheduleRepository.findByScheduleDate(today);
 	}
 
+	// @Transactional
+	// public String createIndividualReservation(String authorizationHeader, CreateReservationRequest request) {
+	// 	// 종합된 스케줄의 예약 자리가 비어있는지, 예약 가능 상태인지 확인
+	// 	List<Schedule> schedules = findSchedules(request.scheduleId());
+	// 	validateSchedulesAvailable(schedules);
+	//
+	// 	String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
+	//
+	//
+	// }
+
 	@Transactional
-	public String createReservation(String authorizationHeader, CreateReservationRequest request) {
+	public String createGroupReservation(String authorizationHeader, CreateReservationRequest request) {
 		// 예약 가능 여부 확인
 		List<Schedule> schedules = findSchedules(request.scheduleId());
 		validateSchedulesAvailable(schedules);
 
+		// 단체 스케줄 -> 예약 시 RES
+		// 개인 스케줄 -> 예약 인원 만큼 채워지면 RES
+		// 스케줄에서 Type을 저장해야하며, Type에 따른 RES 처리가 필요하다.
+		RoomType roomType = schedules.get(0).getRoomType();
+		// if (roomType == schedules.getCapacity)
+
 		// JWT에서 예약자 이메일 추출
 		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		// 예약자(User) 확인
-		memberRepository.findByEmail(Email.of(reserverEmail))
+		// 예약자(User) 확인 및 user_name 가져오기
+		Member reserver = memberRepository.findByEmail(Email.of(reserverEmail))
 			.orElseThrow(() -> new IllegalArgumentException("예약자 이메일이 존재하지 않습니다: " + reserverEmail));
 
 		// 중복된 이메일 검사 (예약자 포함)
 		Set<String> uniqueEmails = new HashSet<>();
 		uniqueEmails.add(reserverEmail); // 예약자 이메일 포함
 
-		// 참여자 리스트 추가 (중복 검사)
-		List<Member> participants = new ArrayList<>();
+		// 예약자와 참여자의 이메일을 저장 (이름 포함)
+		Map<String, String> emailToNameMap = new HashMap<>();
+		emailToNameMap.put(reserverEmail, reserver.getName());
+
+		// 참여자 리스트 추가 (중복 검사 및 user_name 조회)
 		if (!ObjectUtils.isEmpty(request.participantEmail())) {
 			for (String email : request.participantEmail()) {
 				if (!uniqueEmails.add(email)) {
@@ -92,7 +113,7 @@ public class ReservationService {
 				}
 				Member participant = memberRepository.findByEmail(Email.of(email))
 					.orElseThrow(() -> new IllegalArgumentException("참여자 이메일이 존재하지 않습니다: " + email));
-				participants.add(participant);
+				emailToNameMap.put(email, participant.getName());
 			}
 		}
 
@@ -108,19 +129,19 @@ public class ReservationService {
 		List<Reservation> reservations = new ArrayList<>();
 		Map<String, String> qrCodeMap = new HashMap<>();
 
-		// 참여자 예약 추가
+		// 예약 생성 및 저장
 		for (String email : uniqueEmails) {
-			Reservation reservation = Reservation.from(schedules, request, email);
+			String userName = emailToNameMap.get(email);
+			Reservation reservation = Reservation.from(schedules, email, userName);
 			reservations.add(reservation);
 			reservationRepository.save(reservation);
 
-			// 🔹 QR 코드 생성 (예약 ID + 이메일 조합)
+			// QR 코드 생성 (예약 ID + 이메일 조합)
 			String qrCodeBase64 = qrCodeUtil.generateQRCode(email, reservation.getId().toString());
-			qrCodeService.saveQRCode(email, reservation.getId().toString(), request.scheduleId().toString(),
-				qrCodeBase64);
-
+			qrCodeService.saveQRCode(email, reservation.getId().toString(), request.scheduleId().toString(), qrCodeBase64);
 			qrCodeMap.put(email, qrCodeBase64);
 		}
+
 		// 예약 저장
 		reservationRepository.saveAll(reservations);
 
@@ -129,12 +150,10 @@ public class ReservationService {
 		}
 
 		scheduleRepository.saveAll(schedules);
-		// 응답 변환 후 반환
-		// return reservations.stream()
-		// 	.map(ReservationResponse::of)
-		// 	.collect(Collectors.toList());
+
 		return "Success";
 	}
+
 
 	@Transactional
 	public void cancelReservation(DeleteReservationRequest request) {
@@ -202,8 +221,8 @@ public class ReservationService {
 	}
 
 	private void validateSchedulesAvailable(List<Schedule> schedules) {
-		if (schedules.stream().anyMatch(schedule -> !schedule.isAvailable())) {
-			throw new IllegalStateException(("이미 예약된 시간이 존재합니다."));
+		if (schedules.stream().anyMatch(schedule -> !schedule.isAvailable() || !schedule.isCurrentResLessThanCapacity())) {
+			throw new IllegalStateException(("예약이 불가능합니다."));
 		}
 	}
 }
