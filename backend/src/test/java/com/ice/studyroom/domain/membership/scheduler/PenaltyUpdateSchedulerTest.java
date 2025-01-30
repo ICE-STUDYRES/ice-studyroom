@@ -13,6 +13,7 @@ import org.springframework.test.annotation.Rollback;
 
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.entity.Penalty;
+import com.ice.studyroom.domain.membership.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.PenaltyRepository;
@@ -46,7 +47,6 @@ class PenaltyUpdateSchedulerTest {
 			.createdAt(LocalDateTime.now())
 			.updatedAt(LocalDateTime.now())
 			.isPenalty(false)
-			.penaltyCount(0)
 			.build();
 
 		Member member2 = Member.builder()
@@ -58,30 +58,26 @@ class PenaltyUpdateSchedulerTest {
 			.createdAt(LocalDateTime.now())
 			.updatedAt(LocalDateTime.now())
 			.isPenalty(false)
-			.penaltyCount(0)
 			.build();
 
 		memberRepository.saveAll(List.of(member1, member2));
 
 		Penalty penalty1 = Penalty.builder()
 			.member(member1)
-			.reason("Test Penalty 1")
+			.reason(PenaltyReasonType.LATE)
 			.penaltyEnd(LocalDateTime.now().plusDays(1))
-			.isCanceled(false)
 			.build();
 
 		Penalty penalty2 = Penalty.builder()
 			.member(member1)
-			.reason("Test Penalty 2")
+			.reason(PenaltyReasonType.LATE)
 			.penaltyEnd(LocalDateTime.now().plusDays(2))
-			.isCanceled(false)
 			.build();
 
 		Penalty penalty3 = Penalty.builder()
 			.member(member2)
-			.reason("Test Penalty 3")
+			.reason(PenaltyReasonType.LATE)
 			.penaltyEnd(LocalDateTime.now().minusHours(1)) // 만료된 패널티
-			.isCanceled(false)
 			.build();
 
 		penaltyRepository.saveAll(List.of(penalty1, penalty2, penalty3));
