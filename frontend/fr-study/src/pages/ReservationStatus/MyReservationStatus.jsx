@@ -6,9 +6,10 @@ import { QRCodeCanvas } from 'qrcode.react';
 
 const MyReservationStatus = () => {
   const {
-    studentId,studentName,qrCodeUrl,showQRModal,
+    studentId,studentName,qrCodeUrl,showQRModal,refreshTokens,
     handleQRClick,
     handleCloseQRModal,
+    handleLogout,
   } = useMainpageHandlers();
   const navigate = useNavigate();
   const [myReservations, setMyReservations] = useState([]);
@@ -28,36 +29,52 @@ const MyReservationStatus = () => {
     fetchMyReservations();
   }, []);
 
-  const fetchMyReservations = async () => {
+  const fetchMyReservations = async (retry = true) => {
     setLoading(true);
     try {
-      const accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        throw new Error('로그인이 필요합니다');
-      }
-
-      const response = await fetch('/api/reservations/my', {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`
+        let accessToken = localStorage.getItem('accessToken');
+        let refreshToken = localStorage.getItem('refreshToken');
+        if (!accessToken) {
+            throw new Error('로그인이 필요합니다');
         }
-      });
 
-      if (!response.ok) {
-        throw new Error('Failed to fetch my reservations');
+        const response = await fetch('/api/reservations/my', {
+            headers: {
+                'Authorization': `Bearer ${accessToken}`
+            }
+        });
+
+        if (response.status === 401 && retry) {
+          console.warn("Access token expired. Refreshing tokens...");
+          console.log("Current access token:", accessToken); // 토큰 출력
+          console.log("Current refresh token:", refreshToken); // 토큰 출력
+          accessToken = await refreshTokens();
+          
+          if (accessToken) {
+              console.log("New access token after refresh:", accessToken); // 새로운 토큰 출력
+              console.log("Retrying fetchMyReservations with new access token...");
+              return fetchMyReservations(false); // 한 번만 재시도
+          } else {
+              console.error("Token refresh failed. Logging out.");
+          }
       }
 
-      const data = await response.json();
-      if (data.code === 'S200') {
-        setMyReservations(data.data);
-      } else {
-        throw new Error(data.message);
-      }
+        if (!response.ok) {
+            throw new Error('Failed to fetch my reservations');
+        }
+
+        const data = await response.json();
+        if (data.code === 'S200') {
+            setMyReservations(data.data);
+        } else {
+            throw new Error(data.message);
+        }
     } catch (err) {
-      setError(err.message);
+        setError(err.message);
     } finally {
-      setLoading(false);
+        setLoading(false);
     }
-  };
+};
 
   const formatDate = (date) => {
     const days = ['일', '월', '화', '수', '목', '금', '토'];
