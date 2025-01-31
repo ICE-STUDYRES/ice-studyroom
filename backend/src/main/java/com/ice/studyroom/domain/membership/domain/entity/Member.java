@@ -63,11 +63,8 @@ public class Member {
 	@Column(name = "updated_at", nullable = false)
 	private LocalDateTime updatedAt;
 
-	@Column(name = "isPenalty", nullable = false)
+	@Column(name = "is_penalty", nullable = false)
 	private boolean  isPenalty;
-
-	@Column(name = "penalty_count", nullable = false)
-	private Integer penaltyCount;
 
 	@Builder
 	public Member(Email email, String password, String name, String studentNum, List<String> roles) {
@@ -79,25 +76,10 @@ public class Member {
 		this.createdAt = LocalDateTime.now();
 		this.updatedAt = LocalDateTime.now();
 		this.isPenalty = false;
-		this.penaltyCount = 0;
 	}
 
 	public void updatePenalty(boolean isPenalty) {
 		this.isPenalty = isPenalty;
-	}
-
-	public void addPenalty(int penaltyCount) {
-		if(penaltyCount == 2) {
-			throw new IllegalStateException("현재 이미 사용중지 상태입니다.");
-		}
-		this.penaltyCount += 1;
-	}
-
-	public void subPenalty(int penaltyCount) {
-		if(penaltyCount == 0) {
-			throw new IllegalStateException("패널티 횟수가 0이거나 차감할 수 없습니다.");
-		}
-		this.penaltyCount -= 1;
 	}
 
 	public static Member create(Email email, String name, String rawPassword, String studentNum,
@@ -111,7 +93,6 @@ public class Member {
 			.createdAt(LocalDateTime.now())
 			.updatedAt(LocalDateTime.now())
 			.isPenalty(false)
-			.penaltyCount(0)
 			.build();
 	}
 

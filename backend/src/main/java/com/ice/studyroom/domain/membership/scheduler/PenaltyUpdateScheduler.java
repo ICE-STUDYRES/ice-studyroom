@@ -24,10 +24,14 @@ public class PenaltyUpdateScheduler {
 
 	@Transactional
 	@Scheduled(cron = "0 0 0 * * *") // 매일 00:00에 실행
-	public void updatePenaltyCounts() {
+	public void updateMemberPenalty() {
 		memberRepository.findAll().forEach(member -> {
-			Long penaltyCount = penaltyRepository.countByMemberIdAndPenaltyEndAfter(member.getId(), LocalDateTime.now());
-			member.updatePenalty(penaltyCount >= 2);
+			boolean hasPenalty = penaltyRepository
+				.findTopByMemberIdAndPenaltyEndAfterOrderByPenaltyEndDesc(
+				member.getId(), LocalDateTime.now()).isPresent();
+
+
+			member.updatePenalty(hasPenalty);
 		});
 
 		log.info("Penalty counts updated successfully at {}", LocalDateTime.now());

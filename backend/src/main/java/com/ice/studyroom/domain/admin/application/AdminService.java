@@ -78,7 +78,7 @@ public class AdminService {
 			.orElseThrow(() -> new IllegalArgumentException("해당 이메일로 회원을 찾을 수 없습니다."));
 
 		// 조건에 맞는 패널티 리스트 조회
-		List<Penalty> penaltyList = penaltyRepository.findByMemberIdAndPenaltyEndAfterAndIsCanceledFalse(
+		List<Penalty> penaltyList = penaltyRepository.findByMemberIdAndPenaltyEndAfter(
 			member.getId(), LocalDateTime.now()
 		);
 
@@ -96,37 +96,37 @@ public class AdminService {
 		Member member = memberRepository.findByEmail(Email.of(request.email()))
 			.orElseThrow(() -> new IllegalArgumentException("해당 이메일로 회원을 찾을 수 없습니다."));
 
-		//패널티 횟수 차감
-		if(member.getPenaltyCount() >= 3) {
-			member.subPenalty(member.getPenaltyCount());
-			member.updatePenalty(false);
-		} else if(member.getPenaltyCount() == 1) {
-			member.subPenalty(member.getPenaltyCount());
-		} else {throw new IllegalStateException("현재 패널티 횟수가 0입니다.");}
+		// //패널티 횟수 차감
+		// if(member.getPenaltyCount() >= 3) {
+		// 	member.subPenalty(member.getPenaltyCount());
+		// 	member.updatePenalty(false);
+		// } else if(member.getPenaltyCount() == 1) {
+		// 	member.subPenalty(member.getPenaltyCount());
+		// } else {throw new IllegalStateException("현재 패널티 횟수가 0입니다.");}
 
 		//변경상태 저장
 		memberRepository.save(member);
 
 		//return
-		return AdminPenaltyControlResponse.of("관리자가 패널티 횟수를 차감했습니다.", member.getPenaltyCount());
+		return AdminPenaltyControlResponse.of("관리자가 패널티 횟수를 차감했습니다.", 1);
 	}
 
 	public AdminPenaltyControlResponse adminAddPenalty(AdminPenaltyRequest request) {
 		Member member = memberRepository.findByEmail(Email.of(request.email()))
 			.orElseThrow(() -> new IllegalArgumentException("해당 이메일로 회원을 찾을 수 없습니다."));
 
-		//패널티 횟수 증가
-		if(member.isPenalty()) {
-			throw new IllegalStateException("현재 이미 사용불가 상태입니다.");
-		} else if(member.getPenaltyCount() >= 3) {
-			member.updatePenalty(true);
-			member.addPenalty(member.getPenaltyCount());
-		} else{member.addPenalty(member.getPenaltyCount());}
+		// //패널티 횟수 증가
+		// if(member.isPenalty()) {
+		// 	throw new IllegalStateException("현재 이미 사용불가 상태입니다.");
+		// } else if(member.getPenaltyCount() >= 3) {
+		// 	member.updatePenalty(true);
+		// 	member.addPenalty(member.getPenaltyCount());
+		// } else{member.addPenalty(member.getPenaltyCount());}
 
 		//변경상태 저장
 		memberRepository.save(member);
 
 		//return
-		return AdminPenaltyControlResponse.of("관리자가 패널티 횟수를 증가했습니다.", member.getPenaltyCount());
+		return AdminPenaltyControlResponse.of("관리자가 패널티 횟수를 증가했습니다.", 1);
 	}
 }
