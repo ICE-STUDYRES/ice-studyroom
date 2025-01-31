@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useMainpageHandlers } from '../Mainpage/MainpageHandlers';
 
 export const useStudyRoomBooking = () => {
   const [activeTab, setActiveTab] = useState("room");
@@ -37,11 +38,14 @@ export const useStudyRoomBooking = () => {
     { name: "409-2", capacity: 6, facilities: ["화이트보드", "PC", "대형 모니터"], location: "4층" },
 ];
 
+  const {
+    refreshTokens
+  } = useMainpageHandlers();
 
   // 사용자 정보 가져오기
-  const fetchUserInfo = async () => {
+  const fetchUserInfo = async (retry = true) => {
     try {
-      const accessToken = localStorage.getItem("accessToken");
+      let accessToken = localStorage.getItem("accessToken");
       if (!accessToken) {
         alert("로그인이 필요합니다.");
         return;
@@ -54,10 +58,24 @@ export const useStudyRoomBooking = () => {
         },
       });
 
+      if (response.status === 401 && retry) {
+        console.warn("Access token expired. Refreshing tokens...");
+        console.log("Current access token:", accessToken);
+        accessToken = await refreshTokens();
+        
+        if (accessToken) {
+          console.log("New access token after refresh:", accessToken);
+          console.log("Retrying fetchUserInfo with new access token...");
+          return fetchUserInfo(false); // 한 번만 재시도
+        } else {
+          console.error("Token refresh failed. Logging out.");
+          return;
+        }
+      }
+
       if (!response.ok) throw new Error("사용자 정보를 가져오는 데 실패했습니다.");
 
       const responseData = await response.json();
-      console.log("Users 데이터:", responseData); // 사용자 정보 로그 출력
 
       if (responseData.code !== "S200") {
         throw new Error(responseData.message || "알 수 없는 오류");
@@ -182,10 +200,10 @@ export const useStudyRoomBooking = () => {
   };
 
   // 스케줄 데이터 가져오기
-  const fetchSchedules = async () => {
+  const fetchSchedules = async (retry = true) => {
     setLoading(true);
     try {
-      const accessToken = localStorage.getItem("accessToken");
+      let accessToken = localStorage.getItem("accessToken");
       if (!accessToken) {
         alert("로그인이 필요합니다.");
         return;
@@ -197,45 +215,51 @@ export const useStudyRoomBooking = () => {
         },
       });
 
+      if (response.status === 401 && retry) {
+        console.warn("Access token expired. Refreshing tokens...");
+        console.log("Current access token:", accessToken);
+        accessToken = await refreshTokens();
+        
+        if (accessToken) {
+          console.log("New access token after refresh:", accessToken);
+          console.log("Retrying fetchSchedules with new access token...");
+          return fetchSchedules(false); // 한 번만 재시도
+        } else {
+          console.error("Token refresh failed. Logging out.");
+          return;
+        }
+      }
+
       if (!response.ok) throw new Error("스케줄 정보를 가져오는 데 실패했습니다.");
+      
       const responseData = await response.json();
 
       if (responseData.code !== "S200") {
         throw new Error(responseData.message || "알 수 없는 오류");
       }
 
-      console.log("API에서 받은 스케줄 데이터:", responseData.data);
-
       const mappedData = responseData.data.reduce(
         (acc, item) => {
           const { roomNumber, startTime, endTime, id: scheduleId, available } = item;
   
-          // `rooms` 배열에서 해당 방 찾기
           const matchedRoom = rooms.find((room) => room.name === roomNumber);
   
           if (matchedRoom) {
             const roomName = matchedRoom.name;
             const timeRange = `${startTime.substring(0, 5)}~${endTime.substring(0, 5)}`;
   
-            // 해당 방에 대한 예약 상태 초기화
             if (!acc.bookedSlots[roomName]) acc.bookedSlots[roomName] = {};
   
-            // 예약 상태 저장
             acc.bookedSlots[roomName][timeRange] = { available, scheduleId };
   
-            // 타임 슬롯 추가 (중복 방지)
             if (!acc.timeSlots.includes(timeRange)) acc.timeSlots.push(timeRange);
           }
   
           return acc;
         },
         { bookedSlots: {}, timeSlots: [] }
-      );
-  
-      console.log("매핑된 예약 상태:", mappedData.bookedSlots);
-      console.log("매핑된 타임 슬롯:", mappedData.timeSlots);
-  
-      // 상태 업데이트
+      );  
+
       setBookedSlots(mappedData.bookedSlots);
       setTimeSlots((prev) =>
         [...new Set([...prev, ...mappedData.timeSlots])].sort()
