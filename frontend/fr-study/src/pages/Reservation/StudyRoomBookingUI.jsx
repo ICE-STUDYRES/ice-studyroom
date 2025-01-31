@@ -1,7 +1,7 @@
 import React from 'react';
 import { ChevronLeft, Clock, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useStudyRoomBooking } from './useStudyRoomBookings';
+import { useStudyRoomBooking } from './StudyRoomBookingHandler';
 
 const StudyRoomBookingUI = () => {
   const {
@@ -37,8 +37,6 @@ const StudyRoomBookingUI = () => {
     if (userInfo.participants.length === 0) return userInfo.mainUser.name;
     return `${userInfo.mainUser.name} 외 ${userInfo.participants.length}명`;
   };
-
-
 
   // Render content for each tab
   const renderContent = () => {
@@ -173,8 +171,6 @@ const StudyRoomBookingUI = () => {
             />
           </div>
         </div>
-
-
             <div className="space-y-6">
               <h3 className="text-lg font-bold text-slate-900">참여자 정보</h3>
               <div className="space-y-4">
