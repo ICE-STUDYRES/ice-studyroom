@@ -16,23 +16,25 @@ export const useMainpageHandlers = () => {
     const [showSigninPopup, setShowSigninPopup] = useState(false);
     const [showSignUpPopup, setShowSignUpPopup] = useState(false);
     const [signupForm, setSignupForm] = useState({
-      name: '',
-      studentNum: '',
       email: '',
       password: '',
-      confirmPassword: ''
-    });
+      confirmPassword: '',
+      name: '',
+      studentNum: '',
+      authenticationCode: '',
+      isAuthenticated: false
+  });
     const [signupError, setSignupError] = useState('');
     const [loginForm, setLoginForm] = useState({
       email: '',
       password: ''
     });
     const [loginError, setLoginError] = useState('');
-    const [tokens, setTokens] = useState(null);
     const [isVerificationSent, setIsVerificationSent] = useState(false);
     const [isEmailVerified, setIsEmailVerified] = useState(false);
     const [verificationMessage, setVerificationMessage] = useState('');
     const [verificationSuccess, setVerificationSuccess] = useState(false);
+    const [verificationCode, setVerificationCode] = useState('');
     
     useEffect(() => {
       const today = new Date();
@@ -49,75 +51,7 @@ export const useMainpageHandlers = () => {
         setIsLoggedIn(true);
       }
     }, []);
-  
-    useEffect(() => {
-      const fetchQRCode = async () => {
-        try {
-          const response = await fetch(`/api/qr/${studentId}/${studentName}`);
-          const blob = await response.blob();
-          const url = URL.createObjectURL(blob);
-          setQrCodeUrl(url);
-        } catch (error) {
-          console.error('QR 코드 로드 실패:', error);
-        }
-      };
-  
-      fetchQRCode();
-    }, [studentId, studentName]);
-  
-    useEffect(() => {
-      // 요청 인터셉터
-      const requestInterceptor = axios.interceptors.request.use(
-        (config) => {
-          const token = localStorage.getItem('accessToken');
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-          }
-          return config;
-        },
-        (error) => Promise.reject(error)
-      );
-    
-      // 응답 인터셉터
-      const responseInterceptor = axios.interceptors.response.use(
-        (response) => response, // 정상 응답
-        async (error) => {
-          const originalRequest = error.config;
-    
-          // 401 에러이고 아직 재시도하지 않은 경우
-          if (error.response?.status === 401 && !originalRequest._retry) {
-            originalRequest._retry = true; // 재시도 플래그 설정
-            console.log('🔄 액세스 토큰 만료, 갱신 시도 중...');
-    
-            try {
-              const newAccessToken = await refreshTokens(); // 토큰 갱신 시도
-    
-              if (newAccessToken) {
-                console.log('✅ 액세스 토큰 갱신 성공');
-                originalRequest.headers.Authorization = `Bearer ${newAccessToken}`; // 새로운 토큰 추가
-                return axios(originalRequest); // 실패했던 요청 재시도
-              } else {
-                console.log('❌ 토큰 갱신 실패 - 로그아웃 처리');
-                handleLogout(); // 로그아웃 처리
-                return Promise.reject(error);
-              }
-            } catch (refreshError) {
-              console.log('❌ 토큰 갱신 중 에러:', refreshError.message);
-              handleLogout();
-              return Promise.reject(refreshError);
-            }
-          }
-    
-          return Promise.reject(error); // 다른 에러는 그대로 반환
-        }
-      );
-    
-      return () => {
-        axios.interceptors.request.eject(requestInterceptor);
-        axios.interceptors.response.eject(responseInterceptor);
-      };
-    }, []);
-    
+
     const navigate = useNavigate();  
     const handleReservationClick = () => {
       if (isLoggedIn) {
@@ -165,37 +99,66 @@ export const useMainpageHandlers = () => {
     const handleSignup = async (e) => {
       e.preventDefault();
       setSignupError('');
-    
+  
+      // 이메일 형식 확인
       if (!signupForm.email.endsWith('@hufs.ac.kr')) {
-        setSignupError('학교 이메일(@hufs.ac.kr)만 사용 가능합니다.');
-        return;
+          setSignupError('학교 이메일(@hufs.ac.kr)만 사용 가능합니다.');
+          return;
       }
-    
+  
+      // 비밀번호 일치 확인
       if (signupForm.password !== signupForm.confirmPassword) {
-        setSignupError('비밀번호가 일치하지 않습니다.');
-        return;
+          setSignupError('비밀번호가 일치하지 않습니다.');
+          return;
       }
-    
+  
+      // 인증번호 입력 여부 확인
+      if (!signupForm.authenticationCode || signupForm.authenticationCode.trim() === '') {
+          setSignupError('인증번호를 입력해주세요.');
+          return;
+      }
+  
+      // 이메일 인증 여부 확인
+      if (!signupForm.isAuthenticated) {
+          setSignupError('이메일 인증을 진행해주세요.');
+          return;
+      }
+  
       try {
-        const response = await axios.post('/api/users', {
-          email: signupForm.email,
-          password: signupForm.password,
-          name: signupForm.name,
-          studentNum: signupForm.studentNum
-        });
-    
-        if (response.data.code === 'S200') {
-          alert('회원가입이 완료되었습니다.');
-          handleCloseSignUpPopup();
-          setShowSigninPopup(true);
-        } else {
-          setSignupError(response.data.message || '회원가입 중 오류가 발생했습니다.');
-        }
+          const response = await axios.post('/api/users', {
+              email: signupForm.email,
+              isAuthenticated: signupForm.isAuthenticated,
+              authenticationCode: signupForm.authenticationCode,
+              password: signupForm.password,
+              name: signupForm.name,
+              studentNum: signupForm.studentNum,
+          });
+  
+          if (response.data.code === 'S200') {
+              alert('회원가입이 완료되었습니다.');
+              setSignupForm({
+                  email: '',
+                  password: '',
+                  confirmPassword: '',
+                  name: '',
+                  studentNum: '',
+                  authenticationCode: '',
+                  isAuthenticated: false,
+              });
+              setShowSignUpPopup(false); // 회원가입 팝업 닫기
+          } else {
+              setSignupError(response.data.message || '회원가입 중 오류가 발생했습니다.');
+          }
       } catch (error) {
-        console.error('Signup error:', error);
-        setSignupError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+          if (error.response?.data?.code === 'C400') {
+              setSignupError(error.response.data.message);
+          } else {
+              console.error('Signup error:', error);
+              setSignupError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+          }
       }
   };
+  
   
     const handleLoginInputChange = (e) => {
       const { name, value } = e.target;
@@ -208,147 +171,164 @@ export const useMainpageHandlers = () => {
     // 로그인 처리
     const handleLogin = async (e) => {
       e.preventDefault();
-      setLoginError('');
     
       try {
-        const response = await axios.post('api/users/login', loginForm, {
-          headers: {
-            'Content-Type': 'application/json'
-          }
+        const response = await axios.post('/api/users/login', {
+          email: loginForm.email,
+          password: loginForm.password,
         });
     
-        const data = response.data;
+        if (response.data.code === 'S200') {
+          const accessToken = response.data.data.accessToken;
+          const refreshToken = response.data.data.refreshToken;
     
-        if (data.code === 'S200') {
-          const newTokens = {
-            accessToken: data.data.accessToken,
-            refreshToken: data.data.refreshToken
-          };
-  
-          // 토큰 정보를 콘솔에 출력
-          console.log('Login Tokens:', {
-            accessToken: newTokens.accessToken,
-            refreshToken: newTokens.refreshToken
-          });
-          setTokens(newTokens);
-          localStorage.setItem('accessToken', newTokens.accessToken);
-          localStorage.setItem('refreshToken', newTokens.refreshToken);
-          localStorage.setItem('isLoggedIn', 'true');
+          // 토큰과 로그인 상태를 로컬 스토리지에 저장
+          localStorage.setItem('accessToken', accessToken);
+          localStorage.setItem('refreshToken', refreshToken);
+          localStorage.setItem('isLoggedIn', 'true'); // 로그인 상태 저장
+
+          console.log('Login Tokens:', { accessToken, refreshToken }); // 로그인 시 토큰 출력
+    
           setIsLoggedIn(true);
-          setShowSigninPopup(false);
-        } else {
-          setLoginError(data.message || '로그인에 실패했습니다.');
+          setShowSigninPopup(false); // 로그인 팝업 닫기
         }
       } catch (error) {
         console.error('Login error:', error);
-        setLoginError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       }
-  
-  };
-  
+    };  
+ 
     // 로그아웃 핸들러
     const handleLogout = async () => {
-      if (!tokens || !tokens.accessToken) {
-        console.warn("No tokens available for logout.");
-        clearAuthData();
-        return;
-      }
-    
       try {
-        const response = await axios.post(
-          '/api/users/logout',
-          {
-            refreshToken: tokens.refreshToken, // 요청 본문
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${tokens.accessToken}`, // 명세에 맞게 수정
-              'Content-Type': 'application/json',
-            },
+          const accessToken = localStorage.getItem('accessToken');
+          const refreshToken = localStorage.getItem('refreshToken');
+  
+          if (!accessToken || !refreshToken) {
+              console.warn("No tokens found, clearing storage and redirecting.");
+              localStorage.clear();
+              setIsLoggedIn(false);
+              navigate('/');
+              return;
           }
+  
+          const response = await axios.post(
+              '/api/users/logout',
+              { refreshToken }, 
+              {
+                  headers: {
+                      'Authorization': `Bearer ${accessToken}`
+                  }
+              }
+          );
+  
+          console.log("Logout response:", response); // 응답 로그 출력
+  
+          if (response.status !== 200) {  // response.ok 대신 response.status 사용
+              console.warn("Logout request failed. Status:", response.status);
+          }
+  
+          localStorage.clear();
+          setIsLoggedIn(false);
+          navigate('/');
+      } catch (error) {
+          console.error("Logout failed:", error);
+          localStorage.clear();
+          setIsLoggedIn(false);
+          navigate('/');
+      }
+  };  
+  
+  const refreshTokens = async () => {
+    try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        const accessToken = localStorage.getItem('accessToken');
+
+        if (!refreshToken) {
+            console.error("No refresh token found. Logging out.");
+            handleLogout();
+            return null;
+        }
+
+        const response = await axios.post(
+            '/api/users/refresh',
+            { refreshToken },
+            {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            }
         );
+
+        if (response.data.code !== "S200" || !response.data.data) {
+            console.error("Failed to refresh token. Unexpected response:", response.data);
+            handleLogout();
+            return null;
+        }
+
+        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
+        localStorage.setItem('accessToken', newAccessToken);
+        localStorage.setItem('refreshToken', newRefreshToken);
+
+        // Log a success message
+        console.log("Tokens refreshed successfully:", { newAccessToken, newRefreshToken });
+
+        return newAccessToken;
+    } catch (error) {
+        console.error("Error refreshing token:", error.response?.data || error);
+
+        if (error.response?.status === 401) {
+            handleLogout();
+        }
+        return null;
+    }
+};
+
+    const handleSendVerification = async (email) => {
+      setVerificationMessage('');
+      try {
+        const response = await axios.post('/api/users/email-verification', { email });
     
         if (response.data.code === 'S200') {
-          clearAuthData();
+          setIsVerificationSent(true); // 인증번호 전송 상태 업데이트
+          setVerificationMessage(response.data.data.message || '인증 메일이 전송되었습니다.');
         } else {
-          console.error('Logout failed:', response.data.message);
-          clearAuthData();
+          setVerificationMessage(response.data.message || '인증 메일 발송 실패');
         }
       } catch (error) {
-        console.error('Logout error:', error);
-        clearAuthData();
+        if (error.response?.data?.code === 'B409') {
+          setVerificationMessage('이미 사용 중인 이메일입니다.');
+        } else if (error.response?.data?.code === 'B429') {
+          setVerificationMessage('인증 메일이 이미 발송되었습니다.');
+        } else {
+          console.error('Verification error:', error);
+          setVerificationMessage('인증 메일 전송 중 오류가 발생했습니다.');
+        }
       }
     };
     
-    // 인증 관련 데이터를 정리하는 헬퍼 함수
-    const clearAuthData = () => {
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('isLoggedIn');
-      setTokens({ accessToken: null, refreshToken: null });
-      setIsLoggedIn(false);
-    };
-  
-    const refreshTokens = async () => {
+    const handleVerifyCode = async (email, code) => {
       try {
-        console.log('📤 토큰 갱신 요청 전송 중...');
-        const currentAccessToken = localStorage.getItem('accessToken');
-        const currentRefreshToken = localStorage.getItem('refreshToken');
+        const response = await axios.post('/api/users/email-verification/confirm', { email, code });
     
-        if (!currentAccessToken || !currentRefreshToken) {
-          throw new Error('토큰이 존재하지 않습니다.');
-        }
+        if (response.data.code === 'S200') {
+          setIsEmailVerified(true);
+          setVerificationSuccess(true);
+          setVerificationMessage('이메일 인증이 완료되었습니다.');
     
-        const response = await axios.post('/api/users/refresh', 
-          { refreshToken: currentRefreshToken },
-          {
-            headers: {
-              'Authorization': `Bearer ${currentAccessToken}`,
-              'Content-Type': 'application/json'
-            }
-          }
-        );
-    
-        const { code, data, message } = response.data;
-    
-        if (code === 'S200' && data) {
-          const { accessToken, refreshToken } = data;
-    
-          // 새로운 토큰 저장
-          localStorage.setItem('accessToken', accessToken);
-          localStorage.setItem('refreshToken', refreshToken);
-          setTokens({ accessToken, refreshToken }); // 상태 업데이트
-    
-          // 새로 발급받은 토큰 출력
-          console.log('✅ 새로 발급된 AccessToken:', accessToken);
-          console.log('✅ 새로 발급된 RefreshToken:', refreshToken);
-    
-          return accessToken; // 새로 발급된 AccessToken 반환
+          // 이메일 인증 완료 후 signupForm의 isAuthenticated 업데이트
+          setSignupForm(prev => ({
+            ...prev,
+            isAuthenticated: true,
+          }));
         } else {
-          console.log('❌ 갱신 실패 - 서버 응답:', code, message);
-          throw new Error('토큰 갱신 실패');
+          setVerificationMessage(response.data.message || '인증 코드 확인 실패');
         }
       } catch (error) {
-        console.log('❌ 토큰 갱신 에러:', error.message);
-        if (error.response?.data) {
-          console.log('서버 에러 응답:', error.response.data);
-        }
-        handleLogout();
-        return null;
+        console.error('Verification code error:', error);
+        setVerificationMessage('서버 오류로 인증 코드를 확인하지 못했습니다.');
       }
     };
-    const handleSendVerification = () => {
-      // 인증번호 전송 로직
-      setIsVerificationSent(true);
-    };
     
-    const handleVerifyCode = () => {
-      // 인증번호 확인 로직
-      // 성공시:
-      setIsEmailVerified(true);
-      setVerificationSuccess(true);
-      setVerificationMessage('이메일 인증이 완료되었습니다.');
-    };
 
   return {
     isLoggedIn,
@@ -365,11 +345,13 @@ export const useMainpageHandlers = () => {
     signupError,
     loginForm,
     loginError,
-    isEmailVerified,verificationMessage,verificationSuccess,isVerificationSent,
+    isEmailVerified,verificationMessage,verificationSuccess,isVerificationSent,verificationCode,setVerificationCode,
     handleLogin,
     handleLoginClick,
+    setIsLoggedIn,
     handleLoginInputChange,
     handleLogout,
+    refreshTokens,
     handleReservationClick,
     handleReservationStatusClick,
     handleMyReservationStatusClick,

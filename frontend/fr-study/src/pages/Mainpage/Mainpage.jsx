@@ -1,22 +1,19 @@
 import { X, XCircle, Clock, UserX, LogOut, LogIn, Home, ChevronRight } from 'lucide-react';
 import alertImage from "../../assets/images/alert.png";
 import logo from "../../assets/images/hufslogo.png";
-import { QRCodeCanvas } from 'qrcode.react';
 import { useMainpageHandlers } from './MainpageHandlers';
 
 const MainPage = () => {
     const {
-        studentId,studentName,isLoggedIn,currentDate,roomNumber,checkInStatus,qrCodeUrl,showNotice,
-        showPenaltyPopup,showQRModal,showSigninPopup,showSignUpPopup,signupForm,signupError,
-        loginForm,loginError,isVerificationSent,isEmailVerified,verificationMessage,verificationSuccess,
+        isLoggedIn,currentDate,roomNumber,checkInStatus,showNotice,
+        showPenaltyPopup,showSigninPopup,showSignUpPopup,signupForm,signupError,
+        loginForm,loginError,isVerificationSent,isEmailVerified,verificationMessage,verificationSuccess,verificationCode,setVerificationCode,
         handleLogin,handleLoginClick,handleLoginInputChange,handleLogout,handleReservationClick,
         handleReservationStatusClick,handleMyReservationStatusClick,handleReservationManageClick,
-        handleNoticeClick,handleCloseNotice,handlePenaltyClick,handleClosePenaltyPopup,handleQRClick,handleCloseQRModal,
+        handleNoticeClick,handleCloseNotice,handlePenaltyClick,handleClosePenaltyPopup,
         handleCloseSigninPopup,handleCloseSignUpPopup,handleSignupInputChange,handleSignup,handleSignUpClick,
-        handleSendVerification,handleVerifyCode,
+        handleSendVerification,handleVerifyCode,handlePasswordReset,
       } = useMainpageHandlers();
-
-      
   
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
@@ -25,7 +22,11 @@ const MainPage = () => {
       <div className="bg-white px-4 py-3 flex items-center justify-between border-b">
         <div className="flex items-center gap-2">
           <button 
-            onClick={() => navigate('/')}
+            onClick={() => {
+              console.log("Access Token:", localStorage.getItem('accessToken'));
+              console.log("Refresh Token:", localStorage.getItem('refreshToken'));
+              navigate('/');
+            }}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
           <Home className="w-5 h-5 text-gray-700" />
@@ -206,11 +207,130 @@ const MainPage = () => {
             <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded">
               로그인
             </button>
-            <div className="text-center text-gray-500">또는</div>
-            <button
-              type="button"
-              className="w-full bg-gray-100 text-gray-700 p-2 rounded border"
-              onClick={handleSignUpClick}
+            <div className="flex items-center justify-center">
+              <div className="flex-grow h-px bg-gray-200"></div>
+              <div className="mx-4 text-gray-500">또는</div>
+              <div className="flex-grow h-px bg-gray-200"></div>
+            </div>
+            <div className="flex items-center justify-center">
+              <button
+                type="button"
+                className="text-gray-600 hover:underline px-4"
+                onClick={handlePasswordReset}
+              >
+                비밀번호 찾기
+              </button>
+              <div className="h-4 w-px bg-gray-300"></div>
+              <button
+                type="button"
+                className="text-gray-600 hover:underline px-4"
+                onClick={handleSignUpClick}
+              >
+                회원가입
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    )}
+
+      {/* Sign Up Popup */}
+      {showSignUpPopup && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseSignUpPopup}>
+        <div className="bg-white rounded-lg w-96 p-6" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-4">
+            <img src={logo} alt="HUFS Logo" className="h-12" />
+            <button className="text-2xl" onClick={handleCloseSignUpPopup}>×</button>
+          </div>
+          <form onSubmit={handleSignup} className="space-y-4">
+            <input
+              type="text"
+              name="name"
+              value={signupForm.name}
+              onChange={handleSignupInputChange}
+              placeholder="이름을 입력해주세요"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="text"
+              name="studentNum"
+              value={signupForm.studentNum}
+              onChange={handleSignupInputChange}
+              placeholder="학번을 입력해주세요"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  name="email"
+                  value={signupForm.email}
+                  onChange={handleSignupInputChange}
+                  placeholder="이메일을 입력해주세요"
+                  className="flex-1 p-2 border rounded"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSendVerification(signupForm.email)}
+                  className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm whitespace-nowrap"
+                >
+                  인증번호 전송
+                </button>
+              </div>
+              {isVerificationSent && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    name="authenticationCode"
+                    value={signupForm.authenticationCode}
+                    onChange={handleSignupInputChange}
+                    placeholder="인증번호 입력"
+                    className="w-full p-2 border rounded"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleVerifyCode(signupForm.email, signupForm.authenticationCode)}
+                    className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm whitespace-nowrap"
+                  >
+                    인증확인
+                  </button>
+                </div>
+              )}
+              {verificationMessage && (
+                <p className={`text-sm ${verificationSuccess ? 'text-green-500' : 'text-red-500'}`}>
+                  {verificationMessage}
+                </p>
+              )}
+            </div>
+            <input
+              type="password"
+              name="password"
+              value={signupForm.password}
+              onChange={handleSignupInputChange}
+              placeholder="비밀번호를 입력해주세요"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="password"
+              name="confirmPassword"
+              value={signupForm.confirmPassword}
+              onChange={handleSignupInputChange}
+              placeholder="비밀번호 확인"
+              className="w-full p-2 border rounded"
+              required
+            />
+            {signupError && (
+              <p className="text-red-500 text-sm">{signupError}</p>
+            )}
+            <button 
+              type="submit" 
+              className="w-full bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
+              disabled={!isEmailVerified}
             >
               회원가입
             </button>
@@ -218,112 +338,6 @@ const MainPage = () => {
         </div>
       </div>
     )}
-
-      {/* Sign Up Popup */}
-{showSignUpPopup && (
-  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseSignUpPopup}>
-    <div className="bg-white rounded-lg w-96 p-6" onClick={e => e.stopPropagation()}>
-      <div className="flex justify-between items-center mb-4">
-        <img src={logo} alt="HUFS Logo" className="h-12" />
-        <button className="text-2xl" onClick={handleCloseSignUpPopup}>×</button>
-      </div>
-      <form onSubmit={handleSignup} className="space-y-4">
-        <input
-          type="text"
-          name="name"
-          value={signupForm.name}
-          onChange={handleSignupInputChange}
-          placeholder="이름을 입력해주세요"
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          type="text"
-          name="studentNum"
-          value={signupForm.studentNum}
-          onChange={handleSignupInputChange}
-          placeholder="학번을 입력해주세요"
-          className="w-full p-2 border rounded"
-          required
-        />
-        <div className="space-y-2">
-          <div className="flex gap-2">
-            <input
-              type="email"
-              name="email"
-              value={signupForm.email}
-              onChange={handleSignupInputChange}
-              placeholder="이메일을 입력해주세요"
-              className="flex-1 p-2 border rounded"
-              required
-            />
-            <button
-              type="button"
-              onClick={handleSendVerification}
-              className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm whitespace-nowrap"
-            >
-              인증번호 전송
-            </button>
-          </div>
-          {isVerificationSent && (
-            <div className="flex gap-2">
-              <input
-                type="text"
-                name="verificationCode"
-                value={signupForm.verificationCode}
-                onChange={handleSignupInputChange}
-                placeholder="인증번호 6자리 입력"
-                className="flex-1 p-2 border rounded"
-                maxLength={6}
-                required
-              />
-              <button
-                type="button"
-                onClick={handleVerifyCode}
-                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm whitespace-nowrap"
-              >
-                인증확인
-              </button>
-            </div>
-          )}
-          {verificationMessage && (
-            <p className={`text-sm ${verificationSuccess ? 'text-green-500' : 'text-red-500'}`}>
-              {verificationMessage}
-            </p>
-          )}
-        </div>
-        <input
-          type="password"
-          name="password"
-          value={signupForm.password}
-          onChange={handleSignupInputChange}
-          placeholder="비밀번호를 입력해주세요"
-          className="w-full p-2 border rounded"
-          required
-        />
-        <input
-          type="password"
-          name="confirmPassword"
-          value={signupForm.confirmPassword}
-          onChange={handleSignupInputChange}
-          placeholder="비밀번호 확인"
-          className="w-full p-2 border rounded"
-          required
-        />
-        {signupError && (
-          <p className="text-red-500 text-sm">{signupError}</p>
-        )}
-        <button 
-          type="submit" 
-          className="w-full bg-blue-500 text-white p-2 rounded disabled:bg-gray-400"
-          disabled={!isEmailVerified}
-        >
-          회원가입
-        </button>
-      </form>
-    </div>
-  </div>
-)}
 
       {/* Notice Popup */}
       {showNotice && (
@@ -368,36 +382,6 @@ const MainPage = () => {
           </div>
         </div>
       )}
-
-      {/* QR Modal */}
-      {showQRModal && (
-        <div 
-        className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50" 
-        onClick={handleCloseQRModal}
-        >
-          <div 
-          className="relative bg-white p-6 rounded-lg w-[80vw] h-[80vh] flex flex-col items-center justify-center" 
-          onClick={e => e.stopPropagation()}
-          >
-            {qrCodeUrl && (
-            <>
-              <QRCodeCanvas 
-                  value={`studentId=${studentId}&studentName=${studentName}`} // QR에 포함할 데이터
-                  size={128} // QR 코드 크기
-                  level={"H"} // 오류 복원 수준 (L, M, Q, H 중 선택)
-                  includeMargin={true} // 여백 포함 여부
-                />
-              <button 
-                onClick={handleCloseQRModal}
-                className="absolute top-2 right-2 p-2 bg-white rounded-full hover:bg-gray-100"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </>
-            )}
-        </div>
-      </div>
-    )}
     </div>
   );
 };
