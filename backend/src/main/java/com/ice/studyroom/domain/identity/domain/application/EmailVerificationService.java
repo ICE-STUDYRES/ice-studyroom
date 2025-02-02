@@ -5,6 +5,7 @@ import java.security.SecureRandom;
 import org.springframework.stereotype.Service;
 
 import com.ice.studyroom.domain.identity.domain.service.VerificationCodeCacheService;
+import com.ice.studyroom.global.dto.request.EmailRequest;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.EmailService;
 import com.ice.studyroom.global.type.StatusCode;
@@ -29,7 +30,7 @@ public class EmailVerificationService {
 		String body = buildVerificationEmailBody(authCode);
 		try {
 			resetTTL(email, authCode);
-			emailService.sendEmail(email, title, body);
+			emailService.sendEmail(new EmailRequest(email, title, body));
 		} catch (Exception e) {
 			log.error("인증 메일 전송 실패 {}: {}", email, e.getMessage());
 			throw new BusinessException(StatusCode.INTERNAL_ERROR, "인증 메일 전송 중 오류가 발생했습니다.");
