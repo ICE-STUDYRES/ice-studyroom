@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.membership.domain.type;
+package com.ice.studyroom.domain.penalty.domain.type;
 
 public enum PenaltyReasonType {
 	CANCEL,

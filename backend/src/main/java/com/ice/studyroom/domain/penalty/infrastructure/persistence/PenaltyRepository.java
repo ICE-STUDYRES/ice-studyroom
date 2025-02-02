@@ -1,6 +1,6 @@
-package com.ice.studyroom.domain.membership.infrastructure.persistence;
+package com.ice.studyroom.domain.penalty.infrastructure.persistence;
 
-import com.ice.studyroom.domain.membership.domain.entity.Penalty;
+import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;

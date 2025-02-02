@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.membership.scheduler;
+package com.ice.studyroom.domain.penalty.scheduler;
 
 import java.time.LocalDateTime;
 
@@ -7,7 +7,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
-import com.ice.studyroom.domain.membership.infrastructure.persistence.PenaltyRepository;
+import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;

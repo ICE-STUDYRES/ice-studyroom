@@ -2,7 +2,7 @@ package com.ice.studyroom.domain.admin.presentation.dto.response;
 
 import java.time.LocalDateTime;
 
-import com.ice.studyroom.domain.membership.domain.type.PenaltyReasonType;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 
 public record AdminPenaltyRecordResponse(
 	PenaltyReasonType reason,

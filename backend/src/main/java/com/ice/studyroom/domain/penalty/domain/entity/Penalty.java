@@ -1,9 +1,10 @@
-package com.ice.studyroom.domain.membership.domain.entity;
+package com.ice.studyroom.domain.penalty.domain.entity;
 
 import java.time.LocalDateTime;
 
-import com.ice.studyroom.domain.membership.domain.type.PenaltyStatus;
-import com.ice.studyroom.domain.membership.domain.type.PenaltyReasonType;
+import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 
 import jakarta.persistence.Column;
