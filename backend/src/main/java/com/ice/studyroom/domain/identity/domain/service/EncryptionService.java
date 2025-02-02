@@ -2,6 +2,7 @@ package com.ice.studyroom.domain.identity.domain.service;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
 
 import javax.crypto.Cipher;
@@ -15,28 +16,26 @@ import com.ice.studyroom.domain.identity.infrastructure.security.AESUtil;
 
 @Service
 public class EncryptionService {
-	private final AESUtil aesUtil;
-	private static final int SALT_LENGTH = 16;
+	private final SecretKey secretKey;
+	private final byte[] salt;
 	private static final int IV_LENGTH = 16;
 
 	@Autowired
 	public EncryptionService(AESUtil aesUtil) {
-		this.aesUtil = aesUtil;
+		this.secretKey = aesUtil.getSecretKey();
+		this.salt = aesUtil.getSalt();
 	}
 
 	public String encrypt(String strToEncrypt) {
 		try {
-			byte[] salt = generateRandomBytes(SALT_LENGTH);
-			byte[] iv = generateRandomBytes(IV_LENGTH);
+			byte[] iv = generateRandomBytes(IV_LENGTH); // 랜덤 IV 생성
 			IvParameterSpec ivspec = new IvParameterSpec(iv);
-
-			SecretKey secretKey = aesUtil.generateSecretKey(salt);
 
 			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 			cipher.init(Cipher.ENCRYPT_MODE, secretKey, ivspec);
 			byte[] encrypted = cipher.doFinal(strToEncrypt.getBytes(StandardCharsets.UTF_8));
 
-			return encodeBase64(salt, iv, encrypted);
+			return encodeBase64(salt, iv, encrypted); // 고정된 salt + IV + 암호문을 Base64 인코딩
 		} catch (Exception e) {
 			throw new RuntimeException("암호화 오류", e);
 		}
@@ -45,13 +44,14 @@ public class EncryptionService {
 	public String decrypt(String strToDecrypt) {
 		try {
 			byte[] decoded = Base64.getDecoder().decode(strToDecrypt);
-
-			byte[] salt = extractBytes(decoded, 0, SALT_LENGTH);
-			byte[] iv = extractBytes(decoded, SALT_LENGTH, IV_LENGTH);
+			byte[] extractedSalt = extractBytes(decoded, 0, salt.length);
+			byte[] iv = extractBytes(decoded, salt.length, IV_LENGTH);
 			IvParameterSpec ivspec = new IvParameterSpec(iv);
-			byte[] encrypted = extractBytes(decoded, SALT_LENGTH + IV_LENGTH, decoded.length - SALT_LENGTH - IV_LENGTH);
-
-			SecretKey secretKey = aesUtil.generateSecretKey(salt);
+			byte[] encrypted = extractBytes(decoded, salt.length + IV_LENGTH, decoded.length - salt.length - IV_LENGTH);
+			// salt 검증 (올바른 salt인지 확인)
+			if (!Arrays.equals(salt, extractedSalt)) {
+				throw new RuntimeException("복호화 오류: 잘못된 salt 값");
+			}
 
 			Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 			cipher.init(Cipher.DECRYPT_MODE, secretKey, ivspec);
