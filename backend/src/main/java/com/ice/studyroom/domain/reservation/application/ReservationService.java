@@ -1,6 +1,8 @@
 package com.ice.studyroom.domain.reservation.application;
 
+import java.sql.SQLOutput;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -11,6 +13,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -24,12 +27,15 @@ import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
+import com.ice.studyroom.global.exception.AttendanceException;
 
 import lombok.RequiredArgsConstructor;
 
@@ -65,6 +71,31 @@ public class ReservationService {
 	public List<Schedule> getSchedule() {
 		LocalDate today = LocalDate.now();
 		return scheduleRepository.findByScheduleDate(today);
+	}
+
+	@Transactional
+	public ReservationStatus qrEntrance(QrEntranceRequest request) {
+		// 이미지를 저장.
+		String qrCode = request.qrCode();
+		// 이 qr 코드가 유효한지와 정보를 얻는다.
+		// 이미지 BASE64디코딩 -> 디코딩 된 이미지 -> 텍스트 추출
+		String qrKey = qrCodeUtil.decryptQRCode(qrCode);
+		// 얻은 memer_id와 reservation_id를 토대로 예약 레코드를 찾는다.
+		Long memberId = qrCodeService.getResId(qrKey);
+
+		Reservation reservation = reservationRepository.findById(memberId)
+			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+
+		LocalDateTime now = LocalDateTime.now();
+		ReservationStatus status = reservation.checkAttendanceStatus(now);
+
+		if (status == ReservationStatus.RESERVED) {
+			throw new AttendanceException("출석 시간이 아닙니다.", HttpStatus.FORBIDDEN);
+		} else if (status == ReservationStatus.NO_SHOW) {
+			throw new AttendanceException("출석 시간이 만료되었습니다.", HttpStatus.GONE);
+		}
+
+		return status;
 	}
 
 	// @Transactional
@@ -138,7 +169,7 @@ public class ReservationService {
 
 			// QR 코드 생성 (예약 ID + 이메일 조합)
 			String qrCodeBase64 = qrCodeUtil.generateQRCode(email, reservation.getId().toString());
-			qrCodeService.saveQRCode(email, reservation.getId().toString(), request.scheduleId().toString(), qrCodeBase64);
+			qrCodeService.saveQRCode(email, reservation.getId(), request.scheduleId().toString(), qrCodeBase64);
 			qrCodeMap.put(email, qrCodeBase64);
 		}
 

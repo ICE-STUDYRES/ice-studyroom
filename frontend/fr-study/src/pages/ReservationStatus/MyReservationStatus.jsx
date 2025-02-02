@@ -3,6 +3,7 @@ import { ChevronLeft, LogOut, Clock, QrCode, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMainpageHandlers } from '../Mainpage/MainpageHandlers';
 import { QRCodeCanvas } from 'qrcode.react';
+import useQRCodeFetcher from '../Mainpage/QRCodeFetcher'; // ✅ QR 코드 데이터 가져오는 훅
 
 export const fetchMyReservations = async (retry = true) => {
   let accessToken = localStorage.getItem("accessToken");
@@ -46,7 +47,7 @@ export const fetchMyReservations = async (retry = true) => {
 
 const MyReservationStatus = () => {
   const {
-    studentId,studentName,qrCodeUrl,showQRModal,refreshTokens,
+    studentId,studentName,showQRModal,refreshTokens,
     handleQRClick,
     handleCloseQRModal,
     handleLogout,
@@ -55,6 +56,12 @@ const MyReservationStatus = () => {
   const [myReservations, setMyReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // ✅ 예약 ID 가져오기
+  const resId = myReservations.length > 0 ? myReservations[0].id : null;
+
+  // ✅ 항상 최상단에서 Hook 호출 (조건문 안에서 실행 X)
+  const { qrCode, error: qrError, loading: qrLoading } = useQRCodeFetcher(resId);
 
   const handleLogoutClick = async () => {
     try {
@@ -222,27 +229,37 @@ const MyReservationStatus = () => {
           className="relative bg-white p-6 rounded-lg w-[80vw] h-[80vh] flex flex-col items-center justify-center" 
           onClick={e => e.stopPropagation()}
           >
-            {qrCodeUrl && (
-            <>
+            {/* ✅ QRCodeFetcher에서 가져온 QR 코드 표시 */}
+            {qrLoading ? (
+              <p className="text-sm text-gray-500">QR 코드 로딩 중...</p>
+            ) : qrError ? (
+              <p className="text-sm text-red-500">{qrError}</p>
+            ) : qrCode ? (
+              <>
+              {console.log("QR Code Data:", qrCode)}  {/* ✅ QR 코드 데이터 로깅 */}
               <QRCodeCanvas 
-                  value={`studentId=${studentId}&studentName=${studentName}`} // QR에 포함할 데이터
-                  size={256} // QR 코드 크기
-                  level={"H"} // 오류 복원 수준 (L, M, Q, H 중 선택)
-                  includeMargin={true} // 여백 포함 여부
-                />
-              <button 
-                onClick={handleCloseQRModal}
-                className="absolute top-2 right-2 p-2 bg-white rounded-full hover:bg-gray-100"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </>
+                value={qrCode} // ✅ QR코드 데이터 적용
+                size={256} 
+                level={"H"} 
+                includeMargin={true} 
+              />
+              </>
+            ) : (
+              <p className="text-sm text-gray-500">QR 코드 데이터를 불러올 수 없습니다.</p>
             )}
+
+            <button 
+              onClick={handleCloseQRModal}
+              className="absolute top-2 right-2 p-2 bg-white rounded-full hover:bg-gray-100"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
         </div>
-      </div>
-    )}
+      )}
     </div>
   );
 };
+
 
 export default MyReservationStatus;

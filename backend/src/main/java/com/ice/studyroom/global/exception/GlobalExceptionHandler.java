@@ -59,6 +59,11 @@ public class GlobalExceptionHandler {
 			.body(ResponseDto.error(StatusCode.INVALID_INPUT, errors));
 	}
 
+	@ExceptionHandler(AttendanceException.class)
+	public ResponseEntity<String> handleAttendanceException(AttendanceException ex) {
+		return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+	}
+
 	// 비즈니스 예외 처리
 	@ExceptionHandler(BusinessException.class)
 	protected ResponseEntity<ResponseDto<Object>> handleBusinessException(BusinessException ex) {

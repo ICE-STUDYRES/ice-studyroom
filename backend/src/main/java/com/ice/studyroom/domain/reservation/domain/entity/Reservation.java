@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.reservation.domain.entity;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -79,63 +80,32 @@ public class Reservation {
 		return status == ReservationStatus.RESERVED;
 	}
 
-	// 예약 상태 변경 관련 메서드(checkIn(), checkOut(), cancel())
-	public Reservation checkIn() {
-		// validateCheckIn();
-		return Reservation.builder()
-			.id(this.id)
-			.firstScheduleId(this.firstScheduleId)
-			.secondScheduleId(this.secondScheduleId)
-			.userEmail(this.userEmail)
-			.userName(this.userName)
-			.scheduleDate(this.scheduleDate)
-			.roomNumber(this.roomNumber)
-			.startTime(this.startTime)
-			.endTime(this.endTime)
-			.status(ReservationStatus.CHECKED_IN)
-			.enterTime(LocalDateTime.now())
-			.exitTime(this.exitTime)
-			.createdAt(this.createdAt)
-			.updatedAt(LocalDateTime.now())
-			.build();
+	// 정상 입실인지 지각인지 노쇼인지 판단하는 코드
+	public ReservationStatus checkAttendanceStatus(LocalDateTime now) {
+		LocalDateTime startDateTime = LocalDateTime.of(createdAt.toLocalDate(), startTime);
+		LocalDateTime endDateTime = LocalDateTime.of(createdAt.toLocalDate(), endTime);
+
+		long minutesDifference = Duration.between(startDateTime, now).toMinutes();
+		long minutesDurationOfReservation = Duration.between(startDateTime, endDateTime).toMinutes();
+
+		if (now.isBefore(startDateTime)) {
+			return ReservationStatus.RESERVED;
+		} else if (minutesDifference <= 30) {
+			markStatus(ReservationStatus.ENTRANCE);
+			return ReservationStatus.ENTRANCE;
+		} else if (minutesDifference <= minutesDurationOfReservation) {
+			markStatus(ReservationStatus.LATE);
+			return ReservationStatus.LATE;
+			// 패널티 추가로직
+		} else {
+			return ReservationStatus.NO_SHOW;
+		}
 	}
 
-	public Reservation checkOut() {
-		// validateCheckOut();
-		return Reservation.builder()
-			.id(this.id)
-			.firstScheduleId(this.firstScheduleId)
-			.secondScheduleId(this.secondScheduleId).userEmail(this.userEmail)
-			.userName(this.userName)
-			.scheduleDate(this.scheduleDate)
-			.roomNumber(this.roomNumber)
-			.startTime(this.startTime)
-			.endTime(this.endTime)
-			.status(ReservationStatus.COMPLETED)
-			.enterTime(this.enterTime)
-			.exitTime(LocalDateTime.now())
-			.createdAt(this.createdAt)
-			.updatedAt(LocalDateTime.now())
-			.build();
-	}
-
-	public Reservation cancel() {
-		// validateCancellation();
-		return Reservation.builder()
-			.id(this.id)
-			.firstScheduleId(this.firstScheduleId)
-			.secondScheduleId(this.secondScheduleId).userEmail(this.userEmail)
-			.userName(this.userName)
-			.scheduleDate(this.scheduleDate)
-			.roomNumber(this.roomNumber)
-			.startTime(this.startTime)
-			.endTime(this.endTime)
-			.status(ReservationStatus.RESERVED)
-			.enterTime(this.enterTime)
-			.exitTime(this.exitTime)
-			.createdAt(this.createdAt)
-			.updatedAt(LocalDateTime.now())
-			.build();
+	private void markStatus(ReservationStatus status) {
+		this.status = status;
+		this.enterTime = LocalDateTime.now();
+		this.updatedAt = LocalDateTime.now();
 	}
 
 	public static Reservation from(List<Schedule> schedules, String email, String userName) {

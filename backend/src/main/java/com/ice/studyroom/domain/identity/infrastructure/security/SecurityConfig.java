@@ -36,6 +36,7 @@ public class SecurityConfig {
 			.authorizeHttpRequests(authorize -> authorize
 				.requestMatchers(
 					"/api/reservations/**",
+					"/api/**", // API 개발을 위한 임시 사용
 					"/api/schedules/**",
 					"/api/users/**",
 					"/api/email/**",  // 이메일 전송 API 경로
