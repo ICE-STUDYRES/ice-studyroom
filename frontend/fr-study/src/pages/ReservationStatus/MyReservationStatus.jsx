@@ -45,46 +45,6 @@ export const fetchMyReservations = async (retry = true) => {
   }
 };
 
-export const fetchMyReservations = async (retry = true) => {
-  let accessToken = localStorage.getItem("accessToken");
-  const refreshTokens = async () => {
-    // 토큰 갱신 로직 추가
-    return "newAccessToken";
-  };
-
-  try {
-    const response = await fetch("/api/reservations/my", {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
-
-    if (response.status === 401 && retry) {
-      console.warn("Access token expired. Refreshing tokens...");
-      accessToken = await refreshTokens();
-      if (accessToken) {
-        return fetchMyReservations(false); // 갱신된 토큰으로 재시도
-      } else {
-        console.error("Token refresh failed. Logging out.");
-      }
-    }
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch my reservations");
-    }
-
-    const data = await response.json();
-    if (data.code === "S200") {
-      return data.data; // 성공적으로 예약 데이터 반환
-    } else {
-      throw new Error(data.message);
-    }
-  } catch (err) {
-    console.error("Error in fetchMyReservations:", err);
-    throw err;
-  }
-};
-
 const MyReservationStatus = () => {
   const {
     studentId,studentName,showQRModal,refreshTokens,
