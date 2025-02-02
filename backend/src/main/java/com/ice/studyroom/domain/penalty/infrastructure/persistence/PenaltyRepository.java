@@ -9,5 +9,6 @@ import java.util.Optional;
 
 public interface PenaltyRepository extends JpaRepository<Penalty, Long> {
 	Optional<Penalty> findTopByMemberIdAndPenaltyEndAfterOrderByPenaltyEndDesc(Long memberId, LocalDateTime currentTime);
+
 	List<Penalty> findByMemberIdAndPenaltyEndAfter(Long memberId, LocalDateTime currentTime);
 }

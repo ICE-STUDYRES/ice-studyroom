@@ -1,6 +1,7 @@
 package com.ice.studyroom.domain.reservation.infrastructure.persistence;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -14,4 +15,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 	List<Reservation> findByUserEmail(String email);
 
 	Optional<Reservation> findFirstByUserEmailOrderByCreatedAtDesc(String email);
+
+	List<Reservation> findByEndTimeBetween(LocalTime time1, LocalTime time2);
 }
