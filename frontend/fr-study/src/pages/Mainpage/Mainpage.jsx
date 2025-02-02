@@ -1,19 +1,44 @@
-import { X, XCircle, Clock, UserX, LogOut, LogIn, Home, ChevronRight } from 'lucide-react';
+import { X, XCircle, Clock, LogOut, LogIn, Home, ChevronRight } from 'lucide-react';
 import alertImage from "../../assets/images/alert.png";
 import logo from "../../assets/images/hufslogo.png";
 import { useMainpageHandlers } from './MainpageHandlers';
+import { fetchMyReservations } from "../ReservationStatus/MyReservationStatus";
+import { useState, useEffect } from 'react';
 
 const MainPage = () => {
     const {
-        isLoggedIn,currentDate,roomNumber,checkInStatus,showNotice,
+        isLoggedIn,checkInStatus,showNotice,
         showPenaltyPopup,showSigninPopup,showSignUpPopup,signupForm,signupError,
-        loginForm,loginError,isVerificationSent,isEmailVerified,verificationMessage,verificationSuccess,verificationCode,setVerificationCode,
+        loginForm,loginError,isVerificationSent,isEmailVerified,verificationMessage,verificationSuccess,
         handleLogin,handleLoginClick,handleLoginInputChange,handleLogout,handleReservationClick,
         handleReservationStatusClick,handleMyReservationStatusClick,handleReservationManageClick,
         handleNoticeClick,handleCloseNotice,handlePenaltyClick,handleClosePenaltyPopup,
         handleCloseSigninPopup,handleCloseSignUpPopup,handleSignupInputChange,handleSignup,handleSignUpClick,
         handleSendVerification,handleVerifyCode,handlePasswordReset,
       } = useMainpageHandlers();
+
+      const [recentReservation, setRecentReservation] = useState({
+        date: null,
+        roomNumber: null,
+      });
+
+      useEffect(() => {
+        const getReservations = async () => {
+          try {
+            const reservations = await fetchMyReservations();
+            if (reservations && reservations.length > 0) {
+              const recent = reservations[reservations.length -1];
+              setRecentReservation({
+                date: recent.scheduleDate,
+                roomNumber: recent.roomNumber,
+              });
+            }
+          } catch (err) {
+            console.error("Failed to fetch reservations:", err);
+          }
+        };
+        getReservations();
+      }, []);
   
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
@@ -70,21 +95,21 @@ const MainPage = () => {
                 className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 <div className="flex flex-col gap-2 w-full">
-                                    <div className="text-xs text-gray-500">
-                                    <table className="w-full text-left text-sm text-gray-600">
-                                      <tbody>
-                                        <tr>
-                                          <td className="font-medium w-20">최근 예약:</td>
-                                          <td>{currentDate}</td>
-                                          </tr>
-                                          <tr>
-                                            <td className="font-medium w-20">스터디룸:</td>
-                                            <td>{roomNumber}호</td>
-                                          </tr>
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                </div>
+                  <div className="text-xs text-gray-500">
+                    <table className="w-full text-left text-sm text-gray-600">
+                      <tbody>
+                        <tr>
+                        <td className="font-medium w-20">최근 예약:</td>
+                        <td>{recentReservation.date || "정보 없음"}</td>
+                          </tr>
+                          <tr>
+                            <td className="font-medium w-20">스터디룸:</td>
+                            <td>{recentReservation.roomNumber ? `${recentReservation.roomNumber}호` : "정보 없음"}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                </div>
                 <ChevronRight className="w-5 h-5 text-gray-400" />
               </button>
             </>
@@ -152,17 +177,10 @@ const MainPage = () => {
             </div>
             <div className="flex justify-between items-center">
               <div className="flex items-center">
-              <UserX className="w-8 h-8" />
+              <XCircle className="w-8 h-8" />
                 <span className="ml-2">No Show</span>
               </div>
               <span className="ml-2">n일 예약 제한</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-              <XCircle className="w-8 h-8" />
-                <span className="ml-2">취소</span>
-              </div>
-              <span className="ml-2">0회</span>
             </div>
           </div>
         </div>
