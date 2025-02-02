@@ -7,10 +7,10 @@ import com.ice.studyroom.domain.admin.presentation.dto.response.AdminDeleteOccup
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyControlResponse;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyRecordResponse;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
-import com.ice.studyroom.domain.membership.domain.entity.Penalty;
+import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
-import com.ice.studyroom.domain.membership.infrastructure.persistence.PenaltyRepository;
+import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 import com.ice.studyroom.domain.admin.domain.entity.RoomTimeSlot;
 import com.ice.studyroom.domain.admin.domain.type.RoomTimeSlotStatus;
 import com.ice.studyroom.domain.admin.infrastructure.persistence.RoomTimeSlotRepository;

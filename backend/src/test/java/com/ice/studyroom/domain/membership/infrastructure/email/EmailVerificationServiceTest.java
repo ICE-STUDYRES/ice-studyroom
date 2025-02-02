@@ -14,6 +14,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.ice.studyroom.domain.identity.domain.service.VerificationCodeCacheService;
 import com.ice.studyroom.domain.identity.domain.application.EmailVerificationService;
+import com.ice.studyroom.global.dto.request.EmailRequest;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.CacheService;
 import com.ice.studyroom.global.service.EmailService;
@@ -39,14 +40,15 @@ class EmailVerificationServiceTest {
 	@DisplayName("이메일 전송이 성공했을 경우")
 	void testSendCodeToEmail() {
 		String email = "test@example.com";
+
 		when(cacheService.exists(email)).thenReturn(false); // Redis에 키가 없다고 가정
 		doNothing().when(cacheService).save(anyString(), anyString(), eq(Duration.ofMinutes(5)));
-		doNothing().when(emailService).sendEmail(anyString(), anyString(), anyString());
+		doNothing().when(emailService).sendEmail(any(EmailRequest.class));
 
 		emailVerificationService.sendCodeToEmail(email);
 		// Assert
 		verify(cacheService, times(1)).save(eq(email), anyString(), eq(Duration.ofMinutes(5)));
-		verify(emailService, times(1)).sendEmail(eq(email), anyString(), anyString());
+		verify(emailService, times(1)).sendEmail(any(EmailRequest.class));
 	}
 
 	@Test
@@ -61,7 +63,7 @@ class EmailVerificationServiceTest {
 
 		assertEquals("인증 메일이 이미 발송되었습니다.", exception.getMessage());
 		verify(cacheService, never()).save(anyString(), anyString(), eq(Duration.ofMinutes(5))); // save는 호출되지 않아야 함
-		verify(emailService, never()).sendEmail(anyString(), anyString(), anyString()); // 메일 발송도 호출되지 않아야 함
+		verify(emailService, never()).sendEmail(any(EmailRequest.class)); // 메일 발송도 호출되지 않아야 함
 	}
 
 	@Test

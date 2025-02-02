@@ -98,6 +98,7 @@ public class Reservation {
 			return ReservationStatus.LATE;
 			// 패널티 추가로직
 		} else {
+			markStatus(ReservationStatus.NO_SHOW);
 			return ReservationStatus.NO_SHOW;
 		}
 	}
@@ -109,8 +110,17 @@ public class Reservation {
 	}
 
 	public static Reservation from(List<Schedule> schedules, String email, String userName) {
+		if (schedules == null || schedules.isEmpty()) {
+			throw new IllegalArgumentException("Schedules List가 비어있습니다.");
+		}
+
 		Schedule firstSchedule = schedules.get(0);
 		Schedule secondSchedule = schedules.size() > 1 ? schedules.get(1) : null;
+
+		if (firstSchedule.getRoomNumber() == null) {
+			throw new IllegalArgumentException("firstSchedule은 null일  수 없습니다.");
+		}
+
 		return Reservation.builder()
 			.firstScheduleId(firstSchedule.getId())
 			.secondScheduleId(secondSchedule != null ? secondSchedule.getId() : null)
