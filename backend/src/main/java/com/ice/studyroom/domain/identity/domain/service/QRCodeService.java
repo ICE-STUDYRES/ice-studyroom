@@ -22,13 +22,14 @@ public class QRCodeService {
 	}
 
 	// 🔹 QR 코드 데이터 저장 (암호화 전 원본을 Key로 저장)
-	public void saveQRCode(String email, String reservationId, String scheduleId, String qrCodeBase64) {
+	public void saveQRCode(String email, Long reservationId, String scheduleId, String qrCodeBase64) {
 		try {
 			String qrKey = "qr:" + email + "_" + reservationId; // 🔹 암호화 전 원본을 Key로 사용
 
 			Map<String, Object> qrData = new HashMap<>();
 			qrData.put("qrCodeBase64", qrCodeBase64);
-			qrData.put("reservationId", reservationId);
+			// 역직렬화 시 Integer로 변환될 것을 방지하기 위해 강제 저장
+			qrData.put("reservationId", reservationId.longValue());
 			qrData.put("email", email);
 			qrData.put("scheduleId", scheduleId);
 			qrData.put("createdAt", Instant.now().toString());
@@ -54,7 +55,22 @@ public class QRCodeService {
 				return null;
 			}
 			Map<String, Object> qrData = objectMapper.readValue(jsonValue, Map.class);
-			return (String)qrData.get("qrCodeBase64"); // 🔹 특정 필드만 반환
+			return (String)qrData.get("qrCodeBase64");
+		} catch (Exception e) {
+			throw new RuntimeException("QR 코드 조회 오류", e);
+		}
+	}
+
+	public Long getResId(String decryptedData) {
+		try {
+			String jsonValue = redisTemplate.opsForValue().get("qr:" + decryptedData);
+			if (jsonValue == null) {
+				return null;
+			}
+			Map<String, Object> qrData = objectMapper.readValue(jsonValue, Map.class);
+
+			Object reservationId = qrData.get("reservationId");
+			return reservationId != null ? ((Number) reservationId).longValue() : null;
 		} catch (Exception e) {
 			throw new RuntimeException("QR 코드 조회 오류", e);
 		}
