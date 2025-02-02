@@ -83,13 +83,12 @@ public class ReservationService {
 		// 얻은 memer_id와 reservation_id를 토대로 예약 레코드를 찾는다.
 		Long memberId = qrCodeService.getResId(qrKey);
 
-		// 예약 레코드의 입실 시간과 퇴실 시간 중 어느시간을 측정해야하는가.  애초에 QR에 입실인지 퇴실인지 해준다면..
 		Reservation reservation = reservationRepository.findById(memberId)
 			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
 
 		LocalDateTime now = LocalDateTime.now();
 		ReservationStatus status = reservation.checkAttendanceStatus(now);
-		
+
 		if (status == ReservationStatus.RESERVED) {
 			throw new AttendanceException("출석 시간이 아닙니다.", HttpStatus.FORBIDDEN);
 		} else if (status == ReservationStatus.NO_SHOW) {

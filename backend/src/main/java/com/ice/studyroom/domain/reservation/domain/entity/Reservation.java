@@ -87,11 +87,7 @@ public class Reservation {
 
 		long minutesDifference = Duration.between(startDateTime, now).toMinutes();
 		long minutesDurationOfReservation = Duration.between(startDateTime, endDateTime).toMinutes();
-		System.out.println("startTime = " + startDateTime);
-		System.out.println("endTime = " + endDateTime);
-		System.out.println("now = " + now);
-		System.out.println("minutesDifference = " + minutesDifference);
-		System.out.println("minutesDurationOfReservation = " + minutesDurationOfReservation);
+
 		if (now.isBefore(startDateTime)) {
 			return ReservationStatus.RESERVED;
 		} else if (minutesDifference <= 30) {
