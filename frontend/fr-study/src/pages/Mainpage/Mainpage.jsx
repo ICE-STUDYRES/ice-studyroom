@@ -4,17 +4,25 @@ import logo from "../../assets/images/hufslogo.png";
 import { useMainpageHandlers } from './MainpageHandlers';
 import { fetchMyReservations } from "../ReservationStatus/MyReservationStatus";
 import { useState, useEffect } from 'react';
+import ProfileDropdown from './ProfileDropdown';
 
 const MainPage = () => {
     const {
         isLoggedIn,checkInStatus,showNotice,
         showPenaltyPopup,showSigninPopup,showSignUpPopup,signupForm,signupError,
-        loginForm,loginError,isVerificationSent,isEmailVerified,verificationMessage,verificationSuccess,
+        loginForm,isVerificationSent,isEmailVerified,verificationMessage,verificationSuccess,
+        showPasswordChangePopup,
+        passwordChangeForm,
+        passwordChangeError,
         handleLogin,handleLoginClick,handleLoginInputChange,handleLogout,handleReservationClick,
         handleReservationStatusClick,handleMyReservationStatusClick,handleReservationManageClick,
         handleNoticeClick,handleCloseNotice,handlePenaltyClick,handleClosePenaltyPopup,
         handleCloseSigninPopup,handleCloseSignUpPopup,handleSignupInputChange,handleSignup,handleSignUpClick,
-        handleSendVerification,handleVerifyCode,handlePasswordReset,
+        handleSendVerification,handleVerifyCode,
+        handlePasswordChange,
+        handlePasswordChangeClick,
+        handleClosePasswordChangePopup,
+        handlePasswordChangeInputChange,
       } = useMainpageHandlers();
 
       const [recentReservation, setRecentReservation] = useState({
@@ -42,7 +50,6 @@ const MainPage = () => {
   
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
-
       {/* Header */}
       <div className="bg-white px-4 py-3 flex items-center justify-between border-b">
         <div className="flex items-center gap-2">
@@ -54,15 +61,19 @@ const MainPage = () => {
             }}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
-          <Home className="w-5 h-5 text-gray-700" />
+            <Home className="w-5 h-5 text-gray-700" />
           </button>
-          <h1 className="font-semibold text-gray-900">정보통신공학과 스터디룸</h1>
+          <h1 className="font-semibold text-gray-900">정보통신공학과</h1>
         </div>
         {isLoggedIn ? (
-          <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700" onClick={handleLogout}>
-            <LogOut className="w-4 h-4" />
-            <span>로그아웃</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <ProfileDropdown
+              userName={loginForm.email} // 실제 사용자 이름으로 교체 필요
+              userEmail={loginForm.email}
+              onLogout={handleLogout}
+              onPasswordChange={handlePasswordChangeClick}
+            />
+          </div>
         ) : (
           <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700" onClick={handleLoginClick}>
             <LogIn className="w-4 h-4" />
@@ -213,9 +224,6 @@ const MainPage = () => {
               className="w-full p-2 border rounded"
               required
             />
-            {loginError && (
-              <p className="text-red-500 text-sm">{loginError}</p>
-            )}
             <div className="flex items-center">
               <label className="flex items-center">
                 <input type="checkbox" className="mr-2" />
@@ -231,14 +239,6 @@ const MainPage = () => {
               <div className="flex-grow h-px bg-gray-200"></div>
             </div>
             <div className="flex items-center justify-center">
-              <button
-                type="button"
-                className="text-gray-600 hover:underline px-4"
-                onClick={handlePasswordReset}
-              >
-                비밀번호 찾기
-              </button>
-              <div className="h-4 w-px bg-gray-300"></div>
               <button
                 type="button"
                 className="text-gray-600 hover:underline px-4"
@@ -400,6 +400,52 @@ const MainPage = () => {
           </div>
         </div>
       )}
+      
+      {showPasswordChangePopup && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleClosePasswordChangePopup}>
+        <div className="bg-white rounded-lg w-96 p-6" onClick={e => e.stopPropagation()}>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">비밀번호 변경</h2>
+            <button className="text-2xl" onClick={handleClosePasswordChangePopup}>×</button>
+          </div>
+          <form onSubmit={handlePasswordChange} className="space-y-4">
+            <input
+              type="password"
+              name="currentPassword"
+              value={passwordChangeForm.currentPassword}
+              onChange={handlePasswordChangeInputChange}
+              placeholder="현재 비밀번호"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="password"
+              name="newPassword"
+              value={passwordChangeForm.newPassword}
+              onChange={handlePasswordChangeInputChange}
+              placeholder="새 비밀번호"
+              className="w-full p-2 border rounded"
+              required
+            />
+            <input
+              type="password"
+              name="confirmNewPassword"
+              value={passwordChangeForm.confirmNewPassword}
+              onChange={handlePasswordChangeInputChange}
+              placeholder="새 비밀번호 확인"
+              className="w-full p-2 border rounded"
+              required
+            />
+            {passwordChangeError && (
+              <p className="text-red-500 text-sm">{passwordChangeError}</p>
+            )}
+            <button type="submit" className="w-full bg-blue-500 text-white p-2 rounded hover:bg-blue-600">
+              비밀번호 변경
+            </button>
+          </form>
+        </div>
+      </div>
+    )}
     </div>
   );
 };
