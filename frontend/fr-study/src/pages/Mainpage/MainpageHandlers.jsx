@@ -5,10 +5,7 @@ import axios from 'axios';
 export const useMainpageHandlers = () => {
     const [currentDate, setCurrentDate] = useState("");
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [roomNumber, setRoomNumber] = useState("305-1");
     const [checkInStatus, setCheckInStatus] = useState("예약완료");
-    const [studentId] = useState("201902149");
-    const [studentName] = useState("양재원");
     const [qrCodeUrl, setQrCodeUrl] = useState(null);
     const [showNotice, setShowNotice] = useState(false);
     const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
@@ -29,12 +26,18 @@ export const useMainpageHandlers = () => {
       email: '',
       password: ''
     });
-    const [loginError, setLoginError] = useState('');
     const [isVerificationSent, setIsVerificationSent] = useState(false);
     const [isEmailVerified, setIsEmailVerified] = useState(false);
     const [verificationMessage, setVerificationMessage] = useState('');
     const [verificationSuccess, setVerificationSuccess] = useState(false);
-    const [verificationCode, setVerificationCode] = useState('');
+
+    const [showPasswordChangePopup, setShowPasswordChangePopup] = useState(false);
+    const [passwordChangeForm, setPasswordChangeForm] = useState({
+      currentPassword: '',
+      newPassword: '',
+      confirmNewPassword: ''
+    });
+    const [passwordChangeError, setPasswordChangeError] = useState('');
     
     useEffect(() => {
       const today = new Date();
@@ -158,7 +161,6 @@ export const useMainpageHandlers = () => {
           }
       }
   };
-  
   
     const handleLoginInputChange = (e) => {
       const { name, value } = e.target;
@@ -329,11 +331,74 @@ export const useMainpageHandlers = () => {
       }
     };
     
+    const handlePasswordChangeClick = () => {
+      setShowPasswordChangePopup(true);
+      setShowSigninPopup(false);
+    };
+    
+    const handleClosePasswordChangePopup = () => {
+      setShowPasswordChangePopup(false);
+      setPasswordChangeForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmNewPassword: ''
+      });
+      setPasswordChangeError('');
+    };
+    
+    const handlePasswordChangeInputChange = (e) => {
+      const { name, value } = e.target;
+      setPasswordChangeForm(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    };
+    
+    const handlePasswordChange = async (e) => {
+      e.preventDefault();
+    
+      const { currentPassword, newPassword, confirmNewPassword } = passwordChangeForm;
+    
+      if (newPassword !== confirmNewPassword) {
+        setPasswordChangeError('새 비밀번호가 일치하지 않습니다.');
+        return;
+      }
+    
+      if (currentPassword === newPassword) {
+        setPasswordChangeError('현재 비밀번호와 새 비밀번호는 달라야 합니다.');
+        return;
+      }
+    
+      try {
+        const response = await fetch('/api/users/password', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+          },
+          body: JSON.stringify({
+            currentPassword,
+            updatedPassword: newPassword,
+            updatedPasswordForCheck: confirmNewPassword
+          })
+        });
+    
+        const result = await response.json();
+        if (result.code !== 'S200') {
+          throw new Error(result.message || '비밀번호 변경에 실패했습니다.');
+        }
+    
+        handleClosePasswordChangePopup();
+        // 성공 메시지 표시
+        alert(result.data || '비밀번호가 성공적으로 변경되었습니다.');
+      } catch (error) {
+        setPasswordChangeError(error.message);
+      }
+    };    
 
   return {
     isLoggedIn,
     currentDate,
-    roomNumber,
     checkInStatus,
     qrCodeUrl,
     showNotice,
@@ -344,8 +409,10 @@ export const useMainpageHandlers = () => {
     signupForm,
     signupError,
     loginForm,
-    loginError,
-    isEmailVerified,verificationMessage,verificationSuccess,isVerificationSent,verificationCode,setVerificationCode,
+    isEmailVerified,verificationMessage,verificationSuccess,isVerificationSent,
+    showPasswordChangePopup,
+    passwordChangeForm,
+    passwordChangeError,
     handleLogin,
     handleLoginClick,
     setIsLoggedIn,
@@ -369,5 +436,9 @@ export const useMainpageHandlers = () => {
     handleSignUpClick,
     handleSendVerification,
     handleVerifyCode,
+    handlePasswordChange,
+    handlePasswordChangeClick,
+    handleClosePasswordChangePopup,
+    handlePasswordChangeInputChange,
   };
 };
