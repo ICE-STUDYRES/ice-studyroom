@@ -20,6 +20,7 @@ import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 import com.ice.studyroom.domain.penalty.scheduler.PenaltyUpdateScheduler;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
@@ -107,10 +108,63 @@ class PenaltyUpdateSchedulerTest {
 		assertThat(updatedMember2.isPenalty()).isFalse();
 	}
 
+	@Test
+	@DisplayName("expireOldPenalties 메서드는 패널티 기간이 끝난 패널티의 상태를 'EXPIRED' 로 변경해준다.")
+	void testExpireOldPenalties(){
+
+		Member member1 = Member.builder()
+			.email(new Email("test1@hufs.ac.kr"))
+			.name("User1")
+			.password("password1")
+			.studentNum("12345")
+			.roles(List.of("ROLE_USER"))
+			.createdAt(LocalDateTime.now())
+			.updatedAt(LocalDateTime.now())
+			.isPenalty(false)
+			.build();
+
+		Member member2 = Member.builder()
+			.email(new Email("test2@hufs.ac.kr"))
+			.name("User2")
+			.password("password2")
+			.studentNum("67890")
+			.roles(List.of("ROLE_USER"))
+			.createdAt(LocalDateTime.now())
+			.updatedAt(LocalDateTime.now())
+			.isPenalty(false)
+			.build();
+
+		memberRepository.saveAll(List.of(member1, member2));
+
+		//만료되지 않은 패널티
+		Penalty penalty1 = Penalty.builder()
+			.member(member1)
+			.reason(PenaltyReasonType.LATE)
+			.penaltyEnd(LocalDateTime.now().plusDays(1))
+			.build();
+
+		// 만료된 패널티
+		Penalty penalty2 = Penalty.builder()
+			.member(member2)
+			.reason(PenaltyReasonType.LATE)
+			.penaltyEnd(LocalDateTime.now().minusDays(1))
+			.build();
+
+		penaltyRepository.saveAll(List.of(penalty1, penalty2));
+
+		penaltyUpdateScheduler.expireOldPenalties();
+
+		Penalty updatedPenalty1 = penaltyRepository.findById(penalty1.getId()).orElseThrow();
+		Penalty updatedPenalty2 = penaltyRepository.findById(penalty2.getId()).orElseThrow();
+
+		assertThat(updatedPenalty1.getStatus()).isEqualTo(PenaltyStatus.VALID);  // 만료되지 않음
+		assertThat(updatedPenalty2.getStatus()).isEqualTo(PenaltyStatus.EXPIRED); // 만료됨
+	}
+
 
 	@Test
-	@DisplayName("checkNoShowPenalty 메서드는 종료된 예약을 확인하고 노쇼 패널티를 부여해야 한다.")
-	void testCheckNoShowPenalty() {
+	@DisplayName("processNoShowPenalties 메서드는 종료된 예약을 확인하고 노쇼 패널티를 부여해야 한다.")
+	void testProcessNoShowPenalties() {
 		// 1. 테스트 시간 설정
 		LocalTime now = LocalTime.of(11, 0).withSecond(0).withNano(0);
 
@@ -153,7 +207,7 @@ class PenaltyUpdateSchedulerTest {
 		assertThat(beforeUpdateReservation.getStatus()).isEqualTo(ReservationStatus.RESERVED);
 
 		// 5. 스케줄러 실행
-		//penaltyUpdateScheduler.checkNoShowPenalty() 과 동일한 코드입니다.
+		//penaltyUpdateScheduler.processNoShowPenalties() 과 동일한 코드입니다.
 		List<Reservation> expiredReservations = reservationRepository.findByEndTimeBetween(
 			now.minusMinutes(2), now);
 		assertThat(expiredReservations.size()).isEqualTo(1);
