@@ -1,6 +1,5 @@
 package com.ice.studyroom.domain.reservation.application;
 
-import java.sql.SQLOutput;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -23,8 +22,11 @@ import com.ice.studyroom.domain.identity.domain.service.QRCodeService;
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
 import com.ice.studyroom.domain.identity.infrastructure.security.QRCodeUtil;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
+import com.ice.studyroom.domain.penalty.application.PenaltyService;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
@@ -35,6 +37,7 @@ import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReser
 import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
 import com.ice.studyroom.global.exception.AttendanceException;
 
 import lombok.RequiredArgsConstructor;
@@ -50,6 +53,7 @@ public class ReservationService {
 	private final ReservationRepository reservationRepository;
 	private final ScheduleRepository scheduleRepository;
 	private final QRCodeService qrCodeService;
+	private final PenaltyService penaltyService;
 
 	public List<Reservation> getMyAllReservation(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
@@ -81,9 +85,11 @@ public class ReservationService {
 		// 이미지 BASE64디코딩 -> 디코딩 된 이미지 -> 텍스트 추출
 		String qrKey = qrCodeUtil.decryptQRCode(qrCode);
 		// 얻은 memer_id와 reservation_id를 토대로 예약 레코드를 찾는다.
-		Long memberId = qrCodeService.getResId(qrKey);
+		QRDataResponse qrData = qrCodeService.getQRData(qrKey);
+		Long reservationId = qrData.getReservationId();
+		String memberEmail = qrData.getEmail();
 
-		Reservation reservation = reservationRepository.findById(memberId)
+		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
 
 		LocalDateTime now = LocalDateTime.now();
@@ -93,8 +99,10 @@ public class ReservationService {
 			throw new AttendanceException("출석 시간이 아닙니다.", HttpStatus.FORBIDDEN);
 		} else if (status == ReservationStatus.NO_SHOW) {
 			throw new AttendanceException("출석 시간이 만료되었습니다.", HttpStatus.GONE);
+		} else if(status == ReservationStatus.LATE){
+			//해당 멤버에게 패널티 부여
+			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(memberEmail)), PenaltyReasonType.LATE);
 		}
-
 		return status;
 	}
 

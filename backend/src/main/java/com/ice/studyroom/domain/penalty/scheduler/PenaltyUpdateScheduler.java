@@ -49,7 +49,7 @@ public class PenaltyUpdateScheduler {
 	}
 
 	@Transactional
-	@Scheduled(cron = "0 0 0 * * *") // 매일 새벽 1시 실행
+	@Scheduled(cron = "0 0 0 * * *") // 매일 00:00에 실행
 	public void expireOldPenalties() {
 		int updatedCount = penaltyRepository.expireOldPenalties(LocalDateTime.now());
 		log.info("{} 개의 penalty 가 만료되었습니다.", updatedCount);
