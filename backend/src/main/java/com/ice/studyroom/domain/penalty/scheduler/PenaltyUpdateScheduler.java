@@ -48,8 +48,16 @@ public class PenaltyUpdateScheduler {
 		log.info("Member Penalty updated successfully at {}", LocalDateTime.now());
 	}
 
+	@Transactional
+	@Scheduled(cron = "0 0 0 * * *") // 매일 새벽 1시 실행
+	public void expireOldPenalties() {
+		int updatedCount = penaltyRepository.expireOldPenalties(LocalDateTime.now());
+		log.info("{} 개의 penalty 가 만료되었습니다.", updatedCount);
+	}
+
+	@Transactional
 	@Scheduled(cron = "0 1 10-23,0 * * *") // 매일 10:01 ~ 23:01, 자정 00:01 실행
-	public void checkNoShowPenalty() {
+	public void processNoShowPenalties() {
 		LocalTime now = LocalTime.now().withSecond(0).withNano(0);
 
 		List<Reservation> expiredReservations = reservationRepository.findByEndTimeBetween(

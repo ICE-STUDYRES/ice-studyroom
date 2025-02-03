@@ -40,7 +40,7 @@ public class PenaltyService {
 	}
 
 	private LocalDateTime calculatePenaltyEnd(int durationDays) {
-		LocalDate penaltyEndDate = LocalDate.now().plusDays(durationDays); // 종료 날짜 계산
+		LocalDate penaltyEndDate = LocalDate.now().plusDays(durationDays);
 		return LocalDateTime.of(penaltyEndDate, LocalTime.MAX); // 23:59:59
 	}
 
