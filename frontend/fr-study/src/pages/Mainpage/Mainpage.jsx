@@ -1,8 +1,7 @@
-import { X, XCircle, Clock, LogOut, LogIn, Home, ChevronRight } from 'lucide-react';
+import { X, XCircle, Clock, LogIn, Home, ChevronRight } from 'lucide-react';
 import alertImage from "../../assets/images/alert.png";
 import logo from "../../assets/images/hufslogo.png";
 import { useMainpageHandlers } from './MainpageHandlers';
-import { fetchMyReservations } from "../ReservationStatus/MyReservationStatus";
 import { useState, useEffect } from 'react';
 import ProfileDropdown from './ProfileDropdown';
 
@@ -31,23 +30,35 @@ const MainPage = () => {
       });
 
       useEffect(() => {
-        const getReservations = async () => {
-          try {
-            const reservations = await fetchMyReservations();
-            if (reservations && reservations.length > 0) {
-              const recent = reservations[reservations.length -1];
-              setRecentReservation({
-                date: recent.scheduleDate,
-                roomNumber: recent.roomNumber,
-              });
+        const getRecentReservation = async () => {
+            try {
+                const token = localStorage.getItem('accessToken');
+                const response = await fetch('/api/reservations/my/latest', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.data) {
+                    setRecentReservation({
+                        date: result.data.scheduleDate,
+                        roomNumber: result.data.roomNumber
+                    });
+                } else {
+                    setRecentReservation({ date: null, roomNumber: null });
+                }
+            } catch (err) {
+                console.error("Failed to fetch recent reservation:", err);
             }
-          } catch (err) {
-            console.error("Failed to fetch reservations:", err);
-          }
         };
-        getReservations();
-      }, []);
-  
+
+        getRecentReservation();
+    }, []);
+
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
       {/* Header */}
