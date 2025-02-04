@@ -84,6 +84,10 @@ public class Schedule {
 		return currentRes < capacity;
 	}
 
+	public int getCurrentRes() {return this.currentRes;}
+
+	public void setCurrentRes(int currentRes) {this.currentRes = currentRes;}
+
 	public void reserve() {
 		this.status = ScheduleStatus.RESERVED;
 	}
