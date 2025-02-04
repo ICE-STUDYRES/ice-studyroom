@@ -126,4 +126,17 @@ public class ReservationController {
 			.status(StatusCode.OK.getStatus())
 			.body(ResponseDto.<Void>of(null, "예약이 성공적으로 삭제되었습니다"));
 	}
+
+	@Operation(summary = "개인 예약 생성", description = "개인 예약을 생성합니다.")
+	@ApiResponse(responseCode = "200", description = "개인 예약 성공")
+	@ApiResponse(responseCode = "500", description = "개인 예약 실패")
+	@PostMapping("/reservations/individual")
+	public ResponseEntity<ResponseDto<String>> createIndivReservation(
+		@RequestHeader("Authorization") String authorizationHeader,
+		@Valid @RequestBody CreateReservationRequest request
+	) {
+		return ResponseEntity
+			.status(StatusCode.OK.getStatus())
+			.body(ResponseDto.of(reservationService.createIndividualReservation(authorizationHeader, request)));
+	}
 }
