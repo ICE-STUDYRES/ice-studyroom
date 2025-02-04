@@ -97,11 +97,11 @@ public class ReservationController {
 			.body(ResponseDto.of(reservationService.getSchedule()));
 	}
 
-	@Operation(summary = "스터디룸 예약", description = "스터디룸을 예약합니다.")
-	@ApiResponse(responseCode = "201", description = "스터디룸 예약 성공")
-	@ApiResponse(responseCode = "500", description = "스터디룸 예약 실패")
-	@PostMapping("/reservations")
-	public ResponseEntity<ResponseDto<String>> createReservation(
+	@Operation(summary = "단체 스터디룸 예약", description = "단체 단위로 스터디룸을 예약합니다.")
+	@ApiResponse(responseCode = "201", description = "스터디룸 단체 예약 성공")
+	@ApiResponse(responseCode = "500", description = "스터디룸 단체 예약 실패")
+	@PostMapping("/reservations/group")
+	public ResponseEntity<ResponseDto<String>> reserveGroup(
 		@RequestHeader("Authorization") String authorizationHeader,
 		@Valid @RequestBody CreateReservationRequest request
 	) {
@@ -111,11 +111,27 @@ public class ReservationController {
 	}
 
 	// 예약 취소 시 본인 인증이 필요하다.
+	@Operation(summary = "개인 스터디룸 예약", description = "개인 단위로 스터디룸을 예약합니다.")
+	@ApiResponse(responseCode = "200", description = "스터디룸 개인 예약 성공")
+	@ApiResponse(responseCode = "500", description = "스터디룸 개인 예약 실패")
+	@PostMapping("/reservations/individual")
+	public ResponseEntity<ResponseDto<String>> reserveIndividual(
+		@RequestHeader("Authorization") String authorizationHeader,
+		@Valid @RequestBody CreateReservationRequest request
+	) {
+		return ResponseEntity
+			.status(StatusCode.OK.getStatus())
+			.body(ResponseDto.of(reservationService.createIndividualReservation(authorizationHeader, request)));
+	}
+
 	@Operation(summary = "예약 취소", description = "예약을 취소합니다.")
 	@ApiResponse(responseCode = "200", description = "예약 취소 성공")
 	@ApiResponse(responseCode = "500", description = "예약 취소 실패")
 	@DeleteMapping("/reservations/{id}")
-	public ResponseEntity<ResponseDto<Void>> deleteReservation(@PathVariable Long id) {
+	public ResponseEntity<ResponseDto<Void>> deleteReservation(
+		@RequestHeader("Authorization") String authorizationHeader,
+		@PathVariable Long id
+	) {
 		DeleteReservationRequest request = DeleteReservationRequest.builder()
 			.reservationId(id)
 			.userId(1L)  // 모킹했으니 무시해도 됩니다. 추후 회원가입 때 구현 예정
@@ -125,18 +141,5 @@ public class ReservationController {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
 			.body(ResponseDto.<Void>of(null, "예약이 성공적으로 삭제되었습니다"));
-	}
-
-	@Operation(summary = "개인 예약 생성", description = "개인 예약을 생성합니다.")
-	@ApiResponse(responseCode = "200", description = "개인 예약 성공")
-	@ApiResponse(responseCode = "500", description = "개인 예약 실패")
-	@PostMapping("/reservations/individual")
-	public ResponseEntity<ResponseDto<String>> createIndivReservation(
-		@RequestHeader("Authorization") String authorizationHeader,
-		@Valid @RequestBody CreateReservationRequest request
-	) {
-		return ResponseEntity
-			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.createIndividualReservation(authorizationHeader, request)));
 	}
 }
