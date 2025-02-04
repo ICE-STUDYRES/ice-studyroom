@@ -98,16 +98,50 @@ public class ReservationService {
 		return status;
 	}
 
-	// @Transactional
-	// public String createIndividualReservation(String authorizationHeader, CreateReservationRequest request) {
-	// 	// 종합된 스케줄의 예약 자리가 비어있는지, 예약 가능 상태인지 확인
-	// 	List<Schedule> schedules = findSchedules(request.scheduleId());
-	// 	validateSchedulesAvailable(schedules);
-	//
-	// 	String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
-	//
-	//
-	// }
+	@Transactional
+	public String createIndividualReservation(String authorizationHeader, CreateReservationRequest request) {
+		// 예약 가능 여부 확인
+		List<Schedule> schedules = findSchedules(request.scheduleId());
+		validateSchedulesAvailable(schedules);
+
+		// JWT에서 예약자 이메일 추출
+		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
+
+		// 예약자 확인
+		Member reserver = memberRepository.findByEmail(Email.of(reserverEmail))
+			.orElseThrow(() -> new IllegalArgumentException("예약자 이메일이 존재하지 않습니다: " + reserverEmail));
+
+		// 패널티 상태 확인 (예약 불가)
+		if (reserver.isPenalty()) {
+			throw new IllegalStateException("패널티 누적으로 사용불가 상태입니다.");
+		}
+
+		// 예약 객체 생성 및 저장
+		String userName = reserver.getName();
+		String userEmail = reserver.getEmail().getValue();
+		Reservation reservation = Reservation.from(schedules, userEmail, userName);
+		reservationRepository.save(reservation);
+
+		// QR 코드 생성 및 저장
+		String qrCodeBase64 = qrCodeUtil.generateQRCode(userEmail, reservation.getId().toString());
+		qrCodeService.saveQRCode(userEmail, reservation.getId(), request.scheduleId().toString(), qrCodeBase64);
+
+		// 스케줄 업데이트 (currentRes 증가 및 상태 변경)
+		for (Schedule schedule : schedules) {
+			if (!schedule.isCurrentResLessThanCapacity()) {
+				throw new IllegalStateException("예약 가능한 자리가 없습니다.");
+			}
+
+			schedule.setCurrentRes(schedule.getCurrentRes() + 1); // 개인예약은 현재사용인원에서 +1 진행
+			if (schedule.getCurrentRes() == schedule.getCapacity()) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
+				schedule.reserve();
+			}
+		}
+
+		scheduleRepository.saveAll(schedules);
+
+		return "Success";
+	}
 
 	@Transactional
 	public String createGroupReservation(String authorizationHeader, CreateReservationRequest request) {
@@ -151,9 +185,13 @@ public class ReservationService {
 		// 최소 예약 인원(minRes) 검사 (예약자 + 참여자 수 체크)
 		int totalParticipants = uniqueEmails.size(); // 예약자 + 참여자 수
 		int minRes = schedules.get(0).getMinRes(); // 모든 schedule의 minRes는 동일하다고 가정
+		int capacity = schedules.get(0).getCapacity(); // 모든 연속된 schedule의 capacity는 동일하다고 가정
 		if (totalParticipants < minRes) {
 			throw new IllegalArgumentException(
 				"최소 예약 인원 조건을 만족하지 않습니다. (필요 인원: " + minRes + ", 현재 인원: " + totalParticipants + ")");
+		}else if (totalParticipants > capacity) {
+			throw new IllegalArgumentException(
+				"방의 최대 수용 인원을 초과했습니다. (최대 수용 인원: " + capacity + ", 현재 인원: " + totalParticipants +")");
 		}
 
 		// 예약 리스트 생성
@@ -177,6 +215,7 @@ public class ReservationService {
 		reservationRepository.saveAll(reservations);
 
 		for (Schedule schedule : schedules) {
+			schedule.setCurrentRes(totalParticipants); // 현재 사용 인원을 예약자 + 참여자 숫자로 지정
 			schedule.reserve();
 		}
 
