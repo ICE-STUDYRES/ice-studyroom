@@ -92,6 +92,19 @@ public class Schedule {
 		this.status = ScheduleStatus.RESERVED;
 	}
 
+	public void cancel() {
+		this.currentRes--;
+		ifCurrentResZeroThanMakeAvailable();
+	}
+
+	private void ifCurrentResZeroThanMakeAvailable() {
+		if (this.currentRes == 0) {
+			available();
+		}
+		System.out.println("status = " + status);
+		System.out.println("currentRes = " + currentRes);
+	}
+
 	public void available() {
 		this.status = ScheduleStatus.AVAILABLE;
 	}
