@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,7 +20,6 @@ import com.ice.studyroom.domain.reservation.application.ReservationService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
-import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
@@ -136,5 +136,15 @@ public class ReservationController {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
 			.body(ResponseDto.of(reservationService.cancelReservation(id, authorizationHeader)));
+	}
+
+	@PatchMapping("/reservations/{id}")
+	public ResponseEntity<ResponseDto<String>> extendReservation(
+		@PathVariable Long id,
+		@RequestHeader("Authorization") String authorizationHeader
+	) {
+		return ResponseEntity
+			.status(StatusCode.OK.getStatus())
+			.body(ResponseDto.of(reservationService.extendReservation(id, authorizationHeader)));
 	}
 }

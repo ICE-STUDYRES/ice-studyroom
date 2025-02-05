@@ -22,10 +22,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "reservation")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -107,6 +109,12 @@ public class Reservation {
 	private void markStatus(ReservationStatus status) {
 		this.status = status;
 		this.enterTime = LocalDateTime.now();
+		this.updatedAt = LocalDateTime.now();
+	}
+
+	public void extendReservation(Long secondScheduleId, LocalTime endTime) {
+		this.secondScheduleId = secondScheduleId;
+		this.endTime = endTime;
 		this.updatedAt = LocalDateTime.now();
 	}
 

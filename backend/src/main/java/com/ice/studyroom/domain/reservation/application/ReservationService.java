@@ -1,6 +1,7 @@
 package com.ice.studyroom.domain.reservation.application;
 
 import java.sql.SQLOutput;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -38,7 +39,6 @@ import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
-import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
@@ -275,6 +275,52 @@ public class ReservationService {
 
 		reservationRepository.delete(reservation);
 		return new CancelReservationResponse(id);
+	}
+
+	@Transactional
+	public String extendReservation(Long scheduleId, String authorizationHeader) {
+		Reservation reservation = findReservationById(scheduleId);
+		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+
+		if (!reservation.matchEmail(email)) {
+			throw new IllegalStateException("이전에 예약이 되지 않았습니다.");
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime endTime = LocalDateTime.of(reservation.getScheduleDate(), reservation.getEndTime());
+
+
+		if (now.isAfter(endTime)) {
+			throw new IllegalStateException("연장 가능한 시간이 지났습니다.");
+		} else if (now.isBefore(endTime.minusMinutes(10))) {
+			throw new IllegalStateException("연장은 퇴실 시간 10분 전부터 가능합니다.");
+		}
+
+		//방 번호, 오늘 날짜, 시작하는 시간으로 다음 스케줄을 찾는다.
+		Schedule nextSchedule = scheduleRepository.findByRoomNumberAndScheduleDateAndStartTime(
+			reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getEndTime());
+
+		if (nextSchedule == null) {
+			throw new IllegalArgumentException("스터디룸 이용 가능 시간을 확인해주세요.");
+		}
+
+		if (!nextSchedule.isCurrentResLessThanCapacity() || !nextSchedule.isAvailable()) {
+			throw new IllegalStateException("이미 예약이 완료된 스터디룸입니다.");
+		}
+
+		if (nextSchedule.getRoomType() == RoomType.GROUP) {
+			List<Reservation> reservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
+				reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
+
+			for (Reservation res : reservations) {
+				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
+			}
+			nextSchedule.reserve();
+		}else{
+			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
+			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + 1);
+		}
+		return "Success";
 	}
 
 	// TODO: 추후 Jpa에 종합할 예정

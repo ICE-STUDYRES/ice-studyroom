@@ -22,10 +22,12 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "schedule")
 @Getter
+@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -83,10 +85,6 @@ public class Schedule {
 	public boolean isCurrentResLessThanCapacity() {
 		return currentRes < capacity;
 	}
-
-	public int getCurrentRes() {return this.currentRes;}
-
-	public void setCurrentRes(int currentRes) {this.currentRes = currentRes;}
 
 	public void reserve() {
 		this.status = ScheduleStatus.RESERVED;
