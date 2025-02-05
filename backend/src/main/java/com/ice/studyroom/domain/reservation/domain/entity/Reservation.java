@@ -86,7 +86,6 @@ public class Reservation {
 	public ReservationStatus checkAttendanceStatus(LocalDateTime now) {
 		LocalDateTime startDateTime = LocalDateTime.of(createdAt.toLocalDate(), startTime);
 		LocalDateTime endDateTime = LocalDateTime.of(createdAt.toLocalDate(), endTime);
-
 		long minutesDifference = Duration.between(startDateTime, now).toMinutes();
 		long minutesDurationOfReservation = Duration.between(startDateTime, endDateTime).toMinutes();
 

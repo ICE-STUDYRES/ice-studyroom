@@ -88,7 +88,6 @@ class QrRecognitionServiceTest {
 
 		// then
 		assertEquals(ReservationStatus.LATE, status);
-		System.out.println("status = " + status);
 	}
 
 	/**
