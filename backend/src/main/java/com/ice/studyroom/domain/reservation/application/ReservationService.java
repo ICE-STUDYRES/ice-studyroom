@@ -1,7 +1,11 @@
 package com.ice.studyroom.domain.reservation.application;
 
+import java.sql.SQLOutput;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,6 +40,7 @@ import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleR
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
 import com.ice.studyroom.global.exception.AttendanceException;
@@ -234,37 +239,41 @@ public class ReservationService {
 
 
 	@Transactional
-	public void cancelReservation(DeleteReservationRequest request) {
-		// TODO: 추후에는 JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인하고 예약을 취소할 예정
+	public CancelReservationResponse cancelReservation(Long id, String authorizationHeader) {
+		Reservation reservation = findReservationById(id);
+		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		// 예약 데이터를 가져온다.
-		Reservation reservation = findReservationById(request.getReservationId());
-
-		// 예약 상태 확인
-		if (!reservation.isReserved()) {
+		// JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
+		if (!reservation.matchEmail(email)) {
 			throw new IllegalStateException("이전에 예약이 되지 않았습니다.");
 		}
 
-		List<Schedule> schedules = new ArrayList<>();
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime startTime = LocalDateTime.of(LocalDate.now(), reservation.getStartTime());
 
-		// first schedule은 항상 존재
-		Schedule firstSchedule = scheduleRepository.findById(reservation.getFirstScheduleId())
-			.orElseThrow(() -> new IllegalStateException("스케줄을 찾지 못했습니다."));
-		firstSchedule.available();
-		schedules.add(firstSchedule);
-
-		// second schedule이 있는 경우 (2시간 예약인 경우)
-		if (reservation.getSecondScheduleId() != null) {
-			Schedule secondSchedule = scheduleRepository.findById(reservation.getSecondScheduleId())
-				.orElseThrow(() -> new IllegalStateException("스케줄을 찾지 못했습니다."));
-			secondSchedule.available();
-			schedules.add(secondSchedule);
+		// 입실 1 시간 전 일 경우 패널티
+		if (!now.isAfter(startTime)) {
+			throw new IllegalStateException("입실 시간이 초과하였기에 취소할 수 없습니다.");
 		}
 
-		// TODO: 사용자 취소 횟수 차감 코드 구현 예정
+		if (!now.isBefore(startTime.minus(1, ChronoUnit.HOURS))) {
+			// 취소 패널티 부여
+		}
 
-		scheduleRepository.saveAll(schedules);
+		/*
+		 * 취소 프로세스 시작
+		 * 몇 개의 스케줄을 취소해야하는가?
+		 * 시간 비교를 하면 몇 개의 스케줄을 신청했는지 알 수 있다.
+		 */
+		long hourDifference = Duration.between(reservation.getStartTime(), reservation.getEndTime()).toHours();
+
+		scheduleRepository.findById(reservation.getFirstScheduleId()).ifPresent(Schedule::cancel);
+		if (hourDifference == 2) {
+			scheduleRepository.findById(reservation.getSecondScheduleId()).ifPresent(Schedule::cancel);
+		}
+
 		reservationRepository.delete(reservation);
+		return new CancelReservationResponse(id);
 	}
 
 	// TODO: 추후 Jpa에 종합할 예정

@@ -20,6 +20,7 @@ import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 import com.ice.studyroom.global.exception.BusinessException;
@@ -128,18 +129,12 @@ public class ReservationController {
 	@ApiResponse(responseCode = "200", description = "예약 취소 성공")
 	@ApiResponse(responseCode = "500", description = "예약 취소 실패")
 	@DeleteMapping("/reservations/{id}")
-	public ResponseEntity<ResponseDto<Void>> deleteReservation(
-		@RequestHeader("Authorization") String authorizationHeader,
-		@PathVariable Long id
+	public ResponseEntity<ResponseDto<CancelReservationResponse>> cancelReservation(
+		@PathVariable Long id,
+		@RequestHeader("Authorization") String authorizationHeader
 	) {
-		DeleteReservationRequest request = DeleteReservationRequest.builder()
-			.reservationId(id)
-			.userId(1L)  // 모킹했으니 무시해도 됩니다. 추후 회원가입 때 구현 예정
-			.build();
-		reservationService.cancelReservation(request);
-
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.<Void>of(null, "예약이 성공적으로 삭제되었습니다"));
+			.body(ResponseDto.of(reservationService.cancelReservation(id, authorizationHeader)));
 	}
 }

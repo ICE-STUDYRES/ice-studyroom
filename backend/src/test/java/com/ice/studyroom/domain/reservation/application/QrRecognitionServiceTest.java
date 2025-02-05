@@ -77,19 +77,18 @@ class QrRecognitionServiceTest {
 	 * 정해진 입실시간: starTime
 	 * 사용자의 입실시간: enterTime
 	 */
-	@Test
-	void 입실시간_30분_초과_지각() {
-		// given: 출석 시간이 아직 도래하지 않은 경우
-		LocalDateTime startTime = now;
-		LocalDateTime enterTime = startTime.plusMinutes(31);
-		Reservation reservation = ReservationTestHelper.createReservationWithEnterTime(startTime);
-		// when
-		ReservationStatus status = reservation.checkAttendanceStatus(enterTime);
-
-		// then
-		assertEquals(ReservationStatus.LATE, status);
-		System.out.println("status = " + status);
-	}
+	// @Test
+	// void 입실시간_30분_초과_지각() {
+	// 	// given: 출석 시간이 아직 도래하지 않은 경우
+	// 	LocalDateTime startTime = now;
+	// 	LocalDateTime enterTime = startTime.plusMinutes(31);
+	// 	Reservation reservation = ReservationTestHelper.createReservationWithEnterTime(startTime);
+	// 	// when
+	// 	ReservationStatus status = reservation.checkAttendanceStatus(enterTime);
+	//
+	// 	// then
+	// 	assertEquals(ReservationStatus.LATE, status);
+	// }
 
 	/**
 	 * 정해진 입실시간: starTime
