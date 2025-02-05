@@ -4,6 +4,7 @@ import java.sql.SQLOutput;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -237,11 +238,16 @@ public class ReservationService {
 		if (!reservation.matchEmail(email)) {
 			throw new IllegalStateException("이전에 예약이 되지 않았습니다.");
 		}
+
 		LocalDateTime now = LocalDateTime.now();
-		LocalDateTime EnterTime = LocalDateTime.of(LocalDate.now(), reservation.getStartTime());
+		LocalDateTime startTime = LocalDateTime.of(LocalDate.now(), reservation.getStartTime());
 
 		// 입실 1 시간 전 일 경우 패널티
-		if (!now.isBefore(EnterTime.minus(1, ChronoUnit.HOURS))) {
+		if (!now.isAfter(startTime)) {
+			throw new IllegalStateException("입실 시간이 초과하였기에 취소할 수 없습니다.");
+		}
+
+		if (!now.isBefore(startTime.minus(1, ChronoUnit.HOURS))) {
 			// 취소 패널티 부여
 		}
 
