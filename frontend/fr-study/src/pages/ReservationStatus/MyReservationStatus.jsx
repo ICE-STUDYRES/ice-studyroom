@@ -56,12 +56,82 @@ const MyReservationStatus = () => {
   const [myReservations, setMyReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sentQRCode, setSentQRCode] = useState(null); // ✅ 이미 전송된 QR 코드 저장
 
   // ✅ 예약 ID 가져오기
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
 
   // ✅ 항상 최상단에서 Hook 호출 (조건문 안에서 실행 X)
-  const { qrCode, error: qrError, loading: qrLoading } = useQRCodeFetcher(resId);
+  const { qrCode, error: qrError, loading: qrLoading, sendQRCodeToServer } = useQRCodeFetcher(resId);
+  // ✅ QR 코드 리더기로 스캔하면 서버로 전송 (Enter 입력 감지)
+  useEffect(() => {
+    let qrBuffer = ""; // ✅ QR 코드 데이터를 임시 저장할 버퍼
+  
+    const handleScan = async (event) => {
+      if (event.key === "Enter") {
+        if (!qrBuffer.trim()) return; // 빈 값 방지
+  
+        console.log("✅ Enter 입력 감지됨!");
+        // console.log("✅ 원본 QR 코드 입력값:", qrBuffer);
+  
+        let qrData = qrBuffer;
+  
+        // ✅ QR 코드 데이터가 JSON 형식인지 확인
+        try {
+          const parsedData = JSON.parse(qrBuffer);
+          if (parsedData?.data) {
+            qrData = parsedData.data; // ✅ JSON이면 `data` 필드 값 사용
+            console.log("📌 JSON에서 추출한 QR 코드 데이터:", qrData);
+          }
+        } catch (err) {
+          console.warn("⚠️ QR 코드 데이터가 JSON 형식이 아님. 그대로 사용함.");
+        }
+  
+        // ✅ Base64 변환 (한글 포함 여부 확인)
+        let qrBase64;
+        if (/^[A-Za-z0-9+/=]+$/.test(qrData)) {
+          // 이미 Base64 형태라면 변환하지 않음
+          qrBase64 = qrData;
+        } else {
+          // 한글 포함 시 안전한 Base64 변환
+          qrBase64 = btoa(unescape(encodeURIComponent(qrData)));
+        }
+  
+        console.log("📌 변환된 Base64 QR 코드 데이터:", qrBase64);
+  
+        // ✅ 서버로 Base64 QR 데이터 전송
+        const accessToken = localStorage.getItem("accessToken");
+        const response = await fetch(`/api/qr/recognize`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ qrCode: qrBase64 }),
+        });
+  
+        const result = await response.json();
+        console.log("✅ 서버 응답:", result);
+  
+        // ✅ 중복 스캔 방지
+        setSentQRCode(qrBase64);
+  
+        qrBuffer = ""; // ✅ 버퍼 초기화
+      } else if (event.key !== "Shift") {
+        // ✅ Shift 키를 무시하고 QR 코드 문자만 버퍼에 추가
+        qrBuffer += event.key;
+      }
+    };
+  
+    window.addEventListener("keydown", handleScan);
+    return () => window.removeEventListener("keydown", handleScan);
+  }, [setSentQRCode]); // 📌 `sentQRCode`가 변경될 때마다 실행
+  
+  
+  
+  
+
+
 
   const handleLogoutClick = async () => {
     try {
@@ -236,7 +306,6 @@ const MyReservationStatus = () => {
               <p className="text-sm text-red-500">{qrError}</p>
             ) : qrCode ? (
               <>
-              {console.log("QR Code Data:", qrCode)}  {/* ✅ QR 코드 데이터 로깅 */}
               <QRCodeCanvas 
                 value={qrCode} // ✅ QR코드 데이터 적용
                 size={256} 
