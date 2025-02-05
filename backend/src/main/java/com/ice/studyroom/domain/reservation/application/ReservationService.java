@@ -103,6 +103,8 @@ public class ReservationService {
 		// 예약 가능 여부 확인
 		List<Schedule> schedules = findSchedules(request.scheduleId());
 		validateSchedulesAvailable(schedules);
+		RoomType roomType = schedules.get(0).getRoomType();
+		if(roomType == RoomType.GROUP) throw new IllegalStateException("해당 방은 단체예약 전용입니다.");
 
 		// JWT에서 예약자 이메일 추출
 		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
@@ -113,7 +115,16 @@ public class ReservationService {
 
 		// 패널티 상태 확인 (예약 불가)
 		if (reserver.isPenalty()) {
-			throw new IllegalStateException("패널티 누적으로 사용불가 상태입니다.");
+			throw new IllegalStateException("사용정지 상태입니다.");
+		}
+
+		// 🔹 최근 예약 상태 확인 (RESERVED, ENTRANCE가 있으면 예약 불가)
+		Optional<Reservation> recentReservation = reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(reserverEmail);
+		if (recentReservation.isPresent()) {
+			ReservationStatus recentStatus = recentReservation.get().getStatus();
+			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
+				throw new IllegalStateException("현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다. (상태: " + recentStatus + ")");
+			}
 		}
 
 		// 예약 객체 생성 및 저장
@@ -149,11 +160,10 @@ public class ReservationService {
 		List<Schedule> schedules = findSchedules(request.scheduleId());
 		validateSchedulesAvailable(schedules);
 
-		// 단체 스케줄 -> 예약 시 RES
-		// 개인 스케줄 -> 예약 인원 만큼 채워지면 RES
+
 		// 스케줄에서 Type을 저장해야하며, Type에 따른 RES 처리가 필요하다.
 		RoomType roomType = schedules.get(0).getRoomType();
-		// if (roomType == schedules.getCapacity)
+		if(roomType == RoomType.INDIVIDUAL) throw new IllegalStateException("해당 방은 개인예약 전용입니다.");
 
 		// JWT에서 예약자 이메일 추출
 		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
@@ -161,6 +171,12 @@ public class ReservationService {
 		// 예약자(User) 확인 및 user_name 가져오기
 		Member reserver = memberRepository.findByEmail(Email.of(reserverEmail))
 			.orElseThrow(() -> new IllegalArgumentException("예약자 이메일이 존재하지 않습니다: " + reserverEmail));
+
+		if(reserver.isPenalty()) {
+			throw new IllegalStateException("예약자가 패널티 상태입니다. 예약이 불가능합니다.");
+		}
+
+
 
 		// 중복된 이메일 검사 (예약자 포함)
 		Set<String> uniqueEmails = new HashSet<>();
@@ -178,6 +194,21 @@ public class ReservationService {
 				}
 				Member participant = memberRepository.findByEmail(Email.of(email))
 					.orElseThrow(() -> new IllegalArgumentException("참여자 이메일이 존재하지 않습니다: " + email));
+
+				//참여자 패널티 상태 확인
+				if (participant.isPenalty()) {
+					throw new IllegalStateException("참여자 중 패널티 상태인 사용자가 있습니다. 예약이 불가능합니다. (이메일: " + email + ")");
+				}
+
+				//참여자 최근 예약 상태 확인
+				Optional<Reservation> recentReservationOpt = reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(email);
+				if(recentReservationOpt.isPresent()) {
+					ReservationStatus recentStatus = recentReservationOpt.get().getStatus();
+					if(recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
+						throw new IllegalStateException("참여자 중 현재 예약이 진행 중인 사용자가 있어 예약이 불가능합니다." + email);
+					}
+				}
+
 				emailToNameMap.put(email, participant.getName());
 			}
 		}
@@ -223,7 +254,6 @@ public class ReservationService {
 
 		return "Success";
 	}
-
 
 	@Transactional
 	public void cancelReservation(DeleteReservationRequest request) {
