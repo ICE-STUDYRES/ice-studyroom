@@ -80,11 +80,12 @@ public class Reservation {
 		return status == ReservationStatus.RESERVED;
 	}
 
+	public boolean matchEmail(String email) { return userEmail.equals(email); }
+
 	// 정상 입실인지 지각인지 노쇼인지 판단하는 코드
 	public ReservationStatus checkAttendanceStatus(LocalDateTime now) {
 		LocalDateTime startDateTime = LocalDateTime.of(createdAt.toLocalDate(), startTime);
 		LocalDateTime endDateTime = LocalDateTime.of(createdAt.toLocalDate(), endTime);
-
 		long minutesDifference = Duration.between(startDateTime, now).toMinutes();
 		long minutesDurationOfReservation = Duration.between(startDateTime, endDateTime).toMinutes();
 
