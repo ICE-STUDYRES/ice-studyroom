@@ -100,7 +100,7 @@ public class ReservationController {
 	@Operation(summary = "스터디룸 예약", description = "스터디룸을 예약합니다.")
 	@ApiResponse(responseCode = "201", description = "스터디룸 예약 성공")
 	@ApiResponse(responseCode = "500", description = "스터디룸 예약 실패")
-	@PostMapping("/reservations")
+	@PostMapping("/reservations/group")
 	public ResponseEntity<ResponseDto<String>> createReservation(
 		@RequestHeader("Authorization") String authorizationHeader,
 		@Valid @RequestBody CreateReservationRequest request
