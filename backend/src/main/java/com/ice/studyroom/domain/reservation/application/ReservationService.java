@@ -258,6 +258,7 @@ public class ReservationService {
 
 		if (!now.isBefore(startTime.minus(1, ChronoUnit.HOURS))) {
 			// 취소 패널티 부여
+			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(email)), PenaltyReasonType.CANCEL);
 		}
 
 		/*
