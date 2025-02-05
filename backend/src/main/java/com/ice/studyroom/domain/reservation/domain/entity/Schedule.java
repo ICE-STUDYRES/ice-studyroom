@@ -101,8 +101,6 @@ public class Schedule {
 		if (this.currentRes == 0) {
 			available();
 		}
-		System.out.println("status = " + status);
-		System.out.println("currentRes = " + currentRes);
 	}
 
 	public void available() {

@@ -235,11 +235,8 @@ public class ReservationService {
 
 		// JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
 		if (!reservation.matchEmail(email)) {
-			System.out.println("email = " + email);
-			System.out.println("reservation = " + reservation.getUserEmail());
 			throw new IllegalStateException("이전에 예약이 되지 않았습니다.");
 		}
-
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime EnterTime = LocalDateTime.of(LocalDate.now(), reservation.getStartTime());
 
