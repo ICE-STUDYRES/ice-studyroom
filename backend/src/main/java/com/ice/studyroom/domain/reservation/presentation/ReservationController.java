@@ -49,7 +49,7 @@ public class ReservationController {
 	 * @return List 형태의 내 예약 정보들
 	 * exception handler 전역 처리로 수정 예정
 	 */
-	@ExceptionHandler(BusinessException.class)
+	//@ExceptionHandler(BusinessException.class)
 	@Operation(summary = "내 예약 정보 조회", description = "현재 사용자의 예약 정보를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "예약 정보 조회 성공")
 	@ApiResponse(responseCode = "500", description = "예약 정보 조회 실패")
@@ -138,6 +138,9 @@ public class ReservationController {
 			.body(ResponseDto.of(reservationService.cancelReservation(id, authorizationHeader)));
 	}
 
+	@Operation(summary = "예약 연장", description = "예약을 연장합니다.")
+	@ApiResponse(responseCode = "200", description = "예약 연장 성공")
+	@ApiResponse(responseCode = "500", description = "예약 연장 실패")
 	@PatchMapping("/reservations/{id}")
 	public ResponseEntity<ResponseDto<String>> extendReservation(
 		@PathVariable Long id,

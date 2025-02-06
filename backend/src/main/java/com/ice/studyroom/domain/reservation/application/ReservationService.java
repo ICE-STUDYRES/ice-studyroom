@@ -44,12 +44,14 @@ import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelRese
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
 import com.ice.studyroom.global.exception.AttendanceException;
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
 public class ReservationService {
 
 	private final QRCodeUtil qrCodeUtil;
@@ -95,7 +97,7 @@ public class ReservationService {
 		String memberEmail = qrData.getEmail();
 
 		Reservation reservation = reservationRepository.findById(reservationId)
-			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"존재하지 않는 예약입니다."));
 
 		LocalDateTime now = LocalDateTime.now();
 		ReservationStatus status = reservation.checkAttendanceStatus(now);
@@ -277,23 +279,21 @@ public class ReservationService {
 		return new CancelReservationResponse(id);
 	}
 
-	@Transactional
-	public String extendReservation(Long scheduleId, String authorizationHeader) {
-		Reservation reservation = findReservationById(scheduleId);
+	public String extendReservation(Long reservationId, String authorizationHeader) {
+		Reservation reservation = this.findReservationById(reservationId);
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		if (!reservation.matchEmail(email)) {
-			throw new IllegalStateException("이전에 예약이 되지 않았습니다.");
+			throw new BusinessException(StatusCode.NOT_FOUND,"이전에 예약이 되지 않았습니다.");
 		}
 
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime endTime = LocalDateTime.of(reservation.getScheduleDate(), reservation.getEndTime());
 
-
 		if (now.isAfter(endTime)) {
-			throw new IllegalStateException("연장 가능한 시간이 지났습니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "연장 가능한 시간이 지났습니다.");
 		} else if (now.isBefore(endTime.minusMinutes(10))) {
-			throw new IllegalStateException("연장은 퇴실 시간 10분 전부터 가능합니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST,"연장은 퇴실 시간 10분 전부터 가능합니다.");
 		}
 
 		//방 번호, 오늘 날짜, 시작하는 시간으로 다음 스케줄을 찾는다.
@@ -301,43 +301,52 @@ public class ReservationService {
 			reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getEndTime());
 
 		if (nextSchedule == null) {
-			throw new IllegalArgumentException("스터디룸 이용 가능 시간을 확인해주세요.");
+			throw new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요.");
 		}
 
 		if (!nextSchedule.isCurrentResLessThanCapacity() || !nextSchedule.isAvailable()) {
-			throw new IllegalStateException("이미 예약이 완료된 스터디룸입니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST,"이미 예약이 완료된 스터디룸입니다.");
 		}
 
-		List<String> reservationEmails = reservationRepository.findEmailsByRoomNumberAndScheduleDateAndStartTime(
+		//요청한 예약과 동일한 예약을 모두 가져온다.
+		List<Reservation> reservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
 			reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
+
+		//동일한 예약에 대해 모든 이메일을 가져온다.
+		List<String> reservationEmails = reservations.stream().map(Reservation::getUserEmail).toList();
 
 		for (String reservationEmail : reservationEmails) {
 			Member member = memberRepository.getMemberByEmail(Email.of(reservationEmail));
 			if(member.isPenalty()){
-				throw new IllegalStateException("패널티가 있는 멤버로 인해 연장이 불가능합니다.");
+				throw new BusinessException(StatusCode.FORBIDDEN, "패널티가 있는 멤버로 인해 연장이 불가능합니다.");
 			}
 		}
 
 		if (nextSchedule.getRoomType() == RoomType.GROUP) {
-			List<Reservation> reservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
-				reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
-
 			for (Reservation res : reservations) {
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
+				reservationRepository.save(res);
 			}
 
 			nextSchedule.reserve();
+			scheduleRepository.save(nextSchedule);
 		}else{
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
+			reservationRepository.save(reservation);
 			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + 1);
+			if (nextSchedule.getCurrentRes() == nextSchedule.getCapacity()) {
+				nextSchedule.reserve();
+			}
+			scheduleRepository.save(nextSchedule);
+
 		}
 		return "Success";
 	}
 
-	// TODO: 추후 Jpa에 종합할 예정
+	//TODO: 추후 Jpa에 종합할 예정
 	private Reservation findReservationById(Long reservationId) {
 		return reservationRepository.findById(reservationId)
-			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다."));
 	}
 
 	private List<Schedule> findSchedules(Long[] scheduleIds) {
