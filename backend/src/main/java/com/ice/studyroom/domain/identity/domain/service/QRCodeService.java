@@ -2,6 +2,7 @@ package com.ice.studyroom.domain.identity.domain.service;
 
 import java.time.Instant;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -9,6 +10,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
 
 @Service
 public class QRCodeService {
@@ -61,7 +63,7 @@ public class QRCodeService {
 		}
 	}
 
-	public Long getResId(String decryptedData) {
+	public QRDataResponse getQRData(String decryptedData) {
 		try {
 			String jsonValue = redisTemplate.opsForValue().get("qr:" + decryptedData);
 			if (jsonValue == null) {
@@ -69,8 +71,11 @@ public class QRCodeService {
 			}
 			Map<String, Object> qrData = objectMapper.readValue(jsonValue, Map.class);
 
-			Object reservationId = qrData.get("reservationId");
-			return reservationId != null ? ((Number) reservationId).longValue() : null;
+			Long reservationId = qrData.containsKey("reservationId") ?
+				((Number) qrData.get("reservationId")).longValue() : null;
+			String email = qrData.containsKey("email") ? (String) qrData.get("email") : null;
+
+			return new QRDataResponse(reservationId, email);
 		} catch (Exception e) {
 			throw new RuntimeException("QR 코드 조회 오류", e);
 		}

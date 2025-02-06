@@ -43,8 +43,6 @@ public class MembershipService {
 	}
 
 	public MemberLoginResponse login(MemberLoginRequest request) {
-		memberDomainService.checkMemberPenalty(request.email());
-
 		Authentication authentication = authenticationManager.authenticate(
 			new UsernamePasswordAuthenticationToken(request.email(), request.password())
 		);

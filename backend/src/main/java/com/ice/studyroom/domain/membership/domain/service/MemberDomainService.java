@@ -92,10 +92,5 @@ public class MemberDomainService {
 		memberRepository.save(member);
 	}
 
-	public void checkMemberPenalty(String email) {
-		if (memberRepository.existsByEmailAndIsPenalty(Email.of(email), true)) {
-			throw new BusinessException(StatusCode.FORBIDDEN, "패널티 상태로 인해 로그인이 제한되었습니다.");
-		}
-	}
 }
 

@@ -67,6 +67,7 @@ public class GlobalExceptionHandler {
 	// 비즈니스 예외 처리
 	@ExceptionHandler(BusinessException.class)
 	protected ResponseEntity<ResponseDto<Object>> handleBusinessException(BusinessException ex) {
+		log.error("BusinessException caught in GlobalExceptionHandler: {}", ex.getMessage());
 		return ResponseEntity
 			.status(ex.getStatusCode().getStatus())
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));

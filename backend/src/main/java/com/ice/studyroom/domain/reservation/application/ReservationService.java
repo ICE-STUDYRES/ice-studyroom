@@ -1,6 +1,7 @@
 package com.ice.studyroom.domain.reservation.application;
 
 import java.sql.SQLOutput;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -26,8 +27,11 @@ import com.ice.studyroom.domain.identity.domain.service.QRCodeService;
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
 import com.ice.studyroom.domain.identity.infrastructure.security.QRCodeUtil;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
+import com.ice.studyroom.domain.penalty.application.PenaltyService;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
@@ -35,17 +39,19 @@ import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
-import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
 import com.ice.studyroom.global.exception.AttendanceException;
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
+@Transactional
 public class ReservationService {
 
 	private final QRCodeUtil qrCodeUtil;
@@ -54,6 +60,7 @@ public class ReservationService {
 	private final ReservationRepository reservationRepository;
 	private final ScheduleRepository scheduleRepository;
 	private final QRCodeService qrCodeService;
+	private final PenaltyService penaltyService;
 
 	public List<Reservation> getMyAllReservation(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
@@ -85,10 +92,12 @@ public class ReservationService {
 		// 이미지 BASE64디코딩 -> 디코딩 된 이미지 -> 텍스트 추출
 		String qrKey = qrCodeUtil.decryptQRCode(qrCode);
 		// 얻은 memer_id와 reservation_id를 토대로 예약 레코드를 찾는다.
-		Long memberId = qrCodeService.getResId(qrKey);
+		QRDataResponse qrData = qrCodeService.getQRData(qrKey);
+		Long reservationId = qrData.getReservationId();
+		String memberEmail = qrData.getEmail();
 
-		Reservation reservation = reservationRepository.findById(memberId)
-			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+		Reservation reservation = reservationRepository.findById(reservationId)
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"존재하지 않는 예약입니다."));
 
 		LocalDateTime now = LocalDateTime.now();
 		ReservationStatus status = reservation.checkAttendanceStatus(now);
@@ -97,8 +106,10 @@ public class ReservationService {
 			throw new AttendanceException("출석 시간이 아닙니다.", HttpStatus.FORBIDDEN);
 		} else if (status == ReservationStatus.NO_SHOW) {
 			throw new AttendanceException("출석 시간이 만료되었습니다.", HttpStatus.GONE);
+		} else if(status == ReservationStatus.LATE){
+			//해당 멤버에게 패널티 부여
+			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(memberEmail)), PenaltyReasonType.LATE);
 		}
-
 		return status;
 	}
 
@@ -279,6 +290,7 @@ public class ReservationService {
 
 		if (!now.isBefore(startTime.minus(1, ChronoUnit.HOURS))) {
 			// 취소 패널티 부여
+			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(email)), PenaltyReasonType.CANCEL);
 		}
 
 		/*
@@ -297,10 +309,74 @@ public class ReservationService {
 		return new CancelReservationResponse(id);
 	}
 
-	// TODO: 추후 Jpa에 종합할 예정
+	public String extendReservation(Long reservationId, String authorizationHeader) {
+		Reservation reservation = this.findReservationById(reservationId);
+		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+
+		if (!reservation.matchEmail(email)) {
+			throw new BusinessException(StatusCode.NOT_FOUND,"이전에 예약이 되지 않았습니다.");
+		}
+
+		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime endTime = LocalDateTime.of(reservation.getScheduleDate(), reservation.getEndTime());
+
+		if (now.isAfter(endTime)) {
+			throw new BusinessException(StatusCode.BAD_REQUEST, "연장 가능한 시간이 지났습니다.");
+		} else if (now.isBefore(endTime.minusMinutes(10))) {
+			throw new BusinessException(StatusCode.BAD_REQUEST,"연장은 퇴실 시간 10분 전부터 가능합니다.");
+		}
+
+		//방 번호, 오늘 날짜, 시작하는 시간으로 다음 스케줄을 찾는다.
+		Schedule nextSchedule = scheduleRepository.findByRoomNumberAndScheduleDateAndStartTime(
+			reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getEndTime());
+
+		if (nextSchedule == null) {
+			throw new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요.");
+		}
+
+		if (!nextSchedule.isCurrentResLessThanCapacity() || !nextSchedule.isAvailable()) {
+			throw new BusinessException(StatusCode.BAD_REQUEST,"이미 예약이 완료된 스터디룸입니다.");
+		}
+
+		//요청한 예약과 동일한 예약을 모두 가져온다.
+		List<Reservation> reservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
+			reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
+
+		//동일한 예약에 대해 모든 이메일을 가져온다.
+		List<String> reservationEmails = reservations.stream().map(Reservation::getUserEmail).toList();
+
+		for (String reservationEmail : reservationEmails) {
+			Member member = memberRepository.getMemberByEmail(Email.of(reservationEmail));
+			if(member.isPenalty()){
+				throw new BusinessException(StatusCode.FORBIDDEN, "패널티가 있는 멤버로 인해 연장이 불가능합니다.");
+			}
+		}
+
+		if (nextSchedule.getRoomType() == RoomType.GROUP) {
+			for (Reservation res : reservations) {
+				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
+				reservationRepository.save(res);
+			}
+
+			nextSchedule.reserve();
+			scheduleRepository.save(nextSchedule);
+		}else{
+			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
+			reservationRepository.save(reservation);
+			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + 1);
+			if (nextSchedule.getCurrentRes() == nextSchedule.getCapacity()) {
+				nextSchedule.reserve();
+			}
+			scheduleRepository.save(nextSchedule);
+
+		}
+		return "Success";
+	}
+
+	//TODO: 추후 Jpa에 종합할 예정
 	private Reservation findReservationById(Long reservationId) {
 		return reservationRepository.findById(reservationId)
-			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 예약입니다."));
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다."));
 	}
 
 	private List<Schedule> findSchedules(Long[] scheduleIds) {

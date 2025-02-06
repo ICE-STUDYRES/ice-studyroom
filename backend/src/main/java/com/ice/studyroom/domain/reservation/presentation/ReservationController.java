@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -19,7 +20,6 @@ import com.ice.studyroom.domain.reservation.application.ReservationService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
-import com.ice.studyroom.domain.reservation.presentation.dto.request.DeleteReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
@@ -49,7 +49,7 @@ public class ReservationController {
 	 * @return List 형태의 내 예약 정보들
 	 * exception handler 전역 처리로 수정 예정
 	 */
-	@ExceptionHandler(BusinessException.class)
+	//@ExceptionHandler(BusinessException.class)
 	@Operation(summary = "내 예약 정보 조회", description = "현재 사용자의 예약 정보를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "예약 정보 조회 성공")
 	@ApiResponse(responseCode = "500", description = "예약 정보 조회 실패")
@@ -98,11 +98,11 @@ public class ReservationController {
 			.body(ResponseDto.of(reservationService.getSchedule()));
 	}
 
-	@Operation(summary = "스터디룸 예약", description = "스터디룸을 예약합니다.")
-	@ApiResponse(responseCode = "201", description = "스터디룸 예약 성공")
-	@ApiResponse(responseCode = "500", description = "스터디룸 예약 실패")
+	@Operation(summary = "단체 스터디룸 예약", description = "단체 단위로 스터디룸을 예약합니다.")
+	@ApiResponse(responseCode = "201", description = "스터디룸 단체 예약 성공")
+	@ApiResponse(responseCode = "500", description = "스터디룸 단체 예약 실패")
 	@PostMapping("/reservations/group")
-	public ResponseEntity<ResponseDto<String>> createReservation(
+	public ResponseEntity<ResponseDto<String>> reserveGroup(
 		@RequestHeader("Authorization") String authorizationHeader,
 		@Valid @RequestBody CreateReservationRequest request
 	) {
@@ -112,6 +112,19 @@ public class ReservationController {
 	}
 
 	// 예약 취소 시 본인 인증이 필요하다.
+	@Operation(summary = "개인 스터디룸 예약", description = "개인 단위로 스터디룸을 예약합니다.")
+	@ApiResponse(responseCode = "200", description = "스터디룸 개인 예약 성공")
+	@ApiResponse(responseCode = "500", description = "스터디룸 개인 예약 실패")
+	@PostMapping("/reservations/individual")
+	public ResponseEntity<ResponseDto<String>> reserveIndividual(
+		@RequestHeader("Authorization") String authorizationHeader,
+		@Valid @RequestBody CreateReservationRequest request
+	) {
+		return ResponseEntity
+			.status(StatusCode.OK.getStatus())
+			.body(ResponseDto.of(reservationService.createIndividualReservation(authorizationHeader, request)));
+	}
+
 	@Operation(summary = "예약 취소", description = "예약을 취소합니다.")
 	@ApiResponse(responseCode = "200", description = "예약 취소 성공")
 	@ApiResponse(responseCode = "500", description = "예약 취소 실패")
@@ -125,16 +138,16 @@ public class ReservationController {
 			.body(ResponseDto.of(reservationService.cancelReservation(id, authorizationHeader)));
 	}
 
-	@Operation(summary = "개인 예약 생성", description = "개인 예약을 생성합니다.")
-	@ApiResponse(responseCode = "200", description = "개인 예약 성공")
-	@ApiResponse(responseCode = "500", description = "개인 예약 실패")
-	@PostMapping("/reservations/individual")
-	public ResponseEntity<ResponseDto<String>> createIndivReservation(
-		@RequestHeader("Authorization") String authorizationHeader,
-		@Valid @RequestBody CreateReservationRequest request
+	@Operation(summary = "예약 연장", description = "예약을 연장합니다.")
+	@ApiResponse(responseCode = "200", description = "예약 연장 성공")
+	@ApiResponse(responseCode = "500", description = "예약 연장 실패")
+	@PatchMapping("/reservations/{id}")
+	public ResponseEntity<ResponseDto<String>> extendReservation(
+		@PathVariable Long id,
+		@RequestHeader("Authorization") String authorizationHeader
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.createIndividualReservation(authorizationHeader, request)));
+			.body(ResponseDto.of(reservationService.extendReservation(id, authorizationHeader)));
 	}
 }
