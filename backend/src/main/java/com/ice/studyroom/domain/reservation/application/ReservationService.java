@@ -308,6 +308,16 @@ public class ReservationService {
 			throw new IllegalStateException("이미 예약이 완료된 스터디룸입니다.");
 		}
 
+		List<String> reservationEmails = reservationRepository.findEmailsByRoomNumberAndScheduleDateAndStartTime(
+			reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
+
+		for (String reservationEmail : reservationEmails) {
+			Member member = memberRepository.getMemberByEmail(Email.of(reservationEmail));
+			if(member.isPenalty()){
+				throw new IllegalStateException("패널티가 있는 멤버로 인해 연장이 불가능합니다.");
+			}
+		}
+
 		if (nextSchedule.getRoomType() == RoomType.GROUP) {
 			List<Reservation> reservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
 				reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
@@ -315,6 +325,7 @@ public class ReservationService {
 			for (Reservation res : reservations) {
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 			}
+
 			nextSchedule.reserve();
 		}else{
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());

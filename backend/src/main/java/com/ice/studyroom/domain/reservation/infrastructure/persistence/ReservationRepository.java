@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
@@ -19,4 +20,6 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 	List<Reservation> findByEndTimeBetween(LocalTime time1, LocalTime time2);
 
 	List<Reservation> findByRoomNumberAndScheduleDateAndStartTime(String roomNumber, LocalDate scheduleDate, LocalTime startTime);
+
+	List<String> findEmailsByRoomNumberAndScheduleDateAndStartTime(String roomNumber, LocalDate scheduleDate, LocalTime startTime);
 }
