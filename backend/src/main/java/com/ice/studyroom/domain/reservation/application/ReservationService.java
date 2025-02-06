@@ -329,8 +329,15 @@ public class ReservationService {
 	}
 
 	private void validateSchedulesAvailable(List<Schedule> schedules) {
-		if (schedules.stream().anyMatch(schedule -> !schedule.isAvailable() || !schedule.isCurrentResLessThanCapacity())) {
-			throw new IllegalStateException(("예약이 불가능합니다."));
+		LocalDateTime now = LocalDateTime.now();
+
+		if (schedules.stream().anyMatch(schedule -> {
+			LocalDateTime scheduleStartDateTime = LocalDateTime.of(schedule.getScheduleDate(), schedule.getStartTime());
+			return !schedule.isAvailable() ||
+				!schedule.isCurrentResLessThanCapacity() ||
+				scheduleStartDateTime.isBefore(now); // 현재 시간보다 이전이면 예외 발생
+		})) {
+			throw new IllegalStateException("예약이 불가능합니다.");
 		}
 	}
 }
