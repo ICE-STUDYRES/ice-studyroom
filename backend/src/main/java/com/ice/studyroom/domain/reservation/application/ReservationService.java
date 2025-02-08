@@ -1,11 +1,8 @@
 package com.ice.studyroom.domain.reservation.application;
 
-import java.sql.SQLOutput;
-import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,11 +10,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -27,7 +26,6 @@ import com.ice.studyroom.domain.identity.domain.service.QRCodeService;
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
 import com.ice.studyroom.domain.identity.infrastructure.security.QRCodeUtil;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
-import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
@@ -42,6 +40,8 @@ import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReser
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.GetReservationsResponse;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.GetReservationsResponse.Participant;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
 import com.ice.studyroom.global.exception.AttendanceException;
 import com.ice.studyroom.global.exception.BusinessException;
@@ -62,9 +62,34 @@ public class ReservationService {
 	private final QRCodeService qrCodeService;
 	private final PenaltyService penaltyService;
 
-	public List<Reservation> getMyAllReservation(String authorizationHeader) {
+	//todo : N+1 문제 해결
+	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		return reservationRepository.findByUserEmail(email);
+		List<Reservation> reservations = reservationRepository.findByUserEmail(email);
+		Map<String, List<Participant>> reservationParticipantsMap = new HashMap<>();
+
+		for (Reservation reservation : reservations) {
+			String key = reservation.getRoomNumber() + "_" + reservation.getScheduleDate() + "_" + reservation.getStartTime();
+
+			if (!reservationParticipantsMap.containsKey(key)) {
+				List<Reservation> sameReservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
+					reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
+
+				List<Participant> participants = sameReservations.stream()
+					.map(sameRes -> memberRepository.findByEmail(Email.of(sameRes.getUserEmail()))
+						.map(Participant::from)
+						.orElse(null))
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
+
+				reservationParticipantsMap.put(key, participants);
+			}
+		}
+
+		return reservations.stream()
+			.map(reservation -> GetReservationsResponse.from(reservation, reservationParticipantsMap.get(
+				reservation.getRoomNumber() + "_" + reservation.getScheduleDate() + "_" + reservation.getStartTime())))
+			.collect(Collectors.toList());
 	}
 
 	public Optional<GetMostRecentReservationResponse> getMyMostRecentReservation(String authorizationHeader) {
@@ -190,8 +215,6 @@ public class ReservationService {
 		if(reserver.isPenalty()) {
 			throw new IllegalStateException("예약자가 패널티 상태입니다. 예약이 불가능합니다.");
 		}
-
-
 
 		// 중복된 이메일 검사 (예약자 포함)
 		Set<String> uniqueEmails = new HashSet<>();
