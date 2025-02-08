@@ -8,6 +8,8 @@ import java.util.List;
 
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.StatusCode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -120,14 +122,14 @@ public class Reservation {
 
 	public static Reservation from(List<Schedule> schedules, String email, String userName) {
 		if (schedules == null || schedules.isEmpty()) {
-			throw new IllegalArgumentException("Schedules List가 비어있습니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "Schedules List가 비어있습니다.");
 		}
 
 		Schedule firstSchedule = schedules.get(0);
 		Schedule secondSchedule = schedules.size() > 1 ? schedules.get(1) : null;
 
 		if (firstSchedule.getRoomNumber() == null) {
-			throw new IllegalArgumentException("firstSchedule은 null일  수 없습니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "firstSchedule은 null일  수 없습니다.");
 		}
 
 		return Reservation.builder()

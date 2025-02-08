@@ -9,6 +9,8 @@ import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
+import com.ice.studyroom.global.exception.BusinessException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -90,7 +92,7 @@ class ReservationCancelTest {
 		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
 
 		// when & then
-		IllegalStateException exception = assertThrows(IllegalStateException.class,
+		BusinessException exception = assertThrows(BusinessException.class,
 			() -> reservationService.cancelReservation(reservationId, token));
 
 		assertEquals("이전에 예약이 되지 않았습니다.", exception.getMessage());
@@ -147,7 +149,7 @@ class ReservationCancelTest {
 		when(reservationRepository.findById(reservationId)).thenReturn(Optional.empty());
 
 		// when & then
-		IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+		BusinessException exception = assertThrows(BusinessException.class,
 			() -> reservationService.cancelReservation(reservationId, token));
 
 		assertEquals("존재하지 않는 예약입니다.", exception.getMessage());
