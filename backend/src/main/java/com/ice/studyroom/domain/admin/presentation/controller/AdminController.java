@@ -79,21 +79,12 @@ public class AdminController {
 			.body(ResponseDto.of(adminService.adminGetPenaltyRecords(request), "성공적으로 패널티 이유 목록을 반환했습니다."));
 	}
 
-	@PutMapping("/penalty/add")
+	@PostMapping("/penalty")
 	public ResponseEntity<ResponseDto<AdminPenaltyControlResponse>> adminAddPenalties(
 		@Valid @RequestBody AdminPenaltyRequest request
 	) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(adminService.adminAddPenalty(request), "관리자가 성공적으로 패널티 횟수를 증가시켰습니다."));
-	}
-
-	@PutMapping("/penalty/minus")
-	public ResponseEntity<ResponseDto<AdminPenaltyControlResponse>> adminMinusPenalties(
-		@Valid @RequestBody AdminPenaltyRequest request
-	) {
-		return ResponseEntity
-			.status(HttpStatus.OK)
-			.body(ResponseDto.of(adminService.adminSubtractPenalty(request), "관리자가 성공적으로 패널티 횟수를 차감시켰습니다."));
+			.body(ResponseDto.of(adminService.adminSetPenalty(request)));
 	}
 }
