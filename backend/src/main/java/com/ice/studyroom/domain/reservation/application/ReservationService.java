@@ -16,7 +16,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -158,14 +157,8 @@ public class ReservationService {
 			throw new IllegalStateException("사용정지 상태입니다.");
 		}
 
-		// 🔹 최근 예약 상태 확인 (RESERVED, ENTRANCE가 있으면 예약 불가)
-		Optional<Reservation> recentReservation = reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(reserverEmail);
-		if (recentReservation.isPresent()) {
-			ReservationStatus recentStatus = recentReservation.get().getStatus();
-			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
-				throw new IllegalStateException("현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다. (상태: " + recentStatus + ")");
-			}
-		}
+		// 예약 중복 방지
+		checkDuplicateReservation(reserverEmail);
 
 		// 예약 객체 생성 및 저장
 		String userName = reserver.getName();
@@ -215,6 +208,9 @@ public class ReservationService {
 		if(reserver.isPenalty()) {
 			throw new IllegalStateException("예약자가 패널티 상태입니다. 예약이 불가능합니다.");
 		}
+
+		// 예약 중복 방지
+		checkDuplicateReservation(reserverEmail);
 
 		// 중복된 이메일 검사 (예약자 포함)
 		Set<String> uniqueEmails = new HashSet<>();
@@ -437,6 +433,16 @@ public class ReservationService {
 				scheduleStartDateTime.isBefore(now); // 현재 시간보다 이전이면 예외 발생
 		})) {
 			throw new IllegalStateException("예약이 불가능합니다.");
+		}
+	}
+
+	private void checkDuplicateReservation(String reserverEmail){
+		Optional<Reservation> recentReservation = reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(reserverEmail);
+		if (recentReservation.isPresent()) {
+			ReservationStatus recentStatus = recentReservation.get().getStatus();
+			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
+				throw new IllegalStateException("현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다. (상태: " + recentStatus + ")");
+			}
 		}
 	}
 }
