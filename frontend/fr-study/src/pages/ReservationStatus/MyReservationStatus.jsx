@@ -47,19 +47,6 @@ const MyReservationStatus = () => {
           console.warn("⚠️ QR 코드 데이터가 JSON 형식이 아님. 그대로 사용함.");
         }
   
-        // ✅ Base64 변환 (한글 포함 여부 확인)
-        let qrBase64;
-        if (/^[A-Za-z0-9+/=]+$/.test(qrData)) {
-          // 이미 Base64 형태라면 변환하지 않음
-          qrBase64 = qrData;
-        } else {
-          // 한글 포함 시 안전한 Base64 변환
-          qrBase64 = btoa(unescape(encodeURIComponent(qrData)));
-        }
-  
-        console.log("📌 변환된 Base64 QR 코드 데이터:", qrBase64);
-  
-        // ✅ 서버로 Base64 QR 데이터 전송
         const accessToken = localStorage.getItem("accessToken");
         const response = await fetch(`/api/qr/recognize`, {
           method: "POST",
@@ -67,14 +54,14 @@ const MyReservationStatus = () => {
             Authorization: `Bearer ${accessToken}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ qrCode: qrBase64 }),
+          body: JSON.stringify({ qrCode: qrData }),
         });
   
         const result = await response.json();
         console.log("✅ 서버 응답:", result);
   
         // ✅ 중복 스캔 방지
-        setSentQRCode(qrBase64);
+        setSentQRCode(qrData);
   
         qrBuffer = ""; // ✅ 버퍼 초기화
       } else if (event.key !== "Shift") {
