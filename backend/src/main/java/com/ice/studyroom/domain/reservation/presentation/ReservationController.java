@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,13 +16,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ice.studyroom.domain.reservation.application.ReservationService;
-import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.GetReservationsResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
-import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,17 +47,16 @@ public class ReservationController {
 	 * @return List 형태의 내 예약 정보들
 	 * exception handler 전역 처리로 수정 예정
 	 */
-	//@ExceptionHandler(BusinessException.class)
 	@Operation(summary = "내 예약 정보 조회", description = "현재 사용자의 예약 정보를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "예약 정보 조회 성공")
 	@ApiResponse(responseCode = "500", description = "예약 정보 조회 실패")
 	@GetMapping("/reservations/my")
-	public ResponseEntity<ResponseDto<List<Reservation>>> getMyReservation(
+	public ResponseEntity<ResponseDto<List<GetReservationsResponse>>> getMyReservation(
 		@RequestHeader("Authorization") String authorizationHeader
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.getMyAllReservation(authorizationHeader)));
+			.body(ResponseDto.of(reservationService.getReservations(authorizationHeader)));
 	}
 
 	@GetMapping("/reservations/my/latest")
