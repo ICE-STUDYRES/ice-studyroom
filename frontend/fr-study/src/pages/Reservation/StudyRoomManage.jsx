@@ -1,35 +1,187 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Clock, LogOut, CalendarDays, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const StudyRoomManage = () => {
   const navigate = useNavigate();
   const [selectedExtension, setSelectedExtension] = useState(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [booking, setBooking] = useState({
+    id: '',
+    room: '',
+    date: '',
+    time: '',
+    userName: '',
+    userEmail: '',
+    participants: [{ studentNum: '', name: '' }],
+    endTime: '',
+    extendDeadline: '',
+  });  
+
+  useEffect(() => {
+    const fetchBookingData = async () => {
+      try {
+        let accessToken = localStorage.getItem('accessToken');
+        const response = await fetch('/api/reservations/my', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
+          }
+        });
+    
+        const result = await response.json();
+    
+        if (result.code === 'S200' && result.data.length > 0) {
+          const bookingData = getNearestBooking(result.data); // 🔥 가장 가까운 예약 선택
+    
+          if (bookingData) {
+            setBooking({
+              id: bookingData.id || '',
+              room: bookingData.roomNumber || '',
+              date: bookingData.scheduleDate || '',
+              time: `${getFormattedTime(bookingData.startTime)}~${getFormattedTime(bookingData.endTime)}`,
+              userName: bookingData.userName || '',
+              userEmail: bookingData.userEmail || '',
+              participants: Array.isArray(bookingData.participants) ? bookingData.participants : [],
+              endTime: getFormattedTime(bookingData.endTime),
+              extendDeadline: getExtendDeadline(bookingData.endTime),
+            });
+          } else {
+            console.warn("⚠️ 현재 진행 중인 예약이 없습니다.");
+          }
+        }
+      } catch (error) {
+        console.error('🚨 Error fetching booking data:', error);
+      }
+    };
+    
+    fetchBookingData();
+  }, []);
+
+  const isWithinExtensionTime = () => {
+    if (!booking.endTime) return false;
   
-  // 예약 정보 상태
-  const [booking] = useState({
-    room: '305-1',
-    date: '2024.01.03 (수)',
-    time: '14:00~16:00',
-    mainUser: {
-      name: '김철수',
-      studentId: '202012345'
-    },
-    participants: [
-      { name: '이영희', studentId: '202012346' },
-      { name: '박지민', studentId: '202012347' }
-    ],
-    endTime: '16:00',
-    extendDeadline: '15:55'
-  });
+    const now = new Date();
+    const [endHour, endMinute] = booking.endTime.split(':').map(Number);
+  
+    // 연장 가능 시작 시간 (예약 종료 10분 전)
+    const extensionStartTime = new Date();
+    extensionStartTime.setHours(endHour, endMinute - 45, 0, 0);
+  
+    // 예약 종료 시간
+    const extensionEndTime = new Date();
+    extensionEndTime.setHours(endHour, endMinute, 0, 0);
+  
+    return now >= extensionStartTime && now < extensionEndTime;
+  };
 
-  const extensionSlots = [
-    { time: '16:00~17:00', available: true },
-    { time: '17:00~18:00', available: false },
-  ];
+  const getExtensionSlots = () => {
+    if (!booking.endTime) return [];
+  
+    const [endHour, endMinute] = booking.endTime.split(':').map(Number);
+  
+    // 연장 시간 (종료 시간 +1시간)
+    const extendedHour = endHour + 1;
+    const startTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+    const endTime = `${String(extendedHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+  
+    return [{ time: `${startTime}~${endTime}`, available: isWithinExtensionTime() }];
+  };
+  
+  const extensionSlots = getExtensionSlots();  
 
-  const isWithinExtensionTime = true;
+  const getFormattedTime = (time) => {
+    if (!time) return '';
+    return time.slice(0, 5); // "HH:MM:SS" → "HH:MM"
+  };
+
+  const getExtendDeadline = (endTime) => {
+    if (!endTime) return '';
+  
+    let [endHour, endMinute] = endTime.split(':').map(Number);
+  
+    // 10분 전으로 계산
+    endMinute -= 45;
+    if (endMinute < 0) {
+      endMinute += 60;
+      endHour -= 1;
+    }
+  
+    return `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
+  };
+
+  const getNearestBooking = (reservations) => {
+    if (!reservations || reservations.length === 0) return null;
+  
+    const now = new Date();
+  
+    return reservations
+      .map(({ reservation, participants }) => { // 🔥 `reservation` 안의 값 추출
+        if (!reservation) {
+          console.warn("⚠️ reservation 객체가 없습니다:", reservation);
+          return null;
+        }
+  
+        const startTimeString = reservation.startTime || '00:00';
+        const endTimeString = reservation.endTime || '00:00';
+  
+        const [startHour, startMinute] = startTimeString.split(':').map(Number);
+        const [endHour, endMinute] = endTimeString.split(':').map(Number);
+  
+        const startTime = new Date(reservation.scheduleDate);
+        startTime.setHours(startHour, startMinute, 0, 0);
+  
+        const endTime = new Date(reservation.scheduleDate);
+        endTime.setHours(endHour, endMinute, 0, 0);
+  
+        return { 
+          ...reservation, 
+          startTimeObj: startTime, 
+          endTimeObj: endTime,
+          participants // 🔥 `participants`도 함께 반환
+        };
+      })
+      .filter(booking => booking && booking.endTimeObj >= now) // 🔥 유효한 데이터만 필터링
+      .sort((a, b) => a.startTimeObj - b.startTimeObj)[0]; // 🔥 가장 가까운 예약 반환
+  };
+  
+
+  const handleCancelReservation = async () => {
+    console.log(booking)
+    if (!booking.id) {
+      alert("예약 ID가 없습니다.");
+      return;
+    }
+  
+    if (!window.confirm("정말로 예약을 취소하시겠습니까?")) return;
+  
+    try {
+      await axios.delete(`/api/reservations/${booking.id}`);
+      alert("예약이 취소되었습니다.");
+      navigate('/');
+    } catch (error) {
+      console.error("예약 취소 실패:", error);
+      alert("예약 취소 중 오류가 발생했습니다.");
+    }
+  };
+
+  const extendReservation = async () => {
+    try {
+      let accessToken = localStorage.getItem("accessToken");
+        const response = await axios.patch(
+            `/api/reservations/${booking.id}`,
+            {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`,
+                },
+            }
+        );
+        setMessage('예약이 성공적으로 연장되었습니다.');
+    } catch (error) {
+        setMessage('예약 연장에 실패했습니다.');
+    }
+};
 
   const CancelConfirmation = () => (
     <div 
@@ -69,18 +221,17 @@ const StudyRoomManage = () => {
               <div>
                 <div className="text-sm text-gray-600 mb-1">예약자</div>
                 <div className="flex items-center gap-1">
-                  <span className="font-medium text-gray-900">{booking.mainUser.name}</span>
-                  <span className="text-sm text-gray-500">({booking.mainUser.studentId})</span>
+                  <span className="font-medium text-gray-900">{booking.userName}</span>
                 </div>
               </div>
               
-              {booking.participants.length > 0 && (
+              {booking.participants.length > 1 && (
                 <div>
                   <div className="text-sm text-gray-600 mb-1">참여자</div>
-                  {booking.participants.map((participant, index) => (
+                  {booking.participants.slice(1).map((participant, index) => (
                     <div key={index} className="flex items-center gap-1">
                       <span className="font-medium text-gray-900">{participant.name}</span>
-                      <span className="text-sm text-gray-500">({participant.studentId})</span>
+                      <span className="text-sm text-gray-500">({participant.studentNum})</span>
                     </div>
                   ))}
                 </div>
@@ -100,11 +251,7 @@ const StudyRoomManage = () => {
               돌아가기
             </button>
             <button 
-              onClick={() => {
-                // 실제 취소 처리 로직
-                alert('예약이 취소되었습니다.');
-                navigate('/');
-              }}
+              onClick={handleCancelReservation}
               className="w-full py-3 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors"
             >
               취소하기
@@ -178,18 +325,17 @@ const StudyRoomManage = () => {
                 <div>
                   <div className="text-sm text-gray-600 mb-1">예약자</div>
                   <div className="flex items-center gap-1">
-                    <span className="font-medium text-gray-900">{booking.mainUser.name}</span>
-                    <span className="text-sm text-gray-500">({booking.mainUser.studentId})</span>
+                    <span className="font-medium text-gray-900">{booking.userName}</span>
                   </div>
                 </div>
                 
-                {booking.participants.length > 0 && (
+                {booking.participants.length > 1 && (
                   <div>
                     <div className="text-sm text-gray-600 mb-1">참여자</div>
-                    {booking.participants.map((participant, index) => (
+                    {booking.participants.slice(1).map((participant, index) => (
                       <div key={index} className="flex items-center gap-1">
                         <span className="font-medium text-gray-900">{participant.name}</span>
-                        <span className="text-sm text-gray-500">({participant.studentId})</span>
+                        <span className="text-sm text-gray-500">({participant.studentNum})</span>
                       </div>
                     ))}
                   </div>
@@ -207,9 +353,9 @@ const StudyRoomManage = () => {
               <span className="font-semibold text-slate-900">연장 안내</span>
             </div>
             <p className="text-sm text-gray-600">
-              연장은 예약 종료 30분 전부터 5분 전까지 가능합니다.
+              연장은 예약 종료 10분 전부터 가능합니다.
               <br />
-              (현재 예약: {booking.endTime} 종료 → {booking.extendDeadline}까지 연장 가능)
+              (현재 예약: {booking.endTime} 종료 → {booking.extendDeadline}부터 연장 가능)
             </p>
           </div>
         </div>
@@ -217,54 +363,43 @@ const StudyRoomManage = () => {
         {/* Extension Options */}
         <div className="px-4 mt-6">
           <h3 className="text-lg font-bold text-slate-900 mb-3">연장 가능 시간</h3>
-          {!isWithinExtensionTime ? (
-            <div className="text-center py-8 text-gray-500">
-              아직 연장 가능 시간이 아닙니다
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {extensionSlots.map((slot, index) => (
-                <button
-                  key={index}
-                  disabled={!slot.available}
-                  onClick={() => setSelectedExtension(slot.available ? (selectedExtension === slot.time ? null : slot.time) : null)}
-                  className={`
-                    w-full p-4 rounded-xl border-2 transition-all
-                    ${!slot.available 
-                      ? 'bg-gray-50 border-gray-100 cursor-not-allowed' 
-                      : selectedExtension === slot.time
-                        ? 'bg-slate-900 border-slate-900'
-                        : 'bg-white border-gray-200 hover:border-gray-300'
-                    }
-                  `}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Clock className={`w-5 h-5 ${
-                        !slot.available 
-                          ? 'text-gray-300'
-                          : selectedExtension === slot.time
-                            ? 'text-white'
-                            : 'text-gray-600'
-                      }`} />
-                      <span className={`font-medium ${
-                        !slot.available 
-                          ? 'text-gray-400'
-                          : selectedExtension === slot.time
-                            ? 'text-white'
-                            : 'text-gray-900'
-                      }`}>
-                        {slot.time}
-                      </span>
-                    </div>
-                    {selectedExtension === slot.time && (
-                      <CheckCircle2 className="w-5 h-5 text-white" />
-                    )}
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="space-y-2">
+            {extensionSlots.map((slot, index) => (
+              <button
+              key={index}
+              disabled={!slot.available} // 연장 가능 시간이 아닐 경우 클릭 불가능
+              onClick={() => {
+                if (slot.available) {
+                  setSelectedExtension(selectedExtension === slot.time ? null : slot.time);
+                }
+              }}
+              className={`
+                w-full p-4 rounded-xl border-2 font-medium transition-all
+                ${!slot.available 
+                  ? 'bg-gray-50 border-gray-100 cursor-not-allowed text-gray-400' 
+                  : selectedExtension === slot.time
+                    ? 'bg-slate-900 border-slate-900 text-white' // ✅ 선택 시 대비 강화
+                    : 'bg-white border-gray-300 hover:border-gray-500 text-gray-900' // ✅ 기본 상태
+                }
+              `}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Clock className={`
+                    w-5 h-5
+                    ${selectedExtension === slot.time ? 'text-white' : slot.available ? 'text-gray-600' : 'text-gray-300'}
+                  `} /> 
+                  <span className={selectedExtension === slot.time ? "text-white" : "text-gray-900"}>
+                    {slot.time}
+                  </span>
+                </div>
+                {selectedExtension === slot.time && slot.available && (
+                  <CheckCircle2 className="w-5 h-5 text-white" /> // ✅ 선택된 상태에서도 잘 보이도록 유지
+                )}
+              </div>
+            </button>            
+            ))}
+          </div>
         </div>
       </div>
 
@@ -281,7 +416,7 @@ const StudyRoomManage = () => {
             <button 
               onClick={() => {
                 if (selectedExtension) {
-                  // 실제 연장 처리 로직
+                  extendReservation;
                   alert('예약이 연장되었습니다.');
                   navigate('/');
                 }
