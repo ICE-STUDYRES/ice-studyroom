@@ -339,11 +339,11 @@ public class ReservationService {
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime endTime = LocalDateTime.of(reservation.getScheduleDate(), reservation.getEndTime());
 
-		if (now.isAfter(endTime)) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "연장 가능한 시간이 지났습니다.");
-		} else if (now.isBefore(endTime.minusMinutes(10))) {
-			throw new BusinessException(StatusCode.BAD_REQUEST,"연장은 퇴실 시간 10분 전부터 가능합니다.");
-		}
+		// if (now.isAfter(endTime)) {
+		// 	throw new BusinessException(StatusCode.BAD_REQUEST, "연장 가능한 시간이 지났습니다.");
+		// } else if (now.isBefore(endTime.minusMinutes(10))) {
+		// 	throw new BusinessException(StatusCode.BAD_REQUEST,"연장은 퇴실 시간 10분 전부터 가능합니다.");
+		// }
 
 		//방 번호, 오늘 날짜, 시작하는 시간으로 다음 스케줄을 찾는다.
 		Schedule nextSchedule = scheduleRepository.findByRoomNumberAndScheduleDateAndStartTime(
@@ -378,6 +378,7 @@ public class ReservationService {
 			}
 
 			nextSchedule.reserve();
+			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + reservationEmails.size());
 			scheduleRepository.save(nextSchedule);
 
 		}else{
@@ -388,8 +389,8 @@ public class ReservationService {
 				nextSchedule.reserve();
 			}
 			scheduleRepository.save(nextSchedule);
-
 		}
+
 		return "Success";
 	}
 
