@@ -54,33 +54,51 @@ const ReservationStatus = () => {
     }
   };
 
+  const mergeReservations = (reservations) => {
+    if (!reservations.length) return [];
+  
+    const merged = [];
+    let prev = reservations[0];
+  
+    for (let i = 1; i < reservations.length; i++) {
+      const curr = reservations[i];
+  
+      // ✅ 같은 사용자가 예약했고, 시간이 연속되면 병합
+      if (prev.reserver === curr.reserver && prev.time.split('-')[1] === curr.time.split('-')[0]) {
+        prev = {
+          ...prev,
+          time: `${prev.time.split('-')[0]}-${curr.time.split('-')[1]}`, // 시간 병합
+          participants: Math.max(prev.participants, curr.participants), // 참가자 수 유지
+        };
+      } else {
+        merged.push(prev);
+        prev = curr;
+      }
+    }
+    merged.push(prev);
+  
+    return merged;
+  };
+  
   const mapSchedulesToRooms = (scheduleData) => {
     const mappedRooms = rooms.map((room) => {
       const roomSchedules = scheduleData
-        .filter(
-          (schedule) => schedule.roomNumber === room.id && schedule.status === "RESERVED"
-        )
-        .map((schedule) => {
-          const participantCount = (schedule.participantEmail?.length || 0) + 1; // 참가자 수 계산
-          console.log(
-            `Room: ${room.id}, Participants: ${
-              schedule.participantEmail?.length || 0
-            }, Total (including reserver): ${participantCount}`
-          ); // 콘솔 출력
-          return {
-            time: `${schedule.startTime.slice(0, 5)}-${schedule.endTime.slice(0, 5)}`,
-            reserver: "예약됨",
-            participants: participantCount, // 참가자 수
-            status: schedule.status,
-            available: schedule.available,
-          };
-        });
+        .filter((schedule) => schedule.roomNumber === room.id && schedule.status === "RESERVED")
+        .map((schedule) => ({
+          time: `${schedule.startTime.slice(0, 5)}-${schedule.endTime.slice(0, 5)}`,
+          reserver: schedule.reserverEmail, // 예약자 정보 추가
+          participants: schedule.currentRes, // ✅ currentRes 값으로 참가자 수 표시
+          status: schedule.status,
+          available: schedule.available,
+        }))
+        .sort((a, b) => a.time.localeCompare(b.time)); // ✅ 시간 순 정렬 (필수)
   
       return {
         ...room,
-        reservations: roomSchedules,
+        reservations: mergeReservations(roomSchedules), // 병합 로직 적용
       };
     });
+  
     setSchedules(mappedRooms);
   };
 
@@ -182,7 +200,8 @@ const ReservationStatus = () => {
                         >
                           <Clock className="w-4 h-4 text-gray-400" />
                           <span>{res.time}</span>
-                          <span>{res.reserver} / {res.participants}명</span>
+                          <div className="w-px h-4 bg-gray-300"></div>
+                          <span>{res.participants}명</span>
                         </div>
                       ))}
 
