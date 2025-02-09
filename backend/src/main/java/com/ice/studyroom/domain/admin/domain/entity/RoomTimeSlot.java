@@ -7,6 +7,8 @@ import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.admin.domain.type.RoomTimeSlotStatus;
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.StatusCode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -90,18 +92,18 @@ public class RoomTimeSlot extends BaseTimeEntity {
 	 */
 	public void updateStatus(RoomTimeSlotStatus newStatus) {
 		if (this.status == RoomTimeSlotStatus.RESERVED && newStatus == RoomTimeSlotStatus.RESERVED) {
-			throw new IllegalStateException("이미 선점된 상태입니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 선점된 상태입니다.");
 		}
 		this.status = newStatus;
 	}
 
 	private void validateTimeSlot() {
 		if (startTime.isAfter(endTime)) {
-			throw new IllegalArgumentException("시작 시간이 종료 시간보다 늦을 수 없습니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "시작 시간이 종료 시간보다 늦을 수 없습니다.");
 		}
 
 		if (startTime.isBefore(LocalTime.of(9, 0)) || endTime.isAfter(LocalTime.of(22, 0))) {
-			throw new IllegalArgumentException("운영 시간(09:00-22:00) 내에서만 설정 가능합니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "운영 시간(09:00-22:00) 내에서만 설정 가능합니다.");
 		}
 	}
 }

@@ -2,6 +2,9 @@ package com.ice.studyroom.domain.membership.domain.vo;
 
 import java.io.Serializable;
 
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.StatusCode;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
@@ -29,7 +32,7 @@ public class Email implements Serializable {
 
 	private static void validateEmailFormat(String value) {
 		if (!value.endsWith("@hufs.ac.kr")) {
-			throw new IllegalArgumentException("이메일은 @hufs.ac.kr로 끝나야 합니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "이메일은 @hufs.ac.kr로 끝나야 합니다.");
 		}
 	}
 }

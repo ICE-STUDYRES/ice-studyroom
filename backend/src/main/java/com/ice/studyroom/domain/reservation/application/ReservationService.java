@@ -16,7 +16,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -144,28 +143,22 @@ public class ReservationService {
 		List<Schedule> schedules = findSchedules(request.scheduleId());
 		validateSchedulesAvailable(schedules);
 		RoomType roomType = schedules.get(0).getRoomType();
-		if(roomType == RoomType.GROUP) throw new IllegalStateException("해당 방은 단체예약 전용입니다.");
+		if(roomType == RoomType.GROUP) throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다.");
 
 		// JWT에서 예약자 이메일 추출
 		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// 예약자 확인
 		Member reserver = memberRepository.findByEmail(Email.of(reserverEmail))
-			.orElseThrow(() -> new IllegalArgumentException("예약자 이메일이 존재하지 않습니다: " + reserverEmail));
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"예약자 이메일이 존재하지 않습니다: " + reserverEmail));
 
 		// 패널티 상태 확인 (예약 불가)
 		if (reserver.isPenalty()) {
-			throw new IllegalStateException("사용정지 상태입니다.");
+			throw new BusinessException(StatusCode.FORBIDDEN, "사용정지 상태입니다.");
 		}
 
-		// 🔹 최근 예약 상태 확인 (RESERVED, ENTRANCE가 있으면 예약 불가)
-		Optional<Reservation> recentReservation = reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(reserverEmail);
-		if (recentReservation.isPresent()) {
-			ReservationStatus recentStatus = recentReservation.get().getStatus();
-			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
-				throw new IllegalStateException("현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다. (상태: " + recentStatus + ")");
-			}
-		}
+		// 예약 중복 방지
+		checkDuplicateReservation(reserverEmail);
 
 		// 예약 객체 생성 및 저장
 		String userName = reserver.getName();
@@ -180,7 +173,7 @@ public class ReservationService {
 		// 스케줄 업데이트 (currentRes 증가 및 상태 변경)
 		for (Schedule schedule : schedules) {
 			if (!schedule.isCurrentResLessThanCapacity()) {
-				throw new IllegalStateException("예약 가능한 자리가 없습니다.");
+				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 가능한 자리가 없습니다.");
 			}
 
 			schedule.setCurrentRes(schedule.getCurrentRes() + 1); // 개인예약은 현재사용인원에서 +1 진행
@@ -203,18 +196,21 @@ public class ReservationService {
 
 		// 스케줄에서 Type을 저장해야하며, Type에 따른 RES 처리가 필요하다.
 		RoomType roomType = schedules.get(0).getRoomType();
-		if(roomType == RoomType.INDIVIDUAL) throw new IllegalStateException("해당 방은 개인예약 전용입니다.");
+		if(roomType == RoomType.INDIVIDUAL) throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 개인예약 전용입니다.");
 
 		// JWT에서 예약자 이메일 추출
 		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// 예약자(User) 확인 및 user_name 가져오기
 		Member reserver = memberRepository.findByEmail(Email.of(reserverEmail))
-			.orElseThrow(() -> new IllegalArgumentException("예약자 이메일이 존재하지 않습니다: " + reserverEmail));
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reserverEmail));
 
 		if(reserver.isPenalty()) {
-			throw new IllegalStateException("예약자가 패널티 상태입니다. 예약이 불가능합니다.");
+			throw new BusinessException(StatusCode.FORBIDDEN, "예약자가 패널티 상태입니다. 예약이 불가능합니다.");
 		}
+
+		// 예약 중복 방지
+		checkDuplicateReservation(reserverEmail);
 
 		// 중복된 이메일 검사 (예약자 포함)
 		Set<String> uniqueEmails = new HashSet<>();
@@ -228,14 +224,14 @@ public class ReservationService {
 		if (!ObjectUtils.isEmpty(request.participantEmail())) {
 			for (String email : request.participantEmail()) {
 				if (!uniqueEmails.add(email)) {
-					throw new IllegalArgumentException("중복된 참여자 이메일이 존재합니다: " + email);
+					throw new BusinessException(StatusCode.BAD_REQUEST, "중복된 참여자 이메일이 존재합니다: " + email);
 				}
 				Member participant = memberRepository.findByEmail(Email.of(email))
-					.orElseThrow(() -> new IllegalArgumentException("참여자 이메일이 존재하지 않습니다: " + email));
+					.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "참여자 이메일이 존재하지 않습니다: " + email));
 
 				//참여자 패널티 상태 확인
 				if (participant.isPenalty()) {
-					throw new IllegalStateException("참여자 중 패널티 상태인 사용자가 있습니다. 예약이 불가능합니다. (이메일: " + email + ")");
+					throw new BusinessException(StatusCode.FORBIDDEN, "참여자 중 패널티 상태인 사용자가 있습니다. 예약이 불가능합니다. (이메일: " + email + ")");
 				}
 
 				//참여자 최근 예약 상태 확인
@@ -243,7 +239,7 @@ public class ReservationService {
 				if(recentReservationOpt.isPresent()) {
 					ReservationStatus recentStatus = recentReservationOpt.get().getStatus();
 					if(recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
-						throw new IllegalStateException("참여자 중 현재 예약이 진행 중인 사용자가 있어 예약이 불가능합니다." + email);
+						throw new BusinessException(StatusCode.CONFLICT, "참여자 중 현재 예약이 진행 중인 사용자가 있어 예약이 불가능합니다. (이메일: " + email + ")");
 					}
 				}
 
@@ -256,11 +252,11 @@ public class ReservationService {
 		int minRes = schedules.get(0).getMinRes(); // 모든 schedule의 minRes는 동일하다고 가정
 		int capacity = schedules.get(0).getCapacity(); // 모든 연속된 schedule의 capacity는 동일하다고 가정
 		if (totalParticipants < minRes) {
-			throw new IllegalArgumentException(
+			throw new BusinessException(StatusCode.BAD_REQUEST,
 				"최소 예약 인원 조건을 만족하지 않습니다. (필요 인원: " + minRes + ", 현재 인원: " + totalParticipants + ")");
 		}else if (totalParticipants > capacity) {
-			throw new IllegalArgumentException(
-				"방의 최대 수용 인원을 초과했습니다. (최대 수용 인원: " + capacity + ", 현재 인원: " + totalParticipants +")");
+			throw new BusinessException(StatusCode.BAD_REQUEST,
+				"방의 최대 수용 인원을 초과했습니다. (최대 수용 인원: " + capacity + ", 현재 인원: " + totalParticipants + ")");
 		}
 
 		// 예약 리스트 생성
@@ -300,7 +296,7 @@ public class ReservationService {
 
 		// JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
 		if (!reservation.matchEmail(email)) {
-			throw new IllegalStateException("이전에 예약이 되지 않았습니다.");
+			throw new BusinessException(StatusCode.NOT_FOUND, "이전에 예약이 되지 않았습니다.");
 		}
 
 		LocalDateTime now = LocalDateTime.now();
@@ -308,7 +304,7 @@ public class ReservationService {
 
 		// 입실 1 시간 전 일 경우 패널티
 		if (!now.isAfter(startTime)) {
-			throw new IllegalStateException("입실 시간이 초과하였기에 취소할 수 없습니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "입실 시간이 초과하였기에 취소할 수 없습니다.");
 		}
 
 		if (!now.isBefore(startTime.minus(1, ChronoUnit.HOURS))) {
@@ -382,7 +378,9 @@ public class ReservationService {
 			}
 
 			nextSchedule.reserve();
+			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + reservationEmails.size());
 			scheduleRepository.save(nextSchedule);
+
 		}else{
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 			reservationRepository.save(reservation);
@@ -391,8 +389,8 @@ public class ReservationService {
 				nextSchedule.reserve();
 			}
 			scheduleRepository.save(nextSchedule);
-
 		}
+
 		return "Success";
 	}
 
@@ -406,24 +404,24 @@ public class ReservationService {
 		return Arrays.stream(scheduleIds)
 			.map(id -> scheduleRepository.findById(id)
 				.filter(schedule -> schedule.getStatus() == ScheduleStatus.AVAILABLE) // AVAILABLE 상태 체크
-				.orElseThrow(() -> new IllegalArgumentException("존재하지 않거나 사용 불가능한 스케줄입니다.")))
+				.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않거나 사용 불가능한 스케줄입니다.")))
 			.collect(Collectors.toList());
 	}
 
 	private void validateConsecutiveSchedules(CreateReservationRequest request) {
 		Schedule firstSchedule = scheduleRepository.findById(request.scheduleId()[0])
-			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스케줄입니다."));
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
 		Schedule secondSchedule = scheduleRepository.findById(request.scheduleId()[1])
-			.orElseThrow(() -> new IllegalArgumentException("존재하지 않는 스케줄입니다."));
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
 
 		// 같은 방인지 확인
 		if (!firstSchedule.getRoomNumber().equals(secondSchedule.getRoomNumber())) {
-			throw new IllegalArgumentException("연속된 예약은 같은 방에서만 가능합니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST,"연속된 예약은 같은 방에서만 가능합니다.");
 		}
 
 		// 시간이 연속되는지 확인
 		if (!firstSchedule.getEndTime().equals(secondSchedule.getStartTime())) {
-			throw new IllegalArgumentException("연속되지 않은 시간은 예약할 수 없습니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST,"연속되지 않은 시간은 예약할 수 없습니다.");
 		}
 	}
 
@@ -436,7 +434,17 @@ public class ReservationService {
 				!schedule.isCurrentResLessThanCapacity() ||
 				scheduleStartDateTime.isBefore(now); // 현재 시간보다 이전이면 예외 발생
 		})) {
-			throw new IllegalStateException("예약이 불가능합니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다.");
+		}
+	}
+
+	private void checkDuplicateReservation(String reserverEmail){
+		Optional<Reservation> recentReservation = reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(reserverEmail);
+		if (recentReservation.isPresent()) {
+			ReservationStatus recentStatus = recentReservation.get().getStatus();
+			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
+				throw new BusinessException(StatusCode.CONFLICT, "현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다. (상태: " + recentStatus + ")");
+			}
 		}
 	}
 }

@@ -14,6 +14,9 @@ import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyReposi
 import com.ice.studyroom.domain.admin.domain.entity.RoomTimeSlot;
 import com.ice.studyroom.domain.admin.domain.type.RoomTimeSlotStatus;
 import com.ice.studyroom.domain.admin.infrastructure.persistence.RoomTimeSlotRepository;
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.StatusCode;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,11 +36,11 @@ public class AdminService {
 	public AdminCreateOccupyResponse adminOccupyRoom (AdminCreateOccupyRequest request) {
 
 		RoomTimeSlot roomTimeSlot = roomTimeSlotRepository.findById(request.roomTimeSlotId())
-			.orElseThrow(() -> new IllegalStateException("해당 ID에 일치하는 RoomTimeSlot이 없습니다."));
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 없습니다."));
 
 		//상태를 RESERVED로 변경
 		if (roomTimeSlot.getStatus() == RoomTimeSlotStatus.RESERVED) {
-			throw new IllegalStateException("해당 시간에는 이미 선점되어있습니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "해당 시간에는 이미 선점되어있습니다.");
 		}
 
 		//방 상태 변경
@@ -59,10 +62,10 @@ public class AdminService {
 	public AdminDeleteOccupyResponse adminDeleteOccupy(AdminCreateOccupyRequest request) {
 
 		RoomTimeSlot roomTimeSlot = roomTimeSlotRepository.findById(request.roomTimeSlotId())
-			.orElseThrow(() -> new IllegalStateException("해당 ID에 일치하는 RoomTimeSlot이 없습니다."));
+			.orElseThrow(() -> new BusinessException(StatusCode.BAD_REQUEST, "해당 ID에 일치하는 RoomTimeSlot이 없습니다."));
 
 		if(roomTimeSlot.getStatus() == RoomTimeSlotStatus.AVAILABLE) {
-			throw new IllegalStateException("해당 시간은 현재 사용가능 상태입니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "해당 시간은 현재 사용가능 상태입니다.");
 		}
 
 		//방 상태 변경
@@ -75,7 +78,7 @@ public class AdminService {
 
 	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords(AdminPenaltyRequest request) {
 		Member member = memberRepository.findByEmail(Email.of(request.email()))
-			.orElseThrow(() -> new IllegalArgumentException("해당 이메일로 회원을 찾을 수 없습니다."));
+			.orElseThrow(() -> new BusinessException(StatusCode.BAD_REQUEST, "해당 이메일로 회원을 찾을 수 없습니다."));
 
 		// 조건에 맞는 패널티 리스트 조회
 		List<Penalty> penaltyList = penaltyRepository.findByMemberIdAndPenaltyEndAfter(
@@ -83,7 +86,7 @@ public class AdminService {
 		);
 
 		if (penaltyList.isEmpty()) {
-			throw new IllegalArgumentException("해당 회원의 사용 정지 이력이 존재하지 않습니다.");
+			throw new BusinessException(StatusCode.NOT_FOUND, "해당 회원의 사용 정지 이력이 존재하지 않습니다.");
 		}
 
 		// 패널티 리스트를 AdminPenaltyRecordResponse로 변환하여 반환
@@ -92,41 +95,14 @@ public class AdminService {
 			.toList();
 	}
 
-	public AdminPenaltyControlResponse adminSubtractPenalty(AdminPenaltyRequest request) {
+	public AdminPenaltyControlResponse adminSetPenalty(AdminPenaltyRequest request) {
 		Member member = memberRepository.findByEmail(Email.of(request.email()))
-			.orElseThrow(() -> new IllegalArgumentException("해당 이메일로 회원을 찾을 수 없습니다."));
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 이메일로 회원을 찾을 수 없습니다."));
 
-		// //패널티 횟수 차감
-		// if(member.getPenaltyCount() >= 3) {
-		// 	member.subPenalty(member.getPenaltyCount());
-		// 	member.updatePenalty(false);
-		// } else if(member.getPenaltyCount() == 1) {
-		// 	member.subPenalty(member.getPenaltyCount());
-		// } else {throw new IllegalStateException("현재 패널티 횟수가 0입니다.");}
-
-		//변경상태 저장
+		member.updatePenalty(request.setPenalty());
 		memberRepository.save(member);
 
-		//return
-		return AdminPenaltyControlResponse.of("관리자가 패널티 횟수를 차감했습니다.", 1);
-	}
-
-	public AdminPenaltyControlResponse adminAddPenalty(AdminPenaltyRequest request) {
-		Member member = memberRepository.findByEmail(Email.of(request.email()))
-			.orElseThrow(() -> new IllegalArgumentException("해당 이메일로 회원을 찾을 수 없습니다."));
-
-		// //패널티 횟수 증가
-		// if(member.isPenalty()) {
-		// 	throw new IllegalStateException("현재 이미 사용불가 상태입니다.");
-		// } else if(member.getPenaltyCount() >= 3) {
-		// 	member.updatePenalty(true);
-		// 	member.addPenalty(member.getPenaltyCount());
-		// } else{member.addPenalty(member.getPenaltyCount());}
-
-		//변경상태 저장
-		memberRepository.save(member);
-
-		//return
-		return AdminPenaltyControlResponse.of("관리자가 패널티 횟수를 증가했습니다.", 1);
+		String message = request.setPenalty() ? "해당 유저에게 패널티가 부여되었습니다." : "해당 유저의 패널티가 해제되었습니다.";
+		return AdminPenaltyControlResponse.of(message);
 	}
 }
