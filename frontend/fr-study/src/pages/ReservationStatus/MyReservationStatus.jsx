@@ -210,7 +210,7 @@ const MyReservationStatus = () => {
           <p className="text-sm text-red-500">{error}</p>
         ) : myReservations.length > 0 ? (
           <div className="space-y-4">
-            {myReservations.map((reservation) => (
+            {myReservations.map(( {reservation} ) => (
               <div 
                 key={reservation.id} 
                 className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0"
