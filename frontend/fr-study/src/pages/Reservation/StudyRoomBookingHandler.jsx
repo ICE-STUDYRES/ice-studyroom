@@ -173,7 +173,7 @@ export const useStudyRoomBooking = () => {
     console.log("Request Data:", requestData); // 예약 요청 데이터 로그 출력
 
     try {
-      const response = await fetch("/api/reservations", {
+      const response = await fetch("/api/reservations/group", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
