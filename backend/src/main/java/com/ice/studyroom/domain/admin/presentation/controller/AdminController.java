@@ -4,10 +4,12 @@ package com.ice.studyroom.domain.admin.presentation.controller;
 import com.ice.studyroom.domain.admin.application.AdminService;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminCreateOccupyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminPenaltyRequest;
+import com.ice.studyroom.domain.admin.presentation.dto.request.ChangeRoomTypeRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminCreateOccupyResponse;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminDeleteOccupyResponse;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyControlResponse;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyRecordResponse;
+import com.ice.studyroom.domain.admin.presentation.dto.response.ChangeRoomTypeResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -69,6 +71,20 @@ public class AdminController {
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(adminService.adminDeleteOccupy(request)));
 	}
+
+	@Operation(
+		summary = "방 타입 변경",
+		description = "관리자가 특정 스터디룸의 방 타입을 변경합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "방 타입 변경 성공")
+	@ApiResponse(responseCode = "500", description = "방 타입 변경 실패")
+	@PostMapping("/room-time-slots/occupy")
+	public ResponseEntity<ResponseDto<ChangeRoomTypeResponse>> changeRoomType(
+		@Valid @RequestBody ChangeRoomTypeRequest request
+	) {
+		return ResponseEntity.status(HttpStatus.OK).body(ResponseDto.of(adminService.changeRoomType(request)));
+	}
+
 
 	@GetMapping("/penalty/reasons")
 	public ResponseEntity<ResponseDto<List<AdminPenaltyRecordResponse>>> adminGetPenaltyRecords(
