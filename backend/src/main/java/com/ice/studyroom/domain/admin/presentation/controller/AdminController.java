@@ -78,7 +78,7 @@ public class AdminController {
 	)
 	@ApiResponse(responseCode = "200", description = "방 타입 변경 성공")
 	@ApiResponse(responseCode = "500", description = "방 타입 변경 실패")
-	@PostMapping("/room-time-slots/occupy")
+	@PostMapping("/room-time-slots/room-type")
 	public ResponseEntity<ResponseDto<ChangeRoomTypeResponse>> changeRoomType(
 		@Valid @RequestBody ChangeRoomTypeRequest request
 	) {
