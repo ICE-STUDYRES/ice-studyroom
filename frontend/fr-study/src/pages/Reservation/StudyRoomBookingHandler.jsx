@@ -243,6 +243,7 @@ export const useStudyRoomBooking = () => {
 
       const mappedData = responseData.data.reduce(
         (acc, item) => {
+          // console.log(item);
           const { roomNumber, roomType, startTime, endTime, id: scheduleId, available } = item;
   
           const matchedRoom = rooms.find((room) => room.name === roomNumber);
