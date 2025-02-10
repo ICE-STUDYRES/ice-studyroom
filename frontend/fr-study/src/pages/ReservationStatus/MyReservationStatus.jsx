@@ -22,7 +22,7 @@ const MyReservationStatus = () => {
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
 
   // ✅ 항상 최상단에서 Hook 호출 (조건문 안에서 실행 X)
-  const { qrCode, error: qrError, loading: qrLoading, sendQRCodeToServer } = useQRCodeFetcher(resId);
+  const { qrCode, error: qrError, loading: qrLoading} = useQRCodeFetcher(resId);
   // ✅ QR 코드 리더기로 스캔하면 서버로 전송 (Enter 입력 감지)
   useEffect(() => {
     let qrBuffer = ""; // ✅ QR 코드 데이터를 임시 저장할 버퍼
@@ -74,9 +74,6 @@ const MyReservationStatus = () => {
     return () => window.removeEventListener("keydown", handleScan);
   }, [setSentQRCode]); // 📌 `sentQRCode`가 변경될 때마다 실행
   
-  
-  
-  
 
 
 
@@ -109,27 +106,32 @@ const MyReservationStatus = () => {
         });
 
         if (response.status === 401 && retry) {
-          console.warn("Access token expired. Refreshing tokens...");
-          console.log("Current access token:", accessToken); // 토큰 출력
-          console.log("Current refresh token:", refreshToken); // 토큰 출력
-          accessToken = await refreshTokens();
-          
-          if (accessToken) {
-              console.log("New access token after refresh:", accessToken); // 새로운 토큰 출력
-              console.log("Retrying fetchMyReservations with new access token...");
-              return fetchMyReservations(false); // 한 번만 재시도
-          } else {
-              console.error("Token refresh failed. Logging out.");
-          }
-      }
+            console.warn("🔄 Access token expired. Refreshing tokens...");
+            console.log("Current access token:", accessToken);
+            console.log("Current refresh token:", refreshToken);
+            accessToken = await refreshTokens();
+
+            if (accessToken) {
+                console.log("🔄 New access token after refresh:", accessToken);
+                console.log("🔄 Retrying fetchMyReservations with new access token...");
+                return fetchMyReservations(false);
+            } else {
+                console.error("❌ Token refresh failed. Logging out.");
+            }
+        }
 
         if (!response.ok) {
             throw new Error('Failed to fetch my reservations');
         }
 
         const data = await response.json();
+
         if (data.code === 'S200') {
-            setMyReservations(data.data.reverse());
+            const reservations = data.data.reverse().map(item => ({
+                id: item.reservation.id, // ✅ 예약 ID 저장
+                ...item
+            }));
+            setMyReservations(reservations);
         } else {
             throw new Error(data.message);
         }
@@ -139,6 +141,8 @@ const MyReservationStatus = () => {
         setLoading(false);
     }
 };
+
+
 
   const formatDate = (date) => {
     const days = ['일', '월', '화', '수', '목', '금', '토'];
