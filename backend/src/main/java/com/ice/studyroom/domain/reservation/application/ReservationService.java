@@ -303,7 +303,7 @@ public class ReservationService {
 		LocalDateTime startTime = LocalDateTime.of(LocalDate.now(), reservation.getStartTime());
 
 		// 입실 1 시간 전 일 경우 패널티
-		if (!now.isAfter(startTime)) {
+		if (now.isAfter(startTime)) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "입실 시간이 초과하였기에 취소할 수 없습니다.");
 		}
 

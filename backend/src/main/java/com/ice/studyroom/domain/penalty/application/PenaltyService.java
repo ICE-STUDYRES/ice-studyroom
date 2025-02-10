@@ -33,6 +33,7 @@ public class PenaltyService {
 			.member(member)
 			.reason(reason)
 			.penaltyEnd(calculatePenaltyEnd(reason.getDurationDays()))
+			.reason(reason)
 			.build();
 
 		member.updatePenalty(true);

@@ -57,11 +57,4 @@ public class Penalty extends BaseTimeEntity {
 	@Column(name = "status", nullable = false)
 	@Builder.Default
 	private PenaltyStatus status = PenaltyStatus.VALID;
-
-	@Builder
-	public Penalty(Member member, PenaltyReasonType reason, LocalDateTime penaltyEnd) {
-		this.member = member;
-		this.reason = reason;
-		this.penaltyEnd = penaltyEnd;
-	}
 }
