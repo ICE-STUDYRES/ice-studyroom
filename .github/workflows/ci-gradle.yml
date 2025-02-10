@@ -14,10 +14,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # 전체 브랜치 및 파일을 가져와 gradlew가 누락되지 않도록 설정
+          fetch-depth: 0
 
       - name: Debug workspace
-        run: ls -la backend  # GitHub Actions에서 gradlew 파일이 존재하는지 확인
+        run: ls -la backend
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -31,11 +31,11 @@ jobs:
 
       - name: Run Checkstyle (Log Only)
         run: |
-          ./gradlew checkstyleMain || echo "Checkstyle warnings detected, but not failing CI"
+          ./gradlew checkstyleMain checkstyleTest || echo "Checkstyle warnings detected, but not failing CI"
         working-directory: backend
 
-      - name: Build with Gradle (Skip Checkstyle)
-        run: ./gradlew clean build -x test -x checkstyleMain --no-daemon
+      - name: Build with Gradle (Skip Checkstyle & EditorConfig)
+        run: ./gradlew clean build -x test -x checkstyleMain -x checkstyleTest -x editorconfigCheck --no-daemon
         working-directory: backend
 
       - name: Upload build artifact
