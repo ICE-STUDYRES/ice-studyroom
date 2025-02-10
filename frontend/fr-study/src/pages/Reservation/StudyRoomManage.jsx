@@ -67,7 +67,7 @@ const StudyRoomManage = () => {
   
     // 연장 가능 시작 시간 (예약 종료 10분 전)
     const extensionStartTime = new Date();
-    extensionStartTime.setHours(endHour, endMinute - 45, 0, 0);
+    extensionStartTime.setHours(endHour, endMinute - 10, 0, 0);
   
     // 예약 종료 시간
     const extensionEndTime = new Date();
@@ -102,7 +102,7 @@ const StudyRoomManage = () => {
     let [endHour, endMinute] = endTime.split(':').map(Number);
   
     // 10분 전으로 계산
-    endMinute -= 45;
+    endMinute -= 10;
     if (endMinute < 0) {
       endMinute += 60;
       endHour -= 1;
@@ -157,7 +157,13 @@ const StudyRoomManage = () => {
     if (!window.confirm("정말로 예약을 취소하시겠습니까?")) return;
   
     try {
-      await axios.delete(`/api/reservations/${booking.id}`);
+      const accessToken = localStorage.getItem("accessToken");
+      await axios.delete(`/api/reservations/${booking.id}`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+      });
       alert("예약이 취소되었습니다.");
       navigate('/');
     } catch (error) {
@@ -168,20 +174,42 @@ const StudyRoomManage = () => {
 
   const extendReservation = async () => {
     try {
-      let accessToken = localStorage.getItem("accessToken");
-        const response = await axios.patch(
-            `/api/reservations/${booking.id}`,
+        let accessToken = localStorage.getItem("accessToken");
+
+        if (!booking?.id) {
+            console.log('예약 정보가 없습니다.');
+            return;
+        }
+
+        await axios.patch(
+            `/api/reservations/${booking.id}`, 
+            {}, 
             {
                 headers: {
-                  Authorization: `Bearer ${accessToken}`,
-                },
+                    Authorization: `Bearer ${accessToken}`,
+                    "Content-Type": "application/json"
+                }
             }
         );
-        setMessage('예약이 성공적으로 연장되었습니다.');
+
+        console.log('예약이 성공적으로 연장되었습니다.');
     } catch (error) {
-        setMessage('예약 연장에 실패했습니다.');
+        console.error('예약 연장 오류:', error);
+
+        if (error.response) {
+            const { data, status } = error.response;
+
+            if (status === 500) {
+                console.log(data?.message || '예약 연장에 실패했습니다.');
+            } else {
+                console.log(data?.message || '예약 연장 중 알 수 없는 오류가 발생했습니다.');
+            }
+        } else {
+            console.log('서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.');
+        }
     }
 };
+
 
   const CancelConfirmation = () => (
     <div 
@@ -416,9 +444,13 @@ const StudyRoomManage = () => {
             <button 
               onClick={() => {
                 if (selectedExtension) {
-                  extendReservation;
-                  alert('예약이 연장되었습니다.');
-                  navigate('/');
+                  try {
+                    extendReservation();
+                    alert('예약이 연장되었습니다.');
+                    navigate('/');
+                  } catch (error) {
+                    console.error("예약 연장 중 오류 발생", error);
+                  }
                 }
               }}
               disabled={!selectedExtension}
