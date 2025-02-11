@@ -1,11 +1,14 @@
 package com.ice.studyroom.domain.admin.application;
 
+import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminCreateOccupyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminPenaltyRequest;
+import com.ice.studyroom.domain.admin.presentation.dto.request.ChangeRoomTypeRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminCreateOccupyResponse;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminDeleteOccupyResponse;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyControlResponse;
 import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyRecordResponse;
+import com.ice.studyroom.domain.admin.presentation.dto.response.ChangeRoomTypeResponse;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
@@ -23,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -74,6 +78,16 @@ public class AdminService {
 		roomTimeSlotRepository.save(roomTimeSlot);
 
 		return AdminDeleteOccupyResponse.of("관리자가 특정 요일, 방, 시간대의 선점을 해지했습니다.");
+	}
+
+	public ChangeRoomTypeResponse changeRoomType(ChangeRoomTypeRequest request) {
+		RoomTimeSlot roomTimeSlot = roomTimeSlotRepository.findById(request.id())
+			.orElseThrow((() -> new BusinessException(StatusCode.NOT_FOUND, "해당 방을 찾지 못했습니다.")));
+
+		roomTimeSlot.changeRoomType(request.type());
+		roomTimeSlotRepository.save(roomTimeSlot);
+
+		return new ChangeRoomTypeResponse(request.id(), request.type());
 	}
 
 	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords(AdminPenaltyRequest request) {

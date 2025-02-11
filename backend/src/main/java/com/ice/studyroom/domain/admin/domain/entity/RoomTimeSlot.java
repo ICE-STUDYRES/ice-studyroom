@@ -97,6 +97,10 @@ public class RoomTimeSlot extends BaseTimeEntity {
 		this.status = newStatus;
 	}
 
+	public void changeRoomType(RoomType type) {
+		this.roomType = type;
+	}
+
 	private void validateTimeSlot() {
 		if (startTime.isAfter(endTime)) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "시작 시간이 종료 시간보다 늦을 수 없습니다.");
