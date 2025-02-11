@@ -2,14 +2,9 @@ package com.ice.studyroom.domain.admin.presentation.controller;
 
 
 import com.ice.studyroom.domain.admin.application.AdminService;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminCreateOccupyRequest;
+import com.ice.studyroom.domain.admin.presentation.dto.request.AdminOccupyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminPenaltyRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.request.ChangeRoomTypeRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.response.AdminCreateOccupyResponse;
-import com.ice.studyroom.domain.admin.presentation.dto.response.AdminDeleteOccupyResponse;
-import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyControlResponse;
-import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyRecordResponse;
-import com.ice.studyroom.domain.admin.presentation.dto.response.ChangeRoomTypeResponse;
+import com.ice.studyroom.domain.admin.presentation.dto.response.*;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,15 +28,15 @@ public class AdminController {
 		summary = "방 시간대를 점유 상태로 설정",
 		description = "관리자가 특정 스터디룸의 특정 시간대를 점유 상태(예약 불가)로 설정합니다."
 	)
-	@ApiResponse(responseCode = "200", description = "방 점유 상태 설정 성공")
-	@ApiResponse(responseCode = "500", description = "점유 상태 설정 실패")
+	@ApiResponse(responseCode = "200", description = "방 선점 상태 변경 성공")
+	@ApiResponse(responseCode = "500", description = "방 선점 상태 변경 실패")
 	@PostMapping("/room-time-slots/occupy")
-	public ResponseEntity<ResponseDto<AdminCreateOccupyResponse>> adminOccupySchedule(
-			@Valid @RequestBody AdminCreateOccupyRequest request
+	public ResponseEntity<ResponseDto<AdminOccupyResponse>> adminOccupySchedule(
+		@Valid @RequestBody AdminOccupyRequest request
 	) {
 		return ResponseEntity
-				.status(HttpStatus.OK)
-				.body(ResponseDto.of(adminService.adminOccupyRoom(request)));
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(adminService.adminOccupyRooms(request)));
 	}
 
 	@Operation(
@@ -49,42 +44,14 @@ public class AdminController {
 		description = "현재 예약된 스터디룸의 ID 목록을 반환합니다."
 	)
 	@ApiResponse(responseCode = "200", description = "예약된 방 ID 조회 성공")
+	@ApiResponse(responseCode = "500", description = "예약된 방 ID 조회 실패")
 	@GetMapping("/room-time-slots/occupy")
-	public ResponseEntity<ResponseDto<List<Long>>> getReservedRooms() {
-		List<Long> reservedRooms = adminService.getReservedRoomIds();
+	public ResponseEntity<ResponseDto<List<AdminGetReservedResponse>>> getReservedRooms() {
+		List<AdminGetReservedResponse> reservedRooms = adminService.getReservedRoomIds();
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(reservedRooms, "예약된 방들의 id가 성공적으로 반환되었습니다."));
 	}
-
-	@Operation(
-		summary = "방 시간대 점유 해제",
-		description = "관리자가 특정 스터디룸의 점유 상태를 해제(사용 가능 상태)로 변경합니다."
-	)
-	@ApiResponse(responseCode = "200", description = "점유 상태 해제 성공")
-	@ApiResponse(responseCode = "500", description = "점유 상태 해제 실패")
-	@DeleteMapping("/room-time-slots/occupy")
-	public ResponseEntity<ResponseDto<AdminDeleteOccupyResponse>> adminFreeOccupy(
-		@Valid @RequestBody AdminCreateOccupyRequest request
-	){
-		return ResponseEntity
-			.status(HttpStatus.OK)
-			.body(ResponseDto.of(adminService.adminDeleteOccupy(request)));
-	}
-
-	@Operation(
-		summary = "방 타입 변경",
-		description = "관리자가 특정 스터디룸의 방 타입을 변경합니다."
-	)
-	@ApiResponse(responseCode = "200", description = "방 타입 변경 성공")
-	@ApiResponse(responseCode = "500", description = "방 타입 변경 실패")
-	@PostMapping("/room-time-slots/room-type")
-	public ResponseEntity<ResponseDto<ChangeRoomTypeResponse>> changeRoomType(
-		@Valid @RequestBody ChangeRoomTypeRequest request
-	) {
-		return ResponseEntity.status(HttpStatus.OK).body(ResponseDto.of(adminService.changeRoomType(request)));
-	}
-
 
 	@GetMapping("/penalty/reasons")
 	public ResponseEntity<ResponseDto<List<AdminPenaltyRecordResponse>>> adminGetPenaltyRecords(
