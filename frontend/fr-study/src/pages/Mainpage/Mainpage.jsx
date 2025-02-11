@@ -12,7 +12,7 @@ const MainPage = () => {
         loginForm,isVerificationSent,isEmailVerified,verificationMessage,verificationSuccess,
         showPasswordChangePopup,
         passwordChangeForm,
-        passwordChangeError,
+        passwordChangeError,refreshTokens,
         handleLogin,handleLoginClick,handleLoginInputChange,handleLogout,handleReservationClick,
         handleReservationStatusClick,handleMyReservationStatusClick,handleReservationManageClick,
         handleNoticeClick,handleCloseNotice,handlePenaltyClick,handleClosePenaltyPopup,
@@ -31,29 +31,39 @@ const MainPage = () => {
 
       useEffect(() => {
         const getRecentReservation = async () => {
-            try {
-                const token = localStorage.getItem('accessToken');
-                const response = await fetch('/api/reservations/my/latest', {
-                    method: 'GET',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                const result = await response.json();
-                
-                if (response.ok && result.data) {
-                    setRecentReservation({
-                        date: result.data.scheduleDate,
-                        roomNumber: result.data.roomNumber
-                    });
-                } else {
-                    setRecentReservation({ date: null, roomNumber: null });
-                }
-            } catch (err) {
-                console.error("Failed to fetch recent reservation:", err);
+          try {
+            let token = localStorage.getItem('accessToken');
+            let response = await fetch('/api/reservations/my/latest', {
+              method: 'GET',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+      
+            if (response.status === 401) { // 토큰 만료
+              console.warn('토큰이 만료됨. 새로고침 시도.');
+              const newToken = await refreshTokens();
+              if (newToken) {
+                return getRecentReservation(); // 새 토큰으로 재시도
+              } else {
+                console.error('토큰 갱신 실패. 로그아웃 필요.');
+                return;
+              }
             }
+      
+            const result = await response.json();
+            if (response.ok && result.data) {
+              setRecentReservation({
+                date: result.data.scheduleDate,
+                roomNumber: result.data.roomNumber
+              });
+            } else {
+              setRecentReservation({ date: null, roomNumber: null });
+            }
+          } catch (err) {
+            console.error("Failed to fetch recent reservation:", err);
+          }
         };
 
         getRecentReservation();
