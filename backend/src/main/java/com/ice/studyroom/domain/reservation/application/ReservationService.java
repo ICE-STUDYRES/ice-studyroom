@@ -193,7 +193,6 @@ public class ReservationService {
 		List<Schedule> schedules = findSchedules(request.scheduleId());
 		validateSchedulesAvailable(schedules);
 
-
 		// 스케줄에서 Type을 저장해야하며, Type에 따른 RES 처리가 필요하다.
 		RoomType roomType = schedules.get(0).getRoomType();
 		if(roomType == RoomType.INDIVIDUAL) throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 개인예약 전용입니다.");
