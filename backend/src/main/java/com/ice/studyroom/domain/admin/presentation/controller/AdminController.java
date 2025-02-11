@@ -2,6 +2,7 @@ package com.ice.studyroom.domain.admin.presentation.controller;
 
 
 import com.ice.studyroom.domain.admin.application.AdminService;
+import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminOccupyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminPenaltyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.response.*;
@@ -23,6 +24,20 @@ import java.util.List;
 public class AdminController {
 
 	private final AdminService adminService;
+
+	@Operation(
+		summary = "요청한 요일에 따른 방 정보 반환",
+		description = "관리자가 특정 요일에 대한 방 정보를 요청합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "방 상태 반환 성공")
+	@ApiResponse(responseCode = "500", description = "방 상태 반환 실패")
+	@GetMapping("/room-time-slots")
+	public ResponseEntity<ResponseDto<List<AdminRoomResponse>>> adminGetRooms(
+		@RequestParam DayOfWeekStatus dayOfWeek
+	) {
+		List<AdminRoomResponse> rooms = adminService.getRoomByDayOfWeek(dayOfWeek);
+		return ResponseEntity.status(HttpStatus.OK).body(ResponseDto.of(rooms, "요청한 요일의 방 정보가 성공적으로 반환되었습니다."));
+	}
 
 	@Operation(
 		summary = "방 시간대를 점유 상태로 설정",
