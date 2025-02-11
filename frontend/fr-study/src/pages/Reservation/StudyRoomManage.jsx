@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Clock, LogOut, CalendarDays, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useMainpageHandlers } from '../Mainpage/MainpageHandlers';
 import axios from 'axios';
 
 const StudyRoomManage = () => {
@@ -17,7 +18,11 @@ const StudyRoomManage = () => {
     participants: [{ studentNum: '', name: '' }],
     endTime: '',
     extendDeadline: '',
-  });  
+  }); 
+
+    const {
+      refreshTokens
+    } = useMainpageHandlers();
 
   useEffect(() => {
     const fetchBookingData = async () => {
@@ -30,11 +35,22 @@ const StudyRoomManage = () => {
           }
         });
     
+        if (response.status === 401) { // Unauthorized 발생 시
+          console.warn('토큰이 만료됨. 새로고침 시도.');
+          const newAccessToken = await refreshTokens();
+          if (newAccessToken) {
+            return fetchBookingData(); // 새 토큰으로 다시 실행
+          } else {
+            console.error('토큰 갱신 실패. 로그아웃 필요.');
+            return;
+          }
+        }
+    
         const result = await response.json();
+        console.log("API 응답 데이터:", result);
     
         if (result.code === 'S200' && result.data.length > 0) {
-          const bookingData = getNearestBooking(result.data); // 🔥 가장 가까운 예약 선택
-    
+          const bookingData = getNearestBooking(result.data);
           if (bookingData) {
             setBooking({
               id: bookingData.id || '',
@@ -43,16 +59,17 @@ const StudyRoomManage = () => {
               time: `${getFormattedTime(bookingData.startTime)}~${getFormattedTime(bookingData.endTime)}`,
               userName: bookingData.userName || '',
               userEmail: bookingData.userEmail || '',
+              userId: bookingData.studentId || '',
               participants: Array.isArray(bookingData.participants) ? bookingData.participants : [],
               endTime: getFormattedTime(bookingData.endTime),
               extendDeadline: getExtendDeadline(bookingData.endTime),
             });
           } else {
-            console.warn("⚠️ 현재 진행 중인 예약이 없습니다.");
+            console.warn("현재 진행 중인 예약이 없습니다.");
           }
         }
       } catch (error) {
-        console.error('🚨 Error fetching booking data:', error);
+        console.error('Error fetching booking data:', error);
       }
     };
     
@@ -174,49 +191,41 @@ const StudyRoomManage = () => {
 
   const extendReservation = async () => {
     try {
-        let accessToken = localStorage.getItem("accessToken");
-
-        if (!booking?.id) {
-            console.log('예약 정보가 없습니다.');
-            return;
+      let accessToken = localStorage.getItem("accessToken");
+      const response = await axios.patch(
+        `/api/reservations/${booking.id}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
         }
-
-        await axios.patch(
-            `/api/reservations/${booking.id}`, 
-            {}, 
-            {
-                headers: {
-                    Authorization: `Bearer ${accessToken}`,
-                    "Content-Type": "application/json"
-                }
-            }
-        );
-
-        console.log('예약이 성공적으로 연장되었습니다.');
-    } catch (error) {
-        console.error('예약 연장 오류:', error);
-
-        if (error.response) {
-            const { data, status } = error.response;
-
-            if (status === 500) {
-                console.log(data?.message || '예약 연장에 실패했습니다.');
-            } else {
-                console.log(data?.message || '예약 연장 중 알 수 없는 오류가 발생했습니다.');
-            }
+      );
+  
+      if (response.status === 401) { // Unauthorized 발생 시
+        console.warn('토큰이 만료됨. 새로고침 시도.');
+        const newAccessToken = await refreshTokens();
+        if (newAccessToken) {
+          return extendReservation(); // 새 토큰으로 다시 실행
         } else {
-            console.log('서버에 연결할 수 없습니다. 네트워크 상태를 확인해주세요.');
+          console.error('토큰 갱신 실패. 로그아웃 필요.');
+          return;
         }
+      }
+  
+      setMessage('예약이 성공적으로 연장되었습니다.');
+    } catch (error) {
+      setMessage('예약 연장에 실패했습니다.');
     }
-};
+  };
 
-const handleCancelClick = () => {
-  if (!booking.id) {
-    alert("진행 중인 예약이 없습니다.");
-    return;
-  }
-  setShowCancelConfirm(true);
-};
+  const handleCancelClick = () => {
+    if (!booking.id) {
+      alert("진행 중인 예약이 없습니다.");
+      return;
+    }
+    setShowCancelConfirm(true);
+  };
 
 
   const CancelConfirmation = () => (
