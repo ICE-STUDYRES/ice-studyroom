@@ -1,11 +1,16 @@
 import { useState, useRef, useEffect } from 'react';
 import { User, LogOut, Key } from 'lucide-react';
+import { useMainpageHandlers } from './MainpageHandlers';
 
 const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [userName, setUserName] = useState('');
   const [userEmail, setUserEmail] = useState('');
   const dropdownRef = useRef(null);
+
+  const {
+    refreshTokens
+  } = useMainpageHandlers();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -22,18 +27,29 @@ const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
 
   useEffect(() => {
     const fetchUserInfo = async () => {
-      const accessToken = localStorage.getItem('accessToken');
+      let accessToken = localStorage.getItem('accessToken');
       if (!accessToken) return;
-
+  
       try {
-        const response = await fetch('/api/users', {
+        let response = await fetch('/api/users', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
           },
         });
-
+  
+        if (response.status === 401) { // 토큰 만료
+          console.warn('토큰이 만료됨. 새로고침 시도.');
+          const newToken = await refreshTokens();
+          if (newToken) {
+            return fetchUserInfo(); // 새 토큰으로 재시도
+          } else {
+            console.error('토큰 갱신 실패. 로그아웃 필요.');
+            return;
+          }
+        }
+  
         const result = await response.json();
         if (result.code === 'S200' && result.data) {
           setUserName(result.data.name);
