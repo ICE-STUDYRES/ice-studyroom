@@ -210,6 +210,14 @@ const StudyRoomManage = () => {
     }
 };
 
+const handleCancelClick = () => {
+  if (!booking.id) {
+    alert("진행 중인 예약이 없습니다.");
+    return;
+  }
+  setShowCancelConfirm(true);
+};
+
 
   const CancelConfirmation = () => (
     <div 
@@ -332,46 +340,53 @@ const StudyRoomManage = () => {
       </div>
       
       <div className="overflow-y-auto h-[calc(100vh-180px)] pb-24">
-        {/* Current Booking Info */}
-        <div className="p-4">
-          <div className="rounded-2xl border-2 border-slate-900 p-4 bg-white">
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-900">{booking.room}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <CalendarDays className="w-4 h-4 text-gray-600" />
-                  <span className="text-gray-600">{booking.date}</span>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-900 font-medium">{booking.time}</span>
-              </div>
-              
-              <div className="space-y-2">
+        {/* 진행 중인 예약이 없을 경우 */}
+        {!booking.id ? (
+          <div className="p-4 text-center">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <AlertCircle className="w-10 h-10 text-gray-400" />
+            <p className="text-gray-600 text-lg font-semibold">현재 진행 중인 예약이 없습니다.</p>
+          </div>
+        </div>
+        ) : (
+          <div className="p-4">
+            <div className="rounded-2xl border-2 border-slate-900 p-4 bg-white">
+              <div className="space-y-4">
                 <div>
-                  <div className="text-sm text-gray-600 mb-1">예약자</div>
+                  <h2 className="text-2xl font-bold text-slate-900">{booking.room}</h2>
+                  <div className="flex items-center gap-2 mt-1">
+                    <CalendarDays className="w-4 h-4 text-gray-600" />
+                    <span className="text-gray-600">{booking.date}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-gray-600" />
+                  <span className="text-gray-900 font-medium">{booking.time}</span>
+                </div>
+                <div className="space-y-2">
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">예약자</div>
                   <div className="flex items-center gap-1">
                     <span className="font-medium text-gray-900">{booking.userName}</span>
                   </div>
-                </div>
-                
-                {booking.participants.length > 1 && (
-                  <div>
-                    <div className="text-sm text-gray-600 mb-1">참여자</div>
-                    {booking.participants.slice(1).map((participant, index) => (
-                      <div key={index} className="flex items-center gap-1">
-                        <span className="font-medium text-gray-900">{participant.name}</span>
-                        <span className="text-sm text-gray-500">({participant.studentNum})</span>
-                      </div>
-                    ))}
                   </div>
-                )}
+
+                  {booking.participants.length > 1 && (
+                    <div>
+                      <div className="text-sm text-gray-600 mb-1">참여자</div>
+                      {booking.participants.slice(1).map((participant, index) => (
+                        <div key={index} className="flex items-center gap-1">
+                          <span className="font-medium text-gray-900">{participant.name}</span>
+                          <span className="text-sm text-gray-500">({participant.studentNum})</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}        
 
         {/* Extension Notice */}
         <div className="px-4 mt-2">
@@ -435,12 +450,13 @@ const StudyRoomManage = () => {
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t">
         <div className="max-w-[480px] w-full mx-auto p-4">
           <div className="grid grid-cols-2 gap-3">
-            <button 
-              onClick={() => setShowCancelConfirm(true)}
-              className="w-full py-3 text-sm font-medium text-red-500 border-2 border-red-500 rounded-xl hover:bg-red-50 transition-colors"
-            >
-              예약 취소
-            </button>
+          <button 
+            onClick={handleCancelClick}
+            className="w-full py-3 text-sm font-medium text-red-500 border-2 border-red-500 rounded-xl hover:bg-red-50 transition-colors"
+          >
+            예약 취소
+          </button>
+
             <button 
               onClick={() => {
                 if (selectedExtension) {
