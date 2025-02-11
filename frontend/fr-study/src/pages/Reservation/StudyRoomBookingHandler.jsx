@@ -240,7 +240,7 @@ export const useStudyRoomBooking = () => {
       if (responseData.code !== "S200") {
         throw new Error(responseData.message || "알 수 없는 오류");
       }
-  
+
       const mappedData = responseData.data.reduce((acc, item) => {
         const { roomNumber, roomType, startTime, endTime, id: scheduleId, available, currentRes } = item; // ✅ currentRes 확인
         const matchedRoom = rooms.find((room) => room.name === roomNumber);

@@ -83,7 +83,7 @@ const ReservationStatus = () => {
   const mapSchedulesToRooms = (scheduleData) => {
     const mappedRooms = rooms.map((room) => {
       const roomSchedules = scheduleData
-        .filter((schedule) => schedule.roomNumber === room.id && schedule.status === "RESERVED")
+        .filter((schedule) => schedule.roomNumber === room.id && schedule.currentRes >= 1)
         .map((schedule) => ({
           time: `${schedule.startTime.slice(0, 5)}-${schedule.endTime.slice(0, 5)}`,
           reserver: schedule.reserverEmail, // 예약자 정보 추가
@@ -194,9 +194,7 @@ const ReservationStatus = () => {
                       ).map((res, index) => (
                         <div
                           key={index}
-                          className={`flex items-center gap-3 text-sm ${
-                            res.status === 'RESERVED' ? 'text-gray-900' : 'text-green-600'
-                          }`}
+                          className={`flex items-center gap-3 text-sm`}
                         >
                           <Clock className="w-4 h-4 text-gray-400" />
                           <span>{res.time}</span>
