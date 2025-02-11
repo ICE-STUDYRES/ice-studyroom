@@ -46,6 +46,7 @@ public class JwtTokenProvider {
 		// 권한 가져오기
 		String authorities = authentication.getAuthorities().stream()
 			.map(GrantedAuthority::getAuthority)
+			.map(role -> role.startsWith("ROLE_") ? role : "ROLE_" + role)
 			.collect(Collectors.joining(","));
 
 		long now = (new Date()).getTime();
@@ -66,6 +67,7 @@ public class JwtTokenProvider {
 			.grantType("Bearer")
 			.accessToken(accessToken)
 			.refreshToken(refreshToken)
+			.role(authorities)
 			.build();
 	}
 
@@ -80,7 +82,7 @@ public class JwtTokenProvider {
 
 		// 클레임에서 권한 정보 가져오기
 		Collection<? extends GrantedAuthority> authorities = Arrays.stream(claims.get("auth").toString().split(","))
-			.map(SimpleGrantedAuthority::new)
+			.map(role -> new SimpleGrantedAuthority(role.startsWith("ROLE_") ? role : "ROLE_" + role))
 			.collect(Collectors.toList());
 
 		// UserDetails 객체를 만들어서 Authentication return
