@@ -2,15 +2,27 @@ package com.ice.studyroom.domain.membership.presentation.dto.response;
 
 import com.ice.studyroom.domain.identity.domain.JwtToken;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotNull;
+
 public record MemberLoginResponse(
+	@NotNull
+	@Schema(description = "Access Token", example = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJnbGF4eXRAaHVmcy5hYy5rciIsImF1dGgiOiJST0xFX1VTRVIiLCJleHAiOjE3MzkyODc0MDR9.krKvoSNZBx3r7hrrym-WKslbQclORPwbkDEeWJeHMpw")
 	String accessToken,
-	String refreshToken
+	@NotNull
+	@Schema(description = "Refresh Token", example = "2eff31c6-dc7e-4f07-b1f9-6cdd4ab97a83")
+	String refreshToken,
+
+	@NotNull
+	@Schema(description = "사용자 권한", example = "ROLE_USER")
+	String role
 ) {
-	// factory 메서드를 통한 생성
+
 	public static MemberLoginResponse of(JwtToken jwtToken) {
 		return new MemberLoginResponse(
 			jwtToken.getAccessToken(),
-			jwtToken.getRefreshToken()
+			jwtToken.getRefreshToken(),
+			jwtToken.getRole()
 		);
 	}
 }

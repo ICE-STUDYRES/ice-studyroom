@@ -34,14 +34,22 @@ public class SecurityConfig {
 			.sessionManagement(sessionManagement ->
 				sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorize -> authorize
+				// 일반 API - 로그인한 사용자만 접근 가능
 				.requestMatchers(
-					"/api/reservations/**",
-					"/api/**", // API 개발을 위한 임시 사용
-					"/api/schedules/**",
+					"/api/**",
 					"/api/users/**",
-					"/api/email/**",  // 이메일 전송 API 경로
-					"/api/admin/**"   // 관리자 예약 API 경로
+					"/api/qr/**", // API 개발을 위한 임시 사용
+					"/api/schedules/**",
+					"/api/reservations/**"
 				).permitAll()
+
+				// TODO: 관리자 기능 완성 이후 주석 처리된 코드 활성화 예정
+				// .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+				// .requestMatchers(
+				// 	"/api/reservations/**"
+				// 	).authenticated()
+
 				// Swagger 관련 경로 허용
 				.requestMatchers(
 					"/swagger-ui.html",
