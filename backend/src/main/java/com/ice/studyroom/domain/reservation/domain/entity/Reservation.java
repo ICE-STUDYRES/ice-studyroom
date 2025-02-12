@@ -101,7 +101,6 @@ public class Reservation {
 		} else if (minutesDifference <= minutesDurationOfReservation) {
 			markStatus(ReservationStatus.LATE);
 			return ReservationStatus.LATE;
-			// 패널티 추가로직
 		} else {
 			markStatus(ReservationStatus.NO_SHOW);
 			return ReservationStatus.NO_SHOW;
@@ -117,6 +116,11 @@ public class Reservation {
 	public void extendReservation(Long secondScheduleId, LocalTime endTime) {
 		this.secondScheduleId = secondScheduleId;
 		this.endTime = endTime;
+		this.updatedAt = LocalDateTime.now();
+	}
+
+	public void cancelReservation() {
+		this.status = ReservationStatus.CANCELLED;
 		this.updatedAt = LocalDateTime.now();
 	}
 

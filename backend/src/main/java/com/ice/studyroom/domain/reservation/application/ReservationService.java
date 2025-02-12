@@ -132,7 +132,7 @@ public class ReservationService {
 			throw new AttendanceException("출석 시간이 만료되었습니다.", HttpStatus.GONE);
 		} else if(status == ReservationStatus.LATE){
 			//해당 멤버에게 패널티 부여
-			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(memberEmail)), PenaltyReasonType.LATE);
+			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(memberEmail)), reservationId, PenaltyReasonType.LATE);
 		}
 		return status;
 	}
@@ -192,7 +192,6 @@ public class ReservationService {
 		// 예약 가능 여부 확인
 		List<Schedule> schedules = findSchedules(request.scheduleId());
 		validateSchedulesAvailable(schedules);
-
 
 		// 스케줄에서 Type을 저장해야하며, Type에 따른 RES 처리가 필요하다.
 		RoomType roomType = schedules.get(0).getRoomType();
@@ -309,7 +308,7 @@ public class ReservationService {
 
 		if (!now.isBefore(startTime.minus(1, ChronoUnit.HOURS))) {
 			// 취소 패널티 부여
-			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(email)), PenaltyReasonType.CANCEL);
+			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(email)), id, PenaltyReasonType.CANCEL);
 		}
 
 		/*
@@ -324,7 +323,7 @@ public class ReservationService {
 			scheduleRepository.findById(reservation.getSecondScheduleId()).ifPresent(Schedule::cancel);
 		}
 
-		reservationRepository.delete(reservation);
+		reservation.cancelReservation();
 		return new CancelReservationResponse(id);
 	}
 

@@ -63,4 +63,8 @@ public class Penalty extends BaseTimeEntity {
 	@Column(name = "status", nullable = false)
 	@Builder.Default
 	private PenaltyStatus status = PenaltyStatus.VALID;
+
+	public boolean isExpired() {
+		return LocalDateTime.now().isAfter(penaltyEnd);
+	}
 }
