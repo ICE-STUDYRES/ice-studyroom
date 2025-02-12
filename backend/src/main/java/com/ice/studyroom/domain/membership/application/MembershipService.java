@@ -16,7 +16,6 @@ import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvide
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
-import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.membership.presentation.dto.request.EmailVerificationRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberEmailVerificationRequest;
@@ -29,8 +28,6 @@ import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLooku
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberResponse;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
-import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
-import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -43,7 +40,6 @@ public class MembershipService {
 	private final TokenService tokenService;
 	private final AuthenticationManager authenticationManager;
 	private final EmailVerificationService emailVerificationService;
-	private final ReservationRepository reservationRepository;
 	private final PenaltyRepository penaltyRepository;
 
 	public MemberResponse createMember(MemberCreateRequest request) {
