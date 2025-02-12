@@ -13,12 +13,10 @@ import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvide
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
-import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.membership.presentation.dto.request.EmailVerificationRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberEmailVerificationRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.TokenRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.UpdatePasswordRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberEmailResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
@@ -42,7 +40,7 @@ public class MembershipService {
 		return MemberResponse.of("success");
 	}
 
-	public MemberLoginResponse login(MemberLoginRequest request) {
+	public JwtToken login(MemberLoginRequest request) {
 		Authentication authentication = authenticationManager.authenticate(
 			new UsernamePasswordAuthenticationToken(request.email(), request.password())
 		);
@@ -50,23 +48,23 @@ public class MembershipService {
 		JwtToken jwtToken = jwtTokenProvider.generateToken(authentication);
 		tokenService.saveRefreshToken(request.email(), jwtToken.getRefreshToken());
 
-		return MemberLoginResponse.of(jwtToken);
+		return jwtToken;
 	}
 
-	public MemberLoginResponse refresh(String authorizationHeader, TokenRequest request) {
+	public JwtToken refresh(String authorizationHeader, String refreshToken) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		JwtToken jwtToken = tokenService.rotateToken(email, request.refreshToken());
+		JwtToken jwtToken = tokenService.rotateToken(email, refreshToken);
 
-		return MemberLoginResponse.of(jwtToken);
+		return jwtToken;
 	}
 
-	public MemberResponse logout(String authorizationHeader, TokenRequest request) {
+	public MemberResponse logout(String authorizationHeader, String refreshToken) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		tokenService.deleteToken(email, request.refreshToken());
+		tokenService.deleteToken(email, refreshToken);
 
-		return MemberResponse.of("success");
+		return MemberResponse.of("정상적으로 로그아웃 되었습니다.");
 	}
 
 	public String updatePassword(String authorizationHeader, UpdatePasswordRequest request) {
