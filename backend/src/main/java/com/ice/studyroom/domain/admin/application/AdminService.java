@@ -1,14 +1,9 @@
 package com.ice.studyroom.domain.admin.application;
 
-import com.ice.studyroom.domain.admin.domain.type.RoomType;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminCreateOccupyRequest;
+import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
+import com.ice.studyroom.domain.admin.presentation.dto.request.AdminOccupyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminPenaltyRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.request.ChangeRoomTypeRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.response.AdminCreateOccupyResponse;
-import com.ice.studyroom.domain.admin.presentation.dto.response.AdminDeleteOccupyResponse;
-import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyControlResponse;
-import com.ice.studyroom.domain.admin.presentation.dto.response.AdminPenaltyRecordResponse;
-import com.ice.studyroom.domain.admin.presentation.dto.response.ChangeRoomTypeResponse;
+import com.ice.studyroom.domain.admin.presentation.dto.response.*;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
@@ -26,7 +21,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -37,57 +31,52 @@ public class AdminService {
 	private final PenaltyRepository penaltyRepository;
 	private final MemberRepository memberRepository;
 
-	public AdminCreateOccupyResponse adminOccupyRoom (AdminCreateOccupyRequest request) {
+	public AdminOccupyResponse adminOccupyRooms(AdminOccupyRequest request) {
+		// 요청된 roomTimeSlotId들을 기반으로 RoomTimeSlot을 조회
+		List<RoomTimeSlot> roomTimeSlots = roomTimeSlotRepository.findAllById(request.roomTimeSlotId());
 
-		RoomTimeSlot roomTimeSlot = roomTimeSlotRepository.findById(request.roomTimeSlotId())
-			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 없습니다."));
-
-		//상태를 RESERVED로 변경
-		if (roomTimeSlot.getStatus() == RoomTimeSlotStatus.RESERVED) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "해당 시간에는 이미 선점되어있습니다.");
+		if (roomTimeSlots.isEmpty()) {
+			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 없습니다.");
 		}
 
-		//방 상태 변경
-		roomTimeSlot.updateStatus(RoomTimeSlotStatus.RESERVED);
-		//변경 사항 저장
-		roomTimeSlotRepository.save(roomTimeSlot);
+		// 상태 변경 전, 이미 예약된 항목 검사
+		for (RoomTimeSlot roomTimeSlot : roomTimeSlots) {
+			if (request.setOccupy() && roomTimeSlot.getStatus() == RoomTimeSlotStatus.RESERVED) {
+				throw new BusinessException(StatusCode.BAD_REQUEST, "일부 시간대가 이미 선점되어 있습니다.");
+			}
+			if (!request.setOccupy() && roomTimeSlot.getStatus() == RoomTimeSlotStatus.AVAILABLE) {
+				throw new BusinessException(StatusCode.BAD_REQUEST, "일부 시간대는 이미 사용 가능한 상태입니다.");
+			}
+		}
 
-		return AdminCreateOccupyResponse.of("관리자가 특정 요일, 방, 시간대를 선점했습니다.");
+		// 상태 변경
+		for (RoomTimeSlot roomTimeSlot : roomTimeSlots) {
+			roomTimeSlot.updateStatus(request.setOccupy() ? RoomTimeSlotStatus.RESERVED : RoomTimeSlotStatus.AVAILABLE);
+		}
+
+		// 변경 사항 일괄 저장
+		roomTimeSlotRepository.saveAll(roomTimeSlots);
+
+		String message = request.setOccupy() ?
+			"관리자가 선택한 시간대를 선점했습니다." :
+			"관리자가 선택한 시간대의 선점을 해지했습니다.";
+
+		return AdminOccupyResponse.of(message);
 	}
 
-	public List<Long> getReservedRoomIds() {
+	public List<AdminRoomResponse> getRoomByDayOfWeek(DayOfWeekStatus dayOfWeekStatus) {
+		List<RoomTimeSlot> roomTimeSlots = roomTimeSlotRepository.findByDayOfWeek(dayOfWeekStatus);
+
+		return roomTimeSlots.stream().map(AdminRoomResponse::from).toList();
+	}
+
+	public List<AdminGetReservedResponse> getReservedRoomIds() {
 		// 선점된 방 엔티티만 가져오기
-		List<RoomTimeSlot> reservedRoomTimeSlots = roomTimeSlotRepository.findByStatus(RoomTimeSlotStatus.RESERVED);
+		List<RoomTimeSlot> reservedRooms = roomTimeSlotRepository.findByStatus(RoomTimeSlotStatus.RESERVED);
 
-		//ID만 추출하여 반환
-		return reservedRoomTimeSlots.stream().map(RoomTimeSlot::getId).toList();
-	}
-
-	public AdminDeleteOccupyResponse adminDeleteOccupy(AdminCreateOccupyRequest request) {
-
-		RoomTimeSlot roomTimeSlot = roomTimeSlotRepository.findById(request.roomTimeSlotId())
-			.orElseThrow(() -> new BusinessException(StatusCode.BAD_REQUEST, "해당 ID에 일치하는 RoomTimeSlot이 없습니다."));
-
-		if(roomTimeSlot.getStatus() == RoomTimeSlotStatus.AVAILABLE) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "해당 시간은 현재 사용가능 상태입니다.");
-		}
-
-		//방 상태 변경
-		roomTimeSlot.updateStatus(RoomTimeSlotStatus.AVAILABLE);
-		//변경 사항 저장
-		roomTimeSlotRepository.save(roomTimeSlot);
-
-		return AdminDeleteOccupyResponse.of("관리자가 특정 요일, 방, 시간대의 선점을 해지했습니다.");
-	}
-
-	public ChangeRoomTypeResponse changeRoomType(ChangeRoomTypeRequest request) {
-		RoomTimeSlot roomTimeSlot = roomTimeSlotRepository.findById(request.id())
-			.orElseThrow((() -> new BusinessException(StatusCode.NOT_FOUND, "해당 방을 찾지 못했습니다.")));
-
-		roomTimeSlot.changeRoomType(request.type());
-		roomTimeSlotRepository.save(roomTimeSlot);
-
-		return new ChangeRoomTypeResponse(request.id(), request.type());
+//		//ID만 추출하여 반환
+//		return reservedRoomTimeSlots.stream().map(RoomTimeSlot::getId).toList();
+		return reservedRooms.stream().map(AdminGetReservedResponse::from).toList();
 	}
 
 	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords(AdminPenaltyRequest request) {
