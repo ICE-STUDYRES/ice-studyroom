@@ -1,4 +1,4 @@
-import { X, XCircle, Clock, LogIn, Home, ChevronRight } from 'lucide-react';
+import { X, LogIn, Home, QrCode } from 'lucide-react';
 import alertImage from "../../assets/images/alert.png";
 import logo from "../../assets/images/hufslogo.png";
 import { useMainpageHandlers } from './MainpageHandlers';
@@ -7,15 +7,15 @@ import ProfileDropdown from './ProfileDropdown';
 
 const MainPage = () => {
     const {
-        isLoggedIn,checkInStatus,showNotice,
-        showPenaltyPopup,showSigninPopup,showSignUpPopup,signupForm,signupError,
+        isLoggedIn,showNotice,
+        showSigninPopup,showSignUpPopup,signupForm,signupError,
         loginForm,isVerificationSent,isEmailVerified,verificationMessage,verificationSuccess,
         showPasswordChangePopup,
         passwordChangeForm,
-        passwordChangeError,refreshTokens,
+        passwordChangeError,refreshTokens,penaltyRemainingDays,penaltyReason,
         handleLogin,handleLoginClick,handleLoginInputChange,handleLogout,handleReservationClick,
         handleReservationStatusClick,handleMyReservationStatusClick,handleReservationManageClick,
-        handleNoticeClick,handleCloseNotice,handlePenaltyClick,handleClosePenaltyPopup,
+        handleNoticeClick,handleCloseNotice,
         handleCloseSigninPopup,handleCloseSignUpPopup,handleSignupInputChange,handleSignup,handleSignUpClick,
         handleSendVerification,handleVerifyCode,
         handlePasswordChange,
@@ -28,6 +28,7 @@ const MainPage = () => {
         date: null,
         roomNumber: null,
       });
+      const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
 
       useEffect(() => {
         const getRecentReservation = async () => {
@@ -76,9 +77,7 @@ const MainPage = () => {
         <div className="flex items-center gap-2">
           <button 
             onClick={() => {
-              console.log("Access Token:", localStorage.getItem('accessToken'));
-              console.log("Refresh Token:", localStorage.getItem('refreshToken'));
-              navigate('/');
+              window.location.reload();
             }}
             className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
           >
@@ -111,28 +110,29 @@ const MainPage = () => {
         </div>
       </div>
 
-      {/* Modified QR Section to Reservation Check */}
+      {/* 예약 및 패널티 현황 */}
       <div className="px-4 py-4">
         <div className="w-full rounded-2xl border border-gray-100 bg-white p-4">
           {isLoggedIn ? (
             <>
               <div className="flex justify-between items-start mb-4">
-                <h3 className="text-lg font-semibold">내 예약 현황</h3>
-                <span className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm">
-                  {checkInStatus}
-                </span>
+                <h3 className="text-lg font-semibold">이용 현황</h3>
               </div>
-              <button 
+              <div 
                 onClick={handleMyReservationStatusClick}
-                className="w-full flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                className="w-full p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
               >
-                <div className="flex flex-col gap-2 w-full">
-                  <div className="text-xs text-gray-500">
-                    <table className="w-full text-left text-sm text-gray-600">
-                      <tbody>
-                        <tr>
-                        <td className="font-medium w-20">최근 예약:</td>
-                        <td>{recentReservation.date || "정보 없음"}</td>
+                <div className="flex gap-4">
+                  {/* 예약 정보 섹션 */}
+                  <div className="flex-1">
+                    {/* 최근 예약 섹션 */}
+                    <div className="border-b border-gray-200 pb-3 mb-3">
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">최근 예약 정보</h4>
+                      <table className="w-full text-left text-sm text-gray-600">
+                        <tbody>
+                          <tr>
+                            <td className="font-medium w-20">날짜:</td>
+                            <td>{recentReservation.date || "정보 없음"}</td>
                           </tr>
                           <tr>
                             <td className="font-medium w-20">스터디룸:</td>
@@ -141,13 +141,40 @@ const MainPage = () => {
                         </tbody>
                       </table>
                     </div>
+                    
+                    {/* 패널티 섹션 */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">패널티 현황</h4>
+                      <table className="w-full text-left text-sm text-gray-600">
+                        <tbody>
+                          <tr>
+                            <td className="font-medium w-20">제한 기간:</td>
+                            <td className={penaltyRemainingDays ? "text-red-500" : "text-green-500"}>
+                              {penaltyRemainingDays > 0 ? `${penaltyRemainingDays}일 예약 제한` : "제한 없음"}
+                            </td>
+                          </tr>
+                          {penaltyReason && (
+                            <tr>
+                              <td className="font-medium w-20">사유:</td>
+                              <td className="text-red-500">{penaltyReason}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* QR 코드 안내 섹션 */}
+                  <div className="flex flex-col items-center justify-center border-l border-gray-200 pl-4 ml-2">
+                    <QrCode className="w-20 h-20 text-gray-700 mb-2" />
+                    <span className="text-sm text-gray-600">QR 확인</span>
+                  </div>
                 </div>
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-              </button>
+              </div>
             </>
           ) : (
             <div className="flex flex-col items-center py-8 gap-4">
-              <div className="text-sm text-gray-500">로그인 후 예약 현황을 확인할 수 있습니다</div>
+              <div className="text-sm text-gray-500">로그인 후 최근 예약 및 패널티 현황을 확인할 수 있습니다</div>
               <button 
                 onClick={handleLoginClick}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors"
@@ -192,29 +219,6 @@ const MainPage = () => {
             <span className="text-2xl mb-2">✏️</span>
             <span className="text-sm font-medium">연장 및 취소</span>
           </button>
-        </div>
-      </div>
-
-      {/* Penalty Section */}
-      <div className="p-4">
-        <div className="w-full rounded-2xl border border-gray-100 bg-white p-4" onClick={handlePenaltyClick}>
-          <h2 className="text-lg font-semibold mb-4">패널티 현황</h2>
-          <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-              <Clock className="w-8 h-8" />
-                <span className="ml-2">지각</span>
-              </div>
-              <span className="ml-2">1회</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <div className="flex items-center">
-              <XCircle className="w-8 h-8" />
-                <span className="ml-2">No Show</span>
-              </div>
-              <span className="ml-2">n일 예약 제한</span>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -378,46 +382,52 @@ const MainPage = () => {
       </div>
     )}
 
-      {/* Notice Popup */}
+      {/* Notice and Penalty Popup */}
       {showNotice && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50" onClick={handleCloseNotice}>
           <div className="bg-white w-full max-w-2xl rounded-t-lg p-6 transform animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">스터디룸 이용 주의사항</h3>
+              <div className="flex gap-4">
+                <button 
+                  className={`text-lg font-bold pb-2 ${!showPenaltyPopup ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
+                  onClick={() => setShowPenaltyPopup(false)}
+                >
+                  스터디룸 이용 주의사항
+                </button>
+                <button 
+                  className={`text-lg font-bold pb-2 ${showPenaltyPopup ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
+                  onClick={() => setShowPenaltyPopup(true)}
+                >
+                  패널티 안내
+                </button>
+              </div>
               <button onClick={handleCloseNotice} className="p-1 hover:bg-gray-100 rounded-full">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="space-y-3 text-sm">
-              <p>1. 예약 시간 30분 안에 입실하지 않을 경우 자동 취소되며, 노쇼 패널티가 부과됩니다.</p>
-              <p>2. 잔여 사용시간이 30분 이상 남아있다면 다음 예약 최대 시간이 1시간으로 조정됩니다.</p>
-              <p>3. 퇴실을 30분 이상 늦게할 경우 패널티가 부여됩니다.</p>
-              <p>4. 예약 인원 미준수 시 해당 학기 동안 예약이 제한됩니다.</p>
-              <p>5. 스터디룸 내 음식물 반입 및 섭취는 엄격히 금지됩니다.</p>
-              <p>6. 사용 후 정리정돈 및 쓰레기 분리수거는 필수입니다.</p>
-              <p>7. 고의적인 시설물 파손 시 배상 책임이 있습니다.</p>
-            </div>
-          </div>
-        </div>
-      )}
+            
+            {/* Notice Content */}
+            {!showPenaltyPopup && (
+              <div className="space-y-3 text-sm">
+                <p>1. 예약 시간 1시간 안에 입실하지 않을 경우 예약은 자동 취소되며, 노쇼 패널티가 부과됩니다.</p>
+                <p>2. 예약 인원 미준수 시 해당 학기 동안 예약이 제한됩니다.</p>
+                <p>3. 스터디룸 내 음식물 반입 및 섭취는 엄격히 금지됩니다.</p>
+                <p>4. 사용 후 정리정돈 및 쓰레기 분리수거는 필수입니다.</p>
+                <p>5. 고의적인 시설물 파손 시 배상 책임이 있습니다.</p>
+              </div>
+            )}
 
-      {/* Penalty Popup */}
-      {showPenaltyPopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50" onClick={handleClosePenaltyPopup}>
-          <div className="bg-white w-full max-w-2xl rounded-t-lg p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold">패널티 안내</h3>
-              <button onClick={handleClosePenaltyPopup} className="p-1 hover:bg-gray-100 rounded-full">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <div className="space-y-3 text-sm">
-              <p>1. 예약 시간 미준수로 인한 패널티 부여.</p>
-              <p>2. No Show 시 해당 학기 동안 예약 제한.</p>
-              <p>3. 지각 3회 이상 시 추가 페널티 부여.</p>
-              <p>4. 패널티는 관리자 승인 후 조정 가능합니다.</p>
-              <p>** 내용 추후 수정 **</p>
-            </div>
+            {/* Penalty Content */}
+            {showPenaltyPopup && (
+              <div className="space-y-3 text-sm">
+                <p>1. 예약 시간 미준수로 인한 패널티 부여.</p>
+                <p>2. No Show 시 7일간 패널티 부여.</p>
+                <p>3. 10분 이상 지각시 3일간 페널티 부여.</p>
+                <p>4. 시작시간 1시간 이전에 취소시 2일간 패널티 부여.</p>
+                <p>5. 패널티는 관리자 승인 후 조정 가능합니다.</p>
+                <p>6. 패널티가 부여되면 예약 기능이 제한됩니다.</p>
+              </div>
+            )}
           </div>
         </div>
       )}
