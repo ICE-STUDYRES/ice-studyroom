@@ -30,7 +30,6 @@ export const useMainpageHandlers = () => {
     const [isEmailVerified, setIsEmailVerified] = useState(false);
     const [verificationMessage, setVerificationMessage] = useState('');
     const [verificationSuccess, setVerificationSuccess] = useState(false);
-
     const [showPasswordChangePopup, setShowPasswordChangePopup] = useState(false);
     const [passwordChangeForm, setPasswordChangeForm] = useState({
       currentPassword: '',
@@ -38,6 +37,8 @@ export const useMainpageHandlers = () => {
       confirmNewPassword: ''
     });
     const [passwordChangeError, setPasswordChangeError] = useState('');
+    const [penaltyRemainingDays, setPenaltyRemainingDays] = useState(null);
+    const [penaltyReason, setPenaltyReason] = useState(null);
     
     useEffect(() => {
       const today = new Date();
@@ -54,6 +55,29 @@ export const useMainpageHandlers = () => {
         setIsLoggedIn(true);
       }
     }, []);
+
+    useEffect(() => {
+      const fetchUserData = async () => {
+        try {
+          const token = localStorage.getItem('accessToken');
+          const response = await axios.get('/api/users', {
+            headers: {
+              'Authorization': `Bearer ${token}`
+            }
+          });
+          if (response.data && response.data.data) {
+            setPenaltyRemainingDays(response.data.data.penaltyRemainingDays || 0);
+            setPenaltyReason(response.data.data.penaltyReason || "");
+          }
+        } catch (error) {
+          console.error("Error fetching user data:", error);
+        }
+      };
+      
+      if (isLoggedIn) {
+        fetchUserData();
+      }
+    }, [isLoggedIn]);
 
     const navigate = useNavigate();  
     const handleReservationClick = () => {
@@ -440,5 +464,6 @@ export const useMainpageHandlers = () => {
     handlePasswordChangeClick,
     handleClosePasswordChangePopup,
     handlePasswordChangeInputChange,
+    penaltyRemainingDays,penaltyReason
   };
 };
