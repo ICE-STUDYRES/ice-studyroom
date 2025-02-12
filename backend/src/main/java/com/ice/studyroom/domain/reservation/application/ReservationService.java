@@ -184,7 +184,7 @@ public class ReservationService {
 
 		scheduleRepository.saveAll(schedules);
 
-		return "Success";
+		return "개인예약이 완료되었습니다.";
 	}
 
 	@Transactional
@@ -286,7 +286,7 @@ public class ReservationService {
 
 		scheduleRepository.saveAll(schedules);
 
-		return "Success";
+		return "단체예약이 완료되었습니다.";
 	}
 
 	@Transactional
@@ -391,7 +391,7 @@ public class ReservationService {
 			scheduleRepository.save(nextSchedule);
 		}
 
-		return "Success";
+		return "예약 연장이 완료되었습니다.";
 	}
 
 	//TODO: 추후 Jpa에 종합할 예정

@@ -48,7 +48,7 @@ public class MembershipController {
 		@Valid @RequestBody MemberCreateRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.createMember(request)));
+			.body(ResponseDto.of(membershipService.createMember(request), "회원가입이 완료되었습니다."));
 	}
 
 	@Operation(summary = "유저 정보 조회", description = "토큰을 통해 유저의 정보를 조회합니다.")
@@ -59,7 +59,7 @@ public class MembershipController {
 		@RequestHeader("Authorization") String authorizationHeader) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.lookUpMember(authorizationHeader)));
+			.body(ResponseDto.of(membershipService.lookUpMember(authorizationHeader), "회원정보가 반환되었습니다."));
 	}
 
 	@Operation(summary = "로그인", description = "로그인 요청을 처리합니다.")
@@ -71,7 +71,7 @@ public class MembershipController {
 		@Valid @RequestBody MemberLoginRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.login(request)));
+			.body(ResponseDto.of(membershipService.login(request), "로그인이 완료되었습니다."));
 	}
 
 	@Operation(summary = "토큰 재발급", description = "로그인 유지를 위한 토큰을 재발급해줍니다.")
@@ -83,7 +83,7 @@ public class MembershipController {
 		@Valid @RequestBody TokenRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.refresh(authorizationHeader, request)));
+			.body(ResponseDto.of(membershipService.refresh(authorizationHeader, request), "토큰이 발급되었습니다."));
 	}
 
 	@PostMapping("/logout")
@@ -95,7 +95,7 @@ public class MembershipController {
 		@Valid @RequestBody TokenRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.logout(authorizationHeader, request)));
+			.body(ResponseDto.of(membershipService.logout(authorizationHeader, request), "로그아웃 되었습니다."));
 	}
 
 	@Operation(summary = "비밀번호 변경", description = "비밀번호 변경 요청을 처리합니다.")
@@ -107,7 +107,7 @@ public class MembershipController {
 		@Valid @RequestBody UpdatePasswordRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.updatePassword(authorizationHeader, request)));
+			.body(ResponseDto.of(membershipService.updatePassword(authorizationHeader, request), "비밀번호가 변경되었습니다."));
 	}
 
 	@Operation(summary = "이메일 인증 메일 전송", description = "이메일 인증 메일 전송 요청을 처리합니다.")
@@ -120,7 +120,7 @@ public class MembershipController {
 		@Valid @RequestBody EmailVerificationRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.sendMail(request)));
+			.body(ResponseDto.of(membershipService.sendMail(request), "인증 이메일이 발송되었습니다."));
 	}
 
 	@Operation(summary = "이메일 인증 코드 검증", description = "사용자가 입력한 이메일 인증 코드를 확인합니다.")
@@ -131,6 +131,6 @@ public class MembershipController {
 		@Valid @RequestBody MemberEmailVerificationRequest request) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.checkEmailVerification(request)));
+			.body(ResponseDto.of(membershipService.checkEmailVerification(request), "이메일 인증이 완료되었습니다."));
 	}
 }

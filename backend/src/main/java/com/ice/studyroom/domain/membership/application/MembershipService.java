@@ -39,7 +39,7 @@ public class MembershipService {
 
 	public MemberResponse createMember(MemberCreateRequest request) {
 		memberDomainService.registerMember(request);
-		return MemberResponse.of("success");
+		return MemberResponse.of("회원가입에 성공했습니다.");
 	}
 
 	public MemberLoginResponse login(MemberLoginRequest request) {
@@ -66,7 +66,7 @@ public class MembershipService {
 
 		tokenService.deleteToken(email, request.refreshToken());
 
-		return MemberResponse.of("success");
+		return MemberResponse.of("로그아웃 완료");
 	}
 
 	public String updatePassword(String authorizationHeader, UpdatePasswordRequest request) {

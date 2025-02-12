@@ -56,7 +56,7 @@ public class ReservationController {
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.getReservations(authorizationHeader)));
+			.body(ResponseDto.of(reservationService.getReservations(authorizationHeader), "예약 정보를 조회합니다."));
 	}
 
 	@GetMapping("/reservations/my/latest")
@@ -82,7 +82,7 @@ public class ReservationController {
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.getMyReservationQrCode(resId, authorizationHeader)));
+			.body(ResponseDto.of(reservationService.getMyReservationQrCode(resId, authorizationHeader), "QR 코드가 조회되었습니다."));
 	}
 
 	@Operation(summary = "스터디룸 일정 조회", description = "스터디룸 예약 가능한 일정을 조회합니다.")
@@ -92,7 +92,7 @@ public class ReservationController {
 	public ResponseEntity<ResponseDto<List<Schedule>>> getSchedule() {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(reservationService.getSchedule()));
+			.body(ResponseDto.of(reservationService.getSchedule(), "예약 가능한 일정이 반환되었습니다."));
 	}
 
 	@Operation(summary = "단체 스터디룸 예약", description = "단체 단위로 스터디룸을 예약합니다.")
@@ -105,7 +105,7 @@ public class ReservationController {
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.createGroupReservation(authorizationHeader, request)));
+			.body(ResponseDto.of(reservationService.createGroupReservation(authorizationHeader, request), "단체 예약에 성공했습니다."));
 	}
 
 	// 예약 취소 시 본인 인증이 필요하다.
@@ -119,7 +119,7 @@ public class ReservationController {
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.createIndividualReservation(authorizationHeader, request)));
+			.body(ResponseDto.of(reservationService.createIndividualReservation(authorizationHeader, request), "개인 예약에 성공했습니다."));
 	}
 
 	@Operation(summary = "예약 취소", description = "예약을 취소합니다.")
@@ -132,7 +132,7 @@ public class ReservationController {
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.cancelReservation(id, authorizationHeader)));
+			.body(ResponseDto.of(reservationService.cancelReservation(id, authorizationHeader), "예약이 취소되었습니다."));
 	}
 
 	@Operation(summary = "예약 연장", description = "예약을 연장합니다.")
@@ -145,6 +145,6 @@ public class ReservationController {
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.extendReservation(id, authorizationHeader)));
+			.body(ResponseDto.of(reservationService.extendReservation(id, authorizationHeader), "예약이 연장되었습니다."));
 	}
 }
