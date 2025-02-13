@@ -26,54 +26,64 @@ const StudyRoomManage = () => {
       refreshTokens
     } = useMainpageHandlers();
 
-  useEffect(() => {
-    const fetchBookingData = async () => {
-      try {
-        let accessToken = localStorage.getItem('accessToken');
-        const response = await fetch('/api/reservations/my', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`
-          }
-        });
+    useEffect(() => {
+      const fetchBookingData = async () => {
+        try {
+          let accessToken = localStorage.getItem('accessToken');
+          const response = await fetch('/api/reservations/my', {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${accessToken}`
+            }
+          });
     
-        if (response.status === 401) { // Unauthorized 발생 시
-          console.warn('토큰이 만료됨. 새로고침 시도.');
-          const newAccessToken = await refreshTokens();
-          if (newAccessToken) {
-            return fetchBookingData(); // 새 토큰으로 다시 실행
-          } else {
-            console.error('토큰 갱신 실패. 로그아웃 필요.');
-            return;
+          if (response.status === 401) { // Unauthorized 발생 시
+            console.warn('토큰이 만료됨. 새로고침 시도.');
+            const newAccessToken = await refreshTokens();
+            if (newAccessToken) {
+              return fetchBookingData(); // 새 토큰으로 다시 실행
+            } else {
+              console.error('토큰 갱신 실패. 로그아웃 필요.');
+              return;
+            }
           }
+    
+          const result = await response.json();
+    
+          if (result.code === 'S200' && result.data.length > 0) {
+            // ✅ `status === "RESERVED"` 또는 `reserved === true`인 예약만 필터링
+            const reservedBookings = result.data.filter(
+              booking => booking.reservation?.status === "RESERVED" || booking.reservation?.reserved === true
+            );
+    
+            if (reservedBookings.length > 0) {
+              const bookingData = getNearestBooking(reservedBookings);
+              if (bookingData) {
+                setBooking({
+                  id: bookingData.id || '',
+                  room: bookingData.roomNumber || '',
+                  date: bookingData.scheduleDate || '',
+                  time: `${getFormattedTime(bookingData.startTime)}~${getFormattedTime(bookingData.endTime)}`,
+                  userName: bookingData.userName || '',
+                  userEmail: bookingData.userEmail || '',
+                  userId: bookingData.studentId || '',
+                  participants: Array.isArray(bookingData.participants) ? bookingData.participants : [],
+                  endTime: getFormattedTime(bookingData.endTime),
+                  extendDeadline: getExtendDeadline(bookingData.endTime),
+                });
+              }
+            } else {
+              setBooking({}); // 예약이 없으면 초기화
+            }
+          }
+        } catch (error) {
+          console.error('Error fetching booking data:', error);
         }
+      };
     
-        const result = await response.json();
+      fetchBookingData();
+    }, []);
     
-        if (result.code === 'S200' && result.data.length > 0) {
-          const bookingData = getNearestBooking(result.data);
-          if (bookingData) {
-            setBooking({
-              id: bookingData.id || '',
-              room: bookingData.roomNumber || '',
-              date: bookingData.scheduleDate || '',
-              time: `${getFormattedTime(bookingData.startTime)}~${getFormattedTime(bookingData.endTime)}`,
-              userName: bookingData.userName || '',
-              userEmail: bookingData.userEmail || '',
-              userId: bookingData.studentId || '',
-              participants: Array.isArray(bookingData.participants) ? bookingData.participants : [],
-              endTime: getFormattedTime(bookingData.endTime),
-              extendDeadline: getExtendDeadline(bookingData.endTime),
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching booking data:', error);
-      }
-    };
-    
-    fetchBookingData();
-  }, []);
 
   const isWithinExtensionTime = () => {
     if (!booking.endTime) return false;
@@ -164,27 +174,47 @@ const StudyRoomManage = () => {
   
 
   const handleCancelReservation = async () => {
-    if (!window.confirm("정말로 예약을 취소하시겠습니까?")) return;
-  
     try {
       const accessToken = localStorage.getItem("accessToken");
+  
+      if (!booking.id) {
+        alert("취소할 예약이 없습니다.");
+        return;
+      }
+  
       const response = await axios.delete(`/api/reservations/${booking.id}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
       });
-      
-      addNotification('cancellation', 'success');
-      navigate('/');
-
-      if (cancel_response.code !== "S200") {
-        addNotification('cancellation', 'error', response.data.message);
+  
+      console.log("예약 취소 응답:", response);
+  
+      if (response.data?.code === "S200") {
+        setShowCancelConfirm(false); // 모달 닫기
+        setBooking({}); // 예약 데이터 초기화
+        navigate("/"); // 예약 목록으로 이동
+      } else {
+        alert("예약 취소 실패: " + (response.data?.message || "알 수 없는 오류"));
       }
     } catch (error) {
+      console.error("예약 취소 오류:", error);
+  
+      if (error.response) {
+        // 🔥 서버에서 응답을 보내온 경우 (400, 500 등)
+        const errorMessage = error.response.data?.message || "예약 취소 중 오류가 발생했습니다.";
+        alert(errorMessage);
+      } else if (error.request) {
+        // 🔥 요청이 보내졌으나 응답을 받지 못한 경우
+        alert("서버 응답이 없습니다. 네트워크 상태를 확인해주세요.");
+      } else {
+        // 🔥 기타 에러
+        alert("알 수 없는 오류가 발생했습니다. 다시 시도해주세요.");
+      }
     }
-  };
-
+  };  
+  
   const extendReservation = async () => {
     try {
       let accessToken = localStorage.getItem("accessToken");
@@ -222,11 +252,29 @@ const StudyRoomManage = () => {
       alert("진행 중인 예약이 없습니다.");
       return;
     }
-    setShowCancelConfirm(true);
+    setShowCancelConfirm(true); // 바로 모달을 띄움
   };
 
+  const isPastReservation = () => {
+    if (!booking.time || !booking.date) return true; // 예약 정보가 없으면 비활성화
+  
+    const now = new Date();
+    const [startHour, startMinute] = booking.time.split("~")[0].split(":").map(Number); // 예약 시작 시간
+  
+    const reservationStartTime = new Date(booking.date);
+    reservationStartTime.setHours(startHour, startMinute, 0, 0);
+  
+    return now >= reservationStartTime; // 현재 시간이 예약 시작 시간을 넘었으면 true (비활성화)
+  };
 
-  const CancelConfirmation = () => (
+  const CancelConfirmation = () => {
+    const now = new Date();
+  const [startHour, startMinute] = booking.time.split("~")[0].split(":").map(Number); // 예약 시작 시간 가져오기
+  const startTime = new Date(booking.date);
+  startTime.setHours(startHour, startMinute, 0, 0);
+
+  const timeDifference = (startTime - now) / (1000 * 60); // 분 단위 차이 계산
+  return (
     <div 
       className="fixed inset-0 bg-black/30 z-40 flex items-center justify-center"
       onClick={(e) => {
@@ -282,6 +330,15 @@ const StudyRoomManage = () => {
             </div>
           </div>
 
+          {/* 🔥 예약 시작 1시간 미만이면 패널티 경고 메시지 추가 (삽입 위치) */}
+          {timeDifference < 60 && (
+            <p className="text-sm text-red-500 text-center font-medium">
+              현재 예약 시작까지 1시간이 채 남지 않았습니다.<br />
+              취소하면 패널티를 받을 수 있습니다.
+            </p>
+          )}
+
+          {/* 기존 메시지 */}
           <p className="text-sm text-gray-600 text-center">
             예약을 취소하시겠습니까?
           </p>
@@ -304,6 +361,7 @@ const StudyRoomManage = () => {
       </div>
     </div>
   );
+};
 
   // 현재 날짜를 가져오는 함수
   const getCurrentDate = () => {
@@ -459,11 +517,16 @@ const StudyRoomManage = () => {
           <div className="grid grid-cols-2 gap-3">
           <button 
             onClick={handleCancelClick}
-            className="w-full py-3 text-sm font-medium text-red-500 border-2 border-red-500 rounded-xl hover:bg-red-50 transition-colors"
+            disabled={isPastReservation()} // 🔥 예약 시간이 지났으면 비활성화
+            className={`
+              w-full py-3 text-sm font-medium rounded-xl transition-colors
+              ${isPastReservation() 
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed"  // 🔥 비활성화 스타일
+                : "text-red-500 border-2 border-red-500 hover:bg-red-50"}
+            `}
           >
             예약 취소
           </button>
-
             <button 
               onClick={() => {
                 if (selectedExtension) {
@@ -478,10 +541,10 @@ const StudyRoomManage = () => {
               }}
               disabled={!selectedExtension}
               className={`
-                w-full py-3 text-sm font-medium text-white rounded-xl transition-colors
-                ${selectedExtension 
-                  ? 'bg-slate-900 hover:bg-slate-800' 
-                  : 'bg-gray-300 cursor-not-allowed'}
+                w-full py-3 text-sm font-medium rounded-xl transition-colors
+                ${!selectedExtension || isPastReservation()  
+                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                  : "bg-slate-900 hover:bg-slate-800 text-white"}
               `}
             >
               연장하기
