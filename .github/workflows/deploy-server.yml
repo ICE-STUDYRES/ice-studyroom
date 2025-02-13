@@ -55,6 +55,11 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
 
+      - name: Decode SSH Key
+        run: |
+          echo "${{ secrets.KEY }}" | base64 --decode > private-key.pem
+          chmod 600 private-key.pem
+
       - name: Copy .env to EC2
         uses: appleboy/scp-action@master
         with:
