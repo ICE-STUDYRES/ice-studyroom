@@ -55,9 +55,9 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
 
-      - name: Decode SSH Key (Using Base64)
+      - name: Create SSH Private Key
         run: |
-          echo "${{ secrets.KEY_BASE64 }}" | base64 --decode > private-key.pem
+          echo "${{ secrets.KEY }}" > private-key.pem
           chmod 600 private-key.pem
 
       - name: Copy .env to EC2
@@ -65,7 +65,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
-          key: "${{ secrets.KEY_BASE64 }}"
+          key_path: private-key.pem
           source: ".env"
           target: "/home/ubuntu/"
 
