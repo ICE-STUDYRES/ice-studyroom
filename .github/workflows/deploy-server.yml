@@ -20,6 +20,7 @@ jobs:
       - name: Clean Gradle Build (Skip Tests)
         run: |
           cd backend
+          chmod +x ./gradlew
           ./gradlew clean --no-daemon
           ./gradlew build -x test -x compileTestJava -x checkstyleMain --no-daemon
 
