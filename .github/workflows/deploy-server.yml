@@ -27,9 +27,9 @@ jobs:
       - name: Docker build & push
         working-directory: backend
         run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker build -t ${{ secrets.DOCKER_REPO }}/backend:latest .
-          docker push ${{ secrets.DOCKER_REPO }}/backend:latest
+          echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest
 
       - name: Get GitHub Actions Runner IP
         run: |
