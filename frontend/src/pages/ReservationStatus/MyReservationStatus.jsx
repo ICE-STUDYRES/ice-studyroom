@@ -20,6 +20,7 @@ const MyReservationStatus = () => {
   const [error, setError] = useState(null);
   const [sentQRCode, setSentQRCode] = useState(null); // ✅ 이미 전송된 QR 코드 저장
   const { addNotification } = useNotification();
+  
 
   // ✅ 예약 ID 가져오기
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
@@ -55,15 +56,18 @@ const MyReservationStatus = () => {
           },
           body: JSON.stringify({ qrCode: qrData }),
         });
+        console.log(response);
+        const responseData = await response.json();
+        handleCloseQRModal();
   
         if (response.status === 403) {
           addNotification("attendance", "notStarted", response.message); // ✅ 출석 시간이 아닐 때
         } else if (response.status === 401) {
           addNotification("attendance", "expired", response.message); // ✅ 출석 시간 만료
-        } else if (response.code === "S200") {
-          if (result.data === "ENTRANCE") {
+        } else if (response.status === 200) {
+          if (responseData.data === "ENTRANCE") {
             addNotification("attendance", "success"); // ✅ 정상 출석
-          } else if (response.data === "LATE") {
+          } else if (responseData.data === "LATE") {
             addNotification("attendance", "late"); // ✅ 지각
           }
         } else {
@@ -231,14 +235,15 @@ const MyReservationStatus = () => {
                   <Clock className="w-4 h-4 text-gray-400" />
                   <span>{reservation.startTime.slice(0, 5)}-{reservation.endTime.slice(0, 5)}</span>
                   <span className={
-                    status === 'RESERVED' ? 'text-blue-700' :
+                    ['RESERVED', 'ENTRANCE'].includes(status) ? 'text-blue-700' :
                     ['CANCELLED', 'NO_SHOW', 'LATE'].includes(status) ? 'text-red-500' :
-                    'text-gray-700'
+                    'text-gray-700'                    
                   }>
                     {status === 'RESERVED' ? '예약됨' :
                     status === 'CANCELLED' ? '취소됨' :
                     status === 'NO_SHOW' ? '노쇼' :
                     status === 'LATE' ? '지각' :
+                    status == 'ENTRANCE' ? '출석됨' :
                     '알 수 없음'}
                   </span>
                 </div>

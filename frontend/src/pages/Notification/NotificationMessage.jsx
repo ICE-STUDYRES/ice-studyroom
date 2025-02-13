@@ -57,7 +57,7 @@ export const NOTIFICATION_MESSAGES = {
     success: {
       type: 'cancellation',
       title: '예약 취소 완료',
-      description: '예약 현황에서 확인부탁드립니다.',
+      description: '예약 현황에서 확인 부탁드립니다.',
     },
     error: {
       type: 'cancellation',
