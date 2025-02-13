@@ -26,11 +26,11 @@ jobs:
         run: pnpm build --mode production
 
       - name: Deploy to S3
-        run: aws s3 sync ./dist s3://studyroom-ice-webpage --delete
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: "ap-northeast-2"
+          AWS_ACCESS_KEY_ID: ${{ secrets.FE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.FE_AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ secrets.FE_AWS_REGION }}
+        run: aws s3 sync ./dist s3://studyroom-ice-webpage --delete
 
       - name: Invalidate CloudFront Cache
-        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.FE_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
