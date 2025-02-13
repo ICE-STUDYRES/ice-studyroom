@@ -18,35 +18,35 @@ jobs:
           distribution: "adopt"
 
       - name: Clean Gradle Build (Skip Tests & Checkstyle)
+        working-directory: backend
         run: |
-          cd backend
           chmod +x ./gradlew
           ./gradlew clean --no-daemon
           ./gradlew build -x test -x compileTestJava -x checkstyleMain -x editorconfigCheck -x checkstyleTest --no-daemon
 
       - name: Docker build & push
+        working-directory: backend
         run: |
           echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker build -t ${{ secrets.DOCKER_REPO }}/backend:latest ./backend
+          docker build -t ${{ secrets.DOCKER_REPO }}/backend:latest .
           docker push ${{ secrets.DOCKER_REPO }}/backend:latest
 
       - name: Get GitHub Actions Runner IP
         run: |
           RUNNER_IP=$(curl -s ifconfig.me)
+          if [[ -z "$RUNNER_IP" ]]; then
+            echo "Error: Unable to retrieve GitHub Actions Runner IP."
+            exit 1
+          fi
           echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
           echo "GitHub Actions Runner IP: $RUNNER_IP"
 
       - name: Add SSH IP to EC2 Security Group
         run: |
-          if [[ -n "$RUNNER_IP" ]]; then
-            aws ec2 authorize-security-group-ingress \
-              --group-id ${{ secrets.SECURITY_GROUP_ID }} \
-              --protocol tcp --port 22 --cidr $RUNNER_IP/32 \
-              --region ${{ secrets.AWS_REGION }}
-          else
-            echo "Error: RUNNER_IP is empty"
-            exit 1
-          fi
+          aws ec2 authorize-security-group-ingress \
+            --group-id ${{ secrets.SECURITY_GROUP_ID }} \
+            --protocol tcp --port 22 --cidr $RUNNER_IP/32 \
+            --region ${{ secrets.AWS_REGION }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -92,15 +92,10 @@ jobs:
       - name: Remove SSH IP from Security Group
         if: always()
         run: |
-          if [[ -n "$RUNNER_IP" ]]; then
-            aws ec2 revoke-security-group-ingress \
-              --group-id ${{ secrets.SECURITY_GROUP_ID }} \
-              --protocol tcp --port 22 --cidr $RUNNER_IP/32 \
-              --region ${{ secrets.AWS_REGION }}
-          else
-            echo "Error: RUNNER_IP is empty"
-            exit 1
-          fi
+          aws ec2 revoke-security-group-ingress \
+            --group-id ${{ secrets.SECURITY_GROUP_ID }} \
+            --protocol tcp --port 22 --cidr $RUNNER_IP/32 \
+            --region ${{ secrets.AWS_REGION }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
