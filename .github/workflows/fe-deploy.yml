@@ -17,15 +17,26 @@ jobs:
       - name: Install Node.js (v20.15.1)
         uses: actions/setup-node@v3
         with:
-          node-version: 20.15.1  # Node.js 버전 20.15.1로 설정
-          cache: 'pnpm'
+          node-version: 20.15.1
 
-      - name: Enable Corepack & Install pnpm
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
         run: |
-          corepack enable
-          corepack prepare pnpm@latest --activate
-          corepack use pnpm@latest
-          pnpm --version
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v3
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install Dependencies
         run: pnpm install
