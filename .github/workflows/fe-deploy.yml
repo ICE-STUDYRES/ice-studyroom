@@ -14,22 +14,17 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install Node.js
+      - name: Install Node.js (v20.15.1)
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 20.15.1  # Node.js 버전 20.15.1로 설정
           cache: 'pnpm'
 
-      - name: Manually Install pnpm
+      - name: Enable Corepack & Install pnpm
         run: |
-          echo "Enabling Corepack..."
           corepack enable
-          echo "Installing pnpm..."
-          npm install -g pnpm
-          echo "Adding pnpm to PATH..."
-          export PATH="$(npm root -g)/pnpm/bin:$PATH"
-          echo "Verifying installation..."
-          which pnpm
+          corepack prepare pnpm@latest --activate
+          corepack use pnpm@latest
           pnpm --version
 
       - name: Install Dependencies
