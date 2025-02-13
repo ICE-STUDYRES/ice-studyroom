@@ -1,60 +1,63 @@
 name: Deploy Frontend
 
 on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+ push:
+   branches:
+     - main
+ workflow_dispatch:
 
 jobs:
-  deploy_frontend:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./frontend  # frontend 디렉토리에서 작업하도록 설정
+ deploy_frontend:
+   runs-on: ubuntu-latest
+   defaults:
+     run:
+       working-directory: ./frontend
 
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+   steps:
+     - name: Checkout Repository
+       uses: actions/checkout@v3
 
-      - name: Install Node.js (v20.15.1)
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20.15.1
+     - name: Install Node.js (v20.15.1)
+       uses: actions/setup-node@v3
+       with:
+         node-version: 20.15.1
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v2
-        with:
-          version: latest
-          run_install: false
+     - name: Setup pnpm
+       uses: pnpm/action-setup@v2
+       with:
+         version: latest
+         run_install: false
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+     - name: Get pnpm store directory
+       shell: bash
+       run: |
+         echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
 
-      - name: Setup pnpm cache
-        uses: actions/cache@v3
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+     - name: Setup pnpm cache
+       uses: actions/cache@v3
+       with:
+         path: ${{ env.STORE_PATH }}
+         key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+         restore-keys: |
+           ${{ runner.os }}-pnpm-store-
 
-      - name: Install Dependencies
-        run: pnpm install
+     - name: Install Dependencies
+       run: pnpm install
 
-      - name: Build Project
-        env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
-        run: pnpm build --mode production
+     - name: Build Project
+       env:
+         VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
+       run: pnpm build --mode production
 
-      - name: Deploy to S3
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.FE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.FE_AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ secrets.FE_AWS_REGION }}
-        run: aws s3 sync ./dist s3://studyroom-ice-webpage --delete
+     - name: Configure AWS Credentials
+       uses: aws-actions/configure-aws-credentials@v4
+       with:
+         aws-access-key-id: ${{ secrets.FE_AWS_ACCESS_KEY_ID }}
+         aws-secret-access-key: ${{ secrets.FE_AWS_SECRET_ACCESS_KEY }}
+         aws-region: ${{ secrets.FE_AWS_REGION }}
 
-      - name: Invalidate CloudFront Cache
-        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.FE_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+     - name: Deploy to S3
+       run: aws s3 sync ./dist s3://studyroom-ice-webpage --delete
+
+     - name: Invalidate CloudFront Cache
+       run: aws cloudfront create-invalidation --distribution-id ${{ secrets.FE_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
