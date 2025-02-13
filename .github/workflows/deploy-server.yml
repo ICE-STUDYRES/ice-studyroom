@@ -28,7 +28,7 @@ jobs:
         working-directory: backend
         run: |
           echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker build -t ${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest .
+          docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest .
           docker push ${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest
 
       - name: Get GitHub Actions Runner IP
@@ -55,26 +55,12 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
 
-      - name: Create SSH Private Key
-        run: |
-          echo "${{ secrets.KEY }}" > private-key.pem
-          chmod 600 private-key.pem
-
-      - name: Copy .env to EC2
-        uses: appleboy/scp-action@master
-        with:
-          host: ${{ secrets.HOST }}
-          username: ubuntu
-          key_path: private-key.pem
-          source: ".env"
-          target: "/home/ubuntu/"
-
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
-          key: "${{ secrets.KEY_BASE64 }}"
+          key: "${{ secrets.KEY }}"
           script: |
             CONTAINER_NAME="backend"
             IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest"
@@ -88,11 +74,14 @@ jobs:
             # 최신 이미지 가져오기
             sudo docker pull $IMAGE_NAME
 
-            # 컨테이너 실행 (환경변수 적용)
-            sudo docker run -d --name $CONTAINER_NAME -p 8080:8080 --restart always --env-file /home/ubuntu/.env $IMAGE_NAME
+            # .env 이동
+            sudo mv /home/ubuntu/.env /home/ubuntu/backend/.env
 
-            # 사용하지 않는 이미지 정리
-            sudo docker image prune -f
+            # 컨테이너 실행
+            sudo docker run -d --name $CONTAINER_NAME -p 8080:8080 --restart always --env-file /home/ubuntu/backend/.env $IMAGE_NAME
+
+      - name: Clean Up Unused Docker Images
+        run: sudo docker image prune -f
 
       - name: Remove SSH IP from Security Group
         if: always()
