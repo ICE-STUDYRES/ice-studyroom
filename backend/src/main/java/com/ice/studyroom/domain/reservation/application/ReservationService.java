@@ -442,7 +442,7 @@ public class ReservationService {
 		if (recentReservation.isPresent()) {
 			ReservationStatus recentStatus = recentReservation.get().getStatus();
 			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
-				throw new BusinessException(StatusCode.CONFLICT, "현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다. (상태: " + recentStatus + ")");
+				throw new BusinessException(StatusCode.CONFLICT, "현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다.");
 			}
 		}
 	}
