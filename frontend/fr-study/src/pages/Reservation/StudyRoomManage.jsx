@@ -3,8 +3,10 @@ import { ChevronLeft, Clock, LogOut, CalendarDays, AlertCircle, CheckCircle2, X 
 import { useNavigate } from 'react-router-dom';
 import { useMainpageHandlers } from '../Mainpage/MainpageHandlers';
 import axios from 'axios';
+import { useNotification } from '../Notification/Notification';
 
 const StudyRoomManage = () => {
+  const { addNotification } = useNotification();
   const navigate = useNavigate();
   const [selectedExtension, setSelectedExtension] = useState(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -47,7 +49,6 @@ const StudyRoomManage = () => {
         }
     
         const result = await response.json();
-        console.log("API 응답 데이터:", result);
     
         if (result.code === 'S200' && result.data.length > 0) {
           const bookingData = getNearestBooking(result.data);
@@ -64,8 +65,6 @@ const StudyRoomManage = () => {
               endTime: getFormattedTime(bookingData.endTime),
               extendDeadline: getExtendDeadline(bookingData.endTime),
             });
-          } else {
-            console.warn("현재 진행 중인 예약이 없습니다.");
           }
         }
       } catch (error) {
@@ -165,27 +164,24 @@ const StudyRoomManage = () => {
   
 
   const handleCancelReservation = async () => {
-    console.log(booking)
-    if (!booking.id) {
-      alert("예약 ID가 없습니다.");
-      return;
-    }
-  
     if (!window.confirm("정말로 예약을 취소하시겠습니까?")) return;
   
     try {
       const accessToken = localStorage.getItem("accessToken");
-      await axios.delete(`/api/reservations/${booking.id}`, {
+      const response = await axios.delete(`/api/reservations/${booking.id}`, {
         headers: {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
       });
-      alert("예약이 취소되었습니다.");
+      
+      addNotification('cancellation', 'success');
       navigate('/');
+
+      if (cancel_response.code !== "S200") {
+        addNotification('cancellation', 'error', response.data.message);
+      }
     } catch (error) {
-      console.error("예약 취소 실패:", error);
-      alert("예약 취소 중 오류가 발생했습니다.");
     }
   };
 
@@ -203,7 +199,6 @@ const StudyRoomManage = () => {
       );
   
       if (response.status === 401) { // Unauthorized 발생 시
-        console.warn('토큰이 만료됨. 새로고침 시도.');
         const newAccessToken = await refreshTokens();
         if (newAccessToken) {
           return extendReservation(); // 새 토큰으로 다시 실행
@@ -213,9 +208,12 @@ const StudyRoomManage = () => {
         }
       }
   
-      setMessage('예약이 성공적으로 연장되었습니다.');
+      addNotification('extension', 'success');
+
+      if (response.code !== "S200") {
+        addNotification('extension', 'error', response.data.message);
+      }
     } catch (error) {
-      setMessage('예약 연장에 실패했습니다.');
     }
   };
 
