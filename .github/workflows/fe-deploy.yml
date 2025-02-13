@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   deploy_frontend:
@@ -20,16 +19,27 @@ jobs:
           node-version: 18
           cache: 'pnpm'
 
-      - name: Enable Corepack (pnpm support)
+      - name: Debug pnpm Installation
         run: |
-          corepack enable
-          corepack prepare pnpm@latest --activate
+          echo "Checking pnpm installation..."
+          which pnpm || echo "pnpm not found"
+          echo "Current PATH: $PATH"
+          echo "Checking npm global bin directory..."
+          npm root -g
 
-      - name: Install pnpm
-        run: npm install -g pnpm
-
-      - name: Verify pnpm Installation
-        run: pnpm --version  # pnpm 정상 설치 확인
+      - name: Install pnpm (if missing)
+        run: |
+          if ! command -v pnpm &> /dev/null
+          then
+            echo "pnpm not found, installing..."
+            npm install -g pnpm
+            echo "export PATH=$(npm root -g)/pnpm/bin:$PATH" >> $HOME/.bashrc
+            source $HOME/.bashrc
+          fi
+          echo "pnpm location:"
+          which pnpm
+          echo "Final PATH: $PATH"
+          pnpm --version
 
       - name: Install Dependencies
         run: pnpm install
