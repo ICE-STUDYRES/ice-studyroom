@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useNotification } from '../Notification/Notification';
 
 export const useMainpageHandlers = () => {
     const [currentDate, setCurrentDate] = useState("");
     const [isLoggedIn, setIsLoggedIn] = useState(false);
-    const [checkInStatus, setCheckInStatus] = useState("예약완료");
-    const [qrCodeUrl, setQrCodeUrl] = useState(null);
     const [showNotice, setShowNotice] = useState(false);
     const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
     const [showQRModal, setShowQRModal] = useState(false);
@@ -39,7 +38,8 @@ export const useMainpageHandlers = () => {
     const [passwordChangeError, setPasswordChangeError] = useState('');
     const [penaltyRemainingDays, setPenaltyRemainingDays] = useState(null);
     const [penaltyReason, setPenaltyReason] = useState(null);
-    
+    const { addNotification } = useNotification();
+
     useEffect(() => {
       const today = new Date();
       const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -84,7 +84,7 @@ export const useMainpageHandlers = () => {
       if (isLoggedIn) {
         navigate('/reservation/room');
       } else {
-        alert('로그인 후 이용 가능합니다.');
+        addNotification('member', 'error');
       }
     };
     const handleMyReservationStatusClick = () => navigate('/MyReservationStatus');
@@ -93,7 +93,7 @@ export const useMainpageHandlers = () => {
       if (isLoggedIn) {
         navigate('/reservation/manage');
       } else {
-        alert('로그인 후 이용 가능합니다.');
+        addNotification('member', 'error');
       }
     };
     const handleNoticeClick = () => setShowNotice(true);
@@ -102,7 +102,7 @@ export const useMainpageHandlers = () => {
       if (isLoggedIn) {
         setShowPenaltyPopup(true);
       } else {
-        alert('로그인 후 이용 가능합니다.');
+        addNotification('member', 'error');
       }
     };
     const handleClosePenaltyPopup = () => setShowPenaltyPopup(false);
@@ -160,9 +160,10 @@ export const useMainpageHandlers = () => {
               name: signupForm.name,
               studentNum: signupForm.studentNum,
           });
+          console.log(response);
   
           if (response.data.code === 'S200') {
-              alert('회원가입이 완료되었습니다.');
+            addNotification('signup', 'success');
               setSignupForm({
                   email: '',
                   password: '',
@@ -173,15 +174,12 @@ export const useMainpageHandlers = () => {
                   isAuthenticated: false,
               });
               setShowSignUpPopup(false); // 회원가입 팝업 닫기
-          } else {
-              setSignupError(response.data.message || '회원가입 중 오류가 발생했습니다.');
           }
       } catch (error) {
           if (error.response?.data?.code === 'C400') {
-              setSignupError(error.response.data.message);
+            addNotification('signup', 'error', response.data.message);
           } else {
-              console.error('Signup error:', error);
-              setSignupError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+            addNotification('signup', 'error', '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
           }
       }
   };
@@ -203,20 +201,18 @@ export const useMainpageHandlers = () => {
           email: loginForm.email,
           password: loginForm.password,
         });
-    
         if (response.data.code === 'S200') {
           const accessToken = response.data.data.accessToken;
           const refreshToken = response.data.data.refreshToken;
-    
+          
           // 토큰과 로그인 상태를 로컬 스토리지에 저장
           localStorage.setItem('accessToken', accessToken);
           localStorage.setItem('refreshToken', refreshToken);
           localStorage.setItem('isLoggedIn', 'true'); // 로그인 상태 저장
-
-          console.log('Login Tokens:', { accessToken, refreshToken }); // 로그인 시 토큰 출력
     
           setIsLoggedIn(true);
           setShowSigninPopup(false); // 로그인 팝업 닫기
+          
         }
       } catch (error) {
         console.error('Login error:', error);
@@ -246,8 +242,6 @@ export const useMainpageHandlers = () => {
                   }
               }
           );
-  
-          console.log("Logout response:", response); // 응답 로그 출력
   
           if (response.status !== 200) {  // response.ok 대신 response.status 사용
               console.warn("Logout request failed. Status:", response.status);
@@ -423,8 +417,6 @@ export const useMainpageHandlers = () => {
   return {
     isLoggedIn,
     currentDate,
-    checkInStatus,
-    qrCodeUrl,
     showNotice,
     showPenaltyPopup,
     showQRModal,
@@ -467,3 +459,4 @@ export const useMainpageHandlers = () => {
     penaltyRemainingDays,penaltyReason
   };
 };
+
