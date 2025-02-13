@@ -1,5 +1,5 @@
 import { X, LogIn, Home, QrCode } from 'lucide-react';
-import alertImage from "../../assets/images/alert.png";
+import alertImage from "../../assets/images/Alert.png";
 import logo from "../../assets/images/hufslogo.png";
 import { useMainpageHandlers } from './MainpageHandlers';
 import { useState, useEffect } from 'react';
