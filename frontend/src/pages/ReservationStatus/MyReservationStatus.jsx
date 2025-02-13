@@ -20,7 +20,6 @@ const MyReservationStatus = () => {
   const [error, setError] = useState(null);
   const [sentQRCode, setSentQRCode] = useState(null); // ✅ 이미 전송된 QR 코드 저장
   const { addNotification } = useNotification();
-  
 
   // ✅ 예약 ID 가져오기
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
@@ -59,6 +58,7 @@ const MyReservationStatus = () => {
         console.log(response);
         const responseData = await response.json();
         handleCloseQRModal();
+
   
         if (response.status === 403) {
           addNotification("attendance", "notStarted", response.message); // ✅ 출석 시간이 아닐 때

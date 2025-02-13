@@ -196,7 +196,6 @@ const StudyRoomManage = () => {
         setBooking({}); // 예약 데이터 초기화
         addNotification('cancellation', 'success');
         navigate("/"); // 예약 목록으로 이동
-        
       } else {
         alert("예약 취소 실패: " + (response.data?.message || "알 수 없는 오류"));
       }
