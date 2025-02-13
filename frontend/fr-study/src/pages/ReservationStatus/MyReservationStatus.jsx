@@ -129,10 +129,12 @@ const MyReservationStatus = () => {
         const data = await response.json();
 
         if (data.code === 'S200') {
-            const reservations = data.data.reverse().map(item => ({
-                id: item.reservation.id, // ✅ 예약 ID 저장
-                ...item
-            }));
+          const reservations = data.data.reverse().map(item => ({
+            id: item.reservation.id, // ✅ 예약 ID 저장
+            status: item.reservation.status, // ✅ 방 상태 추가
+            ...item
+        }));
+        
             setMyReservations(reservations);
         } else {
             throw new Error(data.message);
@@ -143,8 +145,6 @@ const MyReservationStatus = () => {
         setLoading(false);
     }
 };
-
-
 
   const formatDate = (date) => {
     const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -216,7 +216,7 @@ const MyReservationStatus = () => {
           <p className="text-sm text-red-500">{error}</p>
         ) : myReservations.length > 0 ? (
           <div className="space-y-4">
-            {myReservations.map(( {reservation} ) => (
+            {myReservations.map(( {reservation, status} ) => (
               <div 
                 key={reservation.id} 
                 className="border-t border-gray-100 pt-4 first:border-t-0 first:pt-0"
@@ -230,8 +230,16 @@ const MyReservationStatus = () => {
                 <div className="flex items-center gap-3 text-sm text-gray-900">
                   <Clock className="w-4 h-4 text-gray-400" />
                   <span>{reservation.startTime.slice(0, 5)}-{reservation.endTime.slice(0, 5)}</span>
-                  <span className="text-blue-600">
-                    {reservation.status === 'RESERVED' ? '예약됨' : '완료됨'}
+                  <span className={
+                    status === 'RESERVED' ? 'text-blue-700' :
+                    ['CANCELLED', 'NO_SHOW', 'LATE'].includes(status) ? 'text-red-500' :
+                    'text-gray-700'
+                  }>
+                    {status === 'RESERVED' ? '예약됨' :
+                    status === 'CANCELLED' ? '취소됨' :
+                    status === 'NO_SHOW' ? '노쇼' :
+                    status === 'LATE' ? '지각' :
+                    '알 수 없음'}
                   </span>
                 </div>
               </div>
