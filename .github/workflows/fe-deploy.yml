@@ -9,6 +9,9 @@ on:
 jobs:
   deploy_frontend:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend  # frontend 디렉토리에서 작업하도록 설정
 
     steps:
       - name: Checkout Repository
