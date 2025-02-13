@@ -194,6 +194,7 @@ const StudyRoomManage = () => {
       if (response.data?.code === "S200") {
         setShowCancelConfirm(false); // 모달 닫기
         setBooking({}); // 예약 데이터 초기화
+        addNotification('cancellation', 'success');
         navigate("/"); // 예약 목록으로 이동
       } else {
         alert("예약 취소 실패: " + (response.data?.message || "알 수 없는 오류"));
