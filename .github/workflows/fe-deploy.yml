@@ -14,17 +14,22 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install Node.js & Enable Corepack
+      - name: Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
           cache: 'pnpm'
 
-      - name: Enable Corepack & Install pnpm
+      - name: Manually Install pnpm
         run: |
+          echo "Enabling Corepack..."
           corepack enable
-          corepack prepare pnpm@latest --activate
-          corepack use pnpm@latest
+          echo "Installing pnpm..."
+          npm install -g pnpm
+          echo "Adding pnpm to PATH..."
+          export PATH="$(npm root -g)/pnpm/bin:$PATH"
+          echo "Verifying installation..."
+          which pnpm
           pnpm --version
 
       - name: Install Dependencies
