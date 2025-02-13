@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useMainpageHandlers } from '../Mainpage/MainpageHandlers';
 import { QRCodeCanvas } from 'qrcode.react';
 import useQRCodeFetcher from '../Mainpage/QRCodeFetcher'; // ✅ QR 코드 데이터 가져오는 훅
+import { useNotification } from '../Notification/Notification';
+
 
 const MyReservationStatus = () => {
   const {
@@ -17,6 +19,7 @@ const MyReservationStatus = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [sentQRCode, setSentQRCode] = useState(null); // ✅ 이미 전송된 QR 코드 저장
+  const { addNotification } = useNotification();
 
   // ✅ 예약 ID 가져오기
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
@@ -31,9 +34,6 @@ const MyReservationStatus = () => {
       if (event.key === "Enter") {
         if (!qrBuffer.trim()) return; // 빈 값 방지
   
-        console.log("✅ Enter 입력 감지됨!");
-        // console.log("✅ 원본 QR 코드 입력값:", qrBuffer);
-  
         let qrData = qrBuffer;
   
         // ✅ QR 코드 데이터가 JSON 형식인지 확인
@@ -41,7 +41,6 @@ const MyReservationStatus = () => {
           const parsedData = JSON.parse(qrBuffer);
           if (parsedData?.data) {
             qrData = parsedData.data; // ✅ JSON이면 `data` 필드 값 사용
-            console.log("📌 JSON에서 추출한 QR 코드 데이터:", qrData);
           }
         } catch (err) {
           console.warn("⚠️ QR 코드 데이터가 JSON 형식이 아님. 그대로 사용함.");
@@ -57,12 +56,22 @@ const MyReservationStatus = () => {
           body: JSON.stringify({ qrCode: qrData }),
         });
   
-        const result = await response.json();
-        console.log("✅ 서버 응답:", result);
+        if (response.status === 403) {
+          addNotification("attendance", "notStarted", response.message); // ✅ 출석 시간이 아닐 때
+        } else if (response.status === 401) {
+          addNotification("attendance", "expired", response.message); // ✅ 출석 시간 만료
+        } else if (response.code === "S200") {
+          if (result.data === "ENTRANCE") {
+            addNotification("attendance", "success"); // ✅ 정상 출석
+          } else if (response.data === "LATE") {
+            addNotification("attendance", "late"); // ✅ 지각
+          }
+        } else {
+          addNotification("attendance", "error", response.message); // ✅ 기타 오류
+        }
   
         // ✅ 중복 스캔 방지
         setSentQRCode(qrData);
-  
         qrBuffer = ""; // ✅ 버퍼 초기화
       } else if (event.key !== "Shift") {
         // ✅ Shift 키를 무시하고 QR 코드 문자만 버퍼에 추가
@@ -72,10 +81,7 @@ const MyReservationStatus = () => {
   
     window.addEventListener("keydown", handleScan);
     return () => window.removeEventListener("keydown", handleScan);
-  }, [setSentQRCode]); // 📌 `sentQRCode`가 변경될 때마다 실행
-  
-
-
+}, [setSentQRCode, addNotification]); // 📌 `sentQRCode`, `addNotification`이 변경될 때 실행
 
   const handleLogoutClick = async () => {
     try {
@@ -107,13 +113,9 @@ const MyReservationStatus = () => {
 
         if (response.status === 401 && retry) {
             console.warn("🔄 Access token expired. Refreshing tokens...");
-            console.log("Current access token:", accessToken);
-            console.log("Current refresh token:", refreshToken);
             accessToken = await refreshTokens();
 
             if (accessToken) {
-                console.log("🔄 New access token after refresh:", accessToken);
-                console.log("🔄 Retrying fetchMyReservations with new access token...");
                 return fetchMyReservations(false);
             } else {
                 console.error("❌ Token refresh failed. Logging out.");
