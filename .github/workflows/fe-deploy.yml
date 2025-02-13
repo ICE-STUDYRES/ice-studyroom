@@ -14,20 +14,22 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v3
 
-      - name: Install Node.js & pnpm
+      - name: Install Node.js & Enable pnpm
         uses: actions/setup-node@v3
         with:
           node-version: 18
           cache: 'pnpm'
 
       - name: Enable Corepack (pnpm support)
-        run: corepack enable
+        run: |
+          corepack enable
+          corepack prepare pnpm@latest --activate
 
       - name: Install pnpm
         run: npm install -g pnpm
 
-      - name: Check pnpm version
-        run: pnpm --version  # pnpm이 정상적으로 설치되었는지 확인
+      - name: Verify pnpm Installation
+        run: pnpm --version  # pnpm 정상 설치 확인
 
       - name: Install Dependencies
         run: pnpm install
