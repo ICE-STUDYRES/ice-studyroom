@@ -37,8 +37,9 @@ export const useMainpageHandlers = () => {
     });
     const [passwordChangeError, setPasswordChangeError] = useState('');
     const [penaltyRemainingDays, setPenaltyRemainingDays] = useState(null);
-    const [penaltyReason, setPenaltyReason] = useState(null);
     const { addNotification } = useNotification();
+    const [penaltyEndAt, setPenaltyEndAt] = useState("");
+    const [penaltyReason, setPenaltyReason] = useState(null);
 
     useEffect(() => {
       const today = new Date();
@@ -65,15 +66,33 @@ export const useMainpageHandlers = () => {
               'Authorization': `Bearer ${token}`
             }
           });
+    
           if (response.data && response.data.data) {
-            setPenaltyRemainingDays(response.data.data.penaltyRemainingDays || 0);
-            setPenaltyReason(response.data.data.penaltyReason || "");
+            const { penaltyEndAt, penaltyReasonType } = response.data.data;
+    
+            if (penaltyEndAt) {
+              const endDate = new Date(penaltyEndAt);
+              const today = new Date();
+    
+              // 날짜 형식 변환 (YYYY-MM-DD)
+              const formattedEndAt = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+    
+              // 남은 일 수 계산
+              const remainingDays = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
+    
+              setPenaltyEndAt(`${formattedEndAt} (${remainingDays}일 남음)`);
+            } else {
+              setPenaltyEndAt("");
+            }
+    
+            // penaltyReasonType을 한글로 변환하여 저장
+            setPenaltyReason(penaltyReasonMap[penaltyReasonType]);
           }
         } catch (error) {
           console.error("Error fetching user data:", error);
         }
       };
-      
+    
       if (isLoggedIn) {
         fetchUserData();
       }
@@ -174,13 +193,11 @@ export const useMainpageHandlers = () => {
                   isAuthenticated: false,
               });
               setShowSignUpPopup(false); // 회원가입 팝업 닫기
+          } else {
+            addNotification('signup', 'error', response.data.message);
           }
       } catch (error) {
-          if (error.response?.data?.code === 'C400') {
-            addNotification('signup', 'error', response.data.message);
-          } else {
-            addNotification('signup', 'error', '서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-          }
+        setVerificationMessage('회원가입 실패');
       }
   };
   
@@ -226,7 +243,7 @@ export const useMainpageHandlers = () => {
           const refreshToken = localStorage.getItem('refreshToken');
   
           if (!accessToken || !refreshToken) {
-              console.warn("No tokens found, clearing storage and redirecting.");
+              // console.warn("No tokens found, clearing storage and redirecting.");
               localStorage.clear();
               setIsLoggedIn(false);
               navigate('/');
@@ -244,7 +261,7 @@ export const useMainpageHandlers = () => {
           );
   
           if (response.status !== 200) {  // response.ok 대신 response.status 사용
-              console.warn("Logout request failed. Status:", response.status);
+              // console.warn("Logout request failed. Status:", response.status);
           }
   
           localStorage.clear();
@@ -264,7 +281,7 @@ export const useMainpageHandlers = () => {
         const accessToken = localStorage.getItem('accessToken');
 
         if (!refreshToken) {
-            console.error("No refresh token found. Logging out.");
+            // console.error("No refresh token found. Logging out.");
             handleLogout();
             return null;
         }
@@ -280,7 +297,7 @@ export const useMainpageHandlers = () => {
         );
 
         if (response.data.code !== "S200" || !response.data.data) {
-            console.error("Failed to refresh token. Unexpected response:", response.data);
+            // console.error("Failed to refresh token. Unexpected response:", response.data);
             handleLogout();
             return null;
         }
@@ -290,11 +307,11 @@ export const useMainpageHandlers = () => {
         localStorage.setItem('refreshToken', newRefreshToken);
 
         // Log a success message
-        console.log("Tokens refreshed successfully:", { newAccessToken, newRefreshToken });
+        // console.log("Tokens refreshed successfully:", { newAccessToken, newRefreshToken });
 
         return newAccessToken;
     } catch (error) {
-        console.error("Error refreshing token:", error.response?.data || error);
+        // console.error("Error refreshing token:", error.response?.data || error);
 
         if (error.response?.status === 401) {
             handleLogout();
@@ -345,7 +362,7 @@ export const useMainpageHandlers = () => {
         }
       } catch (error) {
         console.error('Verification code error:', error);
-        setVerificationMessage('서버 오류로 인증 코드를 확인하지 못했습니다.');
+        setVerificationMessage(error.response?.data?.message || '서버 오류로 인증 코드를 확인하지 못했습니다.');
       }
     };
     
@@ -412,7 +429,13 @@ export const useMainpageHandlers = () => {
       } catch (error) {
         setPasswordChangeError(error.message);
       }
-    };    
+    };
+
+    const penaltyReasonMap = {
+      CANCEL: "취소",
+      LATE: "지각",
+      NO_SHOW: "노쇼"
+    };
 
   return {
     isLoggedIn,
@@ -456,7 +479,7 @@ export const useMainpageHandlers = () => {
     handlePasswordChangeClick,
     handleClosePasswordChangePopup,
     handlePasswordChangeInputChange,
-    penaltyRemainingDays,penaltyReason
+    penaltyRemainingDays,penaltyReason,penaltyEndAt,penaltyReasonMap,
   };
 };
 

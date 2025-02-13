@@ -12,7 +12,7 @@ const MainPage = () => {
         loginForm,isVerificationSent,isEmailVerified,verificationMessage,verificationSuccess,
         showPasswordChangePopup,
         passwordChangeForm,
-        passwordChangeError,refreshTokens,penaltyRemainingDays,penaltyReason,
+        passwordChangeError,refreshTokens,penaltyEndAt,penaltyReason,
         handleLogin,handleLoginClick,handleLoginInputChange,handleLogout,handleReservationClick,
         handleReservationStatusClick,handleMyReservationStatusClick,handleReservationManageClick,
         handleNoticeClick,handleCloseNotice,
@@ -43,12 +43,12 @@ const MainPage = () => {
             });
       
             if (response.status === 401) { // 토큰 만료
-              console.warn('토큰이 만료됨. 새로고침 시도.');
+              // console.warn('토큰이 만료됨. 새로고침 시도.');
               const newToken = await refreshTokens();
               if (newToken) {
                 return getRecentReservation(); // 새 토큰으로 재시도
               } else {
-                console.error('토큰 갱신 실패. 로그아웃 필요.');
+                // console.error('토큰 갱신 실패. 로그아웃 필요.');
                 return;
               }
             }
@@ -149,9 +149,10 @@ const MainPage = () => {
                         <tbody>
                           <tr>
                             <td className="font-medium w-20">제한 기간:</td>
-                            <td className={penaltyRemainingDays ? "text-red-500" : "text-green-500"}>
-                              {penaltyRemainingDays > 0 ? `${penaltyRemainingDays}일 예약 제한` : "제한 없음"}
+                            <td className={penaltyEndAt ? "text-red-500" : "text-green-500"}>
+                              {penaltyEndAt ? `${penaltyEndAt}` : "제한 없음"}
                             </td>
+
                           </tr>
                           {penaltyReason && (
                             <tr>
