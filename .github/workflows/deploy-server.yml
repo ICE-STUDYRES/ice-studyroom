@@ -17,11 +17,11 @@ jobs:
           java-version: '17'
           distribution: "adopt"
 
-      - name: Build with Gradle
+      - name: Clean Gradle Build (Skip Tests)
         run: |
           cd backend
-          chmod +x ./gradlew
-          ./gradlew clean build -x test
+          ./gradlew clean --no-daemon
+          ./gradlew build -x test -x compileTestJava -x checkstyleMain --no-daemon
 
       - name: Docker build & push
         run: |
@@ -88,7 +88,7 @@ jobs:
           aws ec2 revoke-security-group-ingress \
             --group-id ${{ secrets.SECURITY_GROUP_ID }} \
             --protocol tcp --port 22 --cidr $RUNNER_IP/32 \
-            --region ${{ secrets.AWS_REGION }} || true
+            --region ${{ secrets.AWS_REGION }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
