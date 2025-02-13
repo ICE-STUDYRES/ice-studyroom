@@ -1,12 +1,13 @@
-name: Deploy Frontend to S3 & CloudFront
+name: Deploy Frontend
 
 on:
   push:
     branches:
-      - main  # main 브랜치에 push될 때 실행
+      - main
+  workflow_dispatch:
 
 jobs:
-  deploy:
+  deploy_frontend:
     runs-on: ubuntu-latest
 
     steps:
@@ -19,12 +20,21 @@ jobs:
           node-version: 18
           cache: 'pnpm'
 
+      - name: Enable Corepack (pnpm support)
+        run: corepack enable
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Check pnpm version
+        run: pnpm --version  # pnpm이 정상적으로 설치되었는지 확인
+
       - name: Install Dependencies
         run: pnpm install
 
       - name: Build Project
         env:
-          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}  
+          VITE_API_BASE_URL: ${{ secrets.VITE_API_BASE_URL }}
         run: pnpm build --mode production
 
       - name: Deploy to S3
