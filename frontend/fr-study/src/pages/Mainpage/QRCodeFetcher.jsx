@@ -15,7 +15,7 @@ const useQRCodeFetcher = (resId) => {
     try {
       let accessToken = localStorage.getItem("accessToken");
       if (!accessToken) {
-        setError("로그인이 필요합니다.");
+        setError("로그인이 필요합니다."); //수정 예정
         setLoading(false);
         return;
       }
@@ -27,20 +27,13 @@ const useQRCodeFetcher = (resId) => {
         },
       });
       
-      
-
-      
-
       if (response.status === 401 && retry) {
         console.warn("Access token expired. Refreshing tokens...");
         accessToken = await refreshTokens();
 
         if (accessToken) {
-          console.log("New access token after refresh:", accessToken);
-          console.log("Retrying fetchQRCode with new access token...");
           return fetchQRCode(false); // 한 번만 재시도
         } else {
-          console.error("Token refresh failed. Logging out.");
           setError("세션이 만료되었습니다. 다시 로그인하세요.");
           setLoading(false);
           return;
@@ -93,7 +86,6 @@ const useQRCodeFetcher = (resId) => {
         accessToken = await refreshTokens();
 
         if (accessToken) {
-          console.log("Retrying sendQRCodeToServer with new access token...");
           return sendQRCodeToServer(); // 한 번만 재시도
         } else {
           console.error("Token refresh failed. Logging out.");
@@ -108,7 +100,6 @@ const useQRCodeFetcher = (resId) => {
       }
 
       const result = await response.json();
-      console.log("✅ QR 코드 서버로 전송 완료:", result);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -126,3 +117,4 @@ const useQRCodeFetcher = (resId) => {
 };
 
 export default useQRCodeFetcher;
+

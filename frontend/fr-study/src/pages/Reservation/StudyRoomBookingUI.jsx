@@ -170,94 +170,109 @@ const StudyRoomBookingUI = () => {
             </div>
           );
       
-      case 'info':
-        if (!selectedRoom || selectedTimes.length === 0) {
-          return (
-            <div className="text-center py-8 text-gray-500">
-              스터디룸과 시간을 먼저 선택해주세요
-            </div>
-          );
-        }
-        const maxParticipants = rooms.find(room => room.name === selectedRoom)?.capacity - 1 || 0;
-        return (
-          <div className="space-y-6 p-4">
-            <div className="space-y-6">
-            <h3 className="text-lg font-bold text-slate-900">예약자 정보</h3>
-            <div className="space-y-3">
-              <input
-              type="text"
-              value={userInfo.mainUser.name}
-              readOnly
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
-              placeholder="이름"
-              />
-            <input
-            type="text"
-            value={userInfo.mainUser.email}
-            readOnly
-            className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
-            placeholder="이메일"
-            />
-          </div>
-        </div>
-            <div className="space-y-6">
-              <h3 className="text-lg font-bold text-slate-900">참여자 정보</h3>
-              <div className="space-y-4">
-                {userInfo.participants.map((participant, index) => (
-                  <div key={index} className="space-y-2 relative">
+          case 'info':
+            if (!selectedRoom || selectedTimes.length === 0) {
+              return (
+                <div className="text-center py-8 text-gray-500">
+                  스터디룸과 시간을 먼저 선택해주세요
+                </div>
+              );
+            }
+    
+            const maxParticipants = rooms.find(room => room.name === selectedRoom)?.capacity - 1 || 0;
+    
+            return (
+              <div className="space-y-6 p-4">
+                <div className="space-y-6">
+                  <h3 className="text-lg font-bold text-slate-900">예약자 정보</h3>
+                  <div className="space-y-3">
                     <input
                       type="text"
-                      value={participant.name}
-                      onChange={(e) => {
-                        const newParticipants = [...userInfo.participants];
-                        newParticipants[index].name = e.target.value;
-                        setUserInfo({ ...userInfo, participants: newParticipants });
-                      }}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2"
+                      value={userInfo.mainUser.name}
+                      readOnly
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
                       placeholder="이름"
                     />
                     <input
                       type="text"
-                      value={participant.email}
-                      onChange={(e) => {
-                        const newParticipants = [...userInfo.participants];
-                        newParticipants[index].email = e.target.value;
-                        setUserInfo({ ...userInfo, participants: newParticipants });
-                      }}
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2"
+                      value={userInfo.mainUser.email}
+                      readOnly
+                      className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
                       placeholder="이메일"
                     />
-                    <button
-                      onClick={() => {
-                        const newParticipants = [...userInfo.participants];
-                        newParticipants.splice(index, 1);
-                        setUserInfo({ ...userInfo, participants: newParticipants });
-                      }}
-                      className="absolute -right-2 -top-2 w-6 h-6 bg-gray-500 text-white rounded-full hover:bg-gray-600 flex items-center justify-center text-sm"
-                    >
-                      ×
-                    </button>
                   </div>
-                ))}
-              </div>
-              {userInfo.participants.length < maxParticipants && (
+                </div>
+    
+                <div className="space-y-6">
+                  <h3 className="text-lg font-bold text-slate-900">참여자 정보</h3>
+                  <div className="space-y-4">
+                    {userInfo.participants.map((participant, index) => (
+                      <div key={index} className="space-y-2 relative">
+                        <input
+                          type="text"
+                          value={participant.name}
+                          onChange={(e) => {
+                            const newParticipants = [...userInfo.participants];
+                            newParticipants[index].name = e.target.value;
+                            setUserInfo({ ...userInfo, participants: newParticipants });
+                          }}
+                          className="w-full rounded-lg border border-gray-300 px-4 py-2"
+                          placeholder="이름"
+                        />
+                        <input
+                          type="text"
+                          value={participant.email}
+                          onChange={(e) => {
+                            const newParticipants = [...userInfo.participants];
+                            newParticipants[index].email = e.target.value;
+                            setUserInfo({ ...userInfo, participants: newParticipants });
+                          }}
+                          className="w-full rounded-lg border border-gray-300 px-4 py-2"
+                          placeholder="이메일"
+                        />
+                        <button
+                          onClick={() => {
+                            const newParticipants = [...userInfo.participants];
+                            newParticipants.splice(index, 1);
+                            setUserInfo({ ...userInfo, participants: newParticipants });
+                          }}
+                          className="absolute -right-2 -top-2 w-6 h-6 bg-gray-500 text-white rounded-full hover:bg-gray-600 flex items-center justify-center text-sm"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+    
+                  {userInfo.participants.length < maxParticipants && (
+                    <button
+                      onClick={() =>
+                        setUserInfo({
+                          ...userInfo,
+                          participants: [...userInfo.participants, { name: '', email: '' }],
+                        })
+                      }
+                      className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      + 참여자 추가
+                    </button>
+                  )}
+                </div>
+    
+                {/* 예약하기 버튼 (이전에는 하단에 있던 버튼을 여기로 이동) */}
                 <button
-                  onClick={() => setUserInfo({
-                    ...userInfo,
-                    participants: [...userInfo.participants, { name: '', email: '' }]
-                  })}
-                  className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors"
+                  onClick={handleReservation}
+                  className="w-full bg-slate-900 text-white py-3 text-sm font-medium rounded-xl hover:bg-slate-800 transition-colors"
                 >
-                  + 참여자 추가
+                  예약하기
                 </button>
-              )}
-            </div>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
+              </div>
+            );
+    
+          default:
+            return null;
+        }
+      };
 
   return (
     <div className="fixed inset-0 max-w-[480px] mx-auto bg-gray-50 flex flex-col">
@@ -332,24 +347,6 @@ const StudyRoomBookingUI = () => {
       {/* Content */}
       <div className="flex-1 overflow-y-auto">
         {renderContent()}
-      </div>
-
-      {/* Bottom Action */}
-      <div className="bg-white border-t">
-        <div className="px-4 py-4">
-          <button
-            onClick={() => {
-              if (activeTab === 'info') {
-                handleReservation();
-              } else {
-                setActiveTab(activeTab === 'room' ? 'time' : 'info');
-              }
-            }}
-            className="w-full bg-slate-900 text-white py-3 text-sm font-medium rounded-xl hover:bg-slate-800 transition-colors"
-          >
-            {activeTab === 'info' ? '예약하기' : '다음'}
-          </button>
-        </div>
       </div>
     </div>
   );
