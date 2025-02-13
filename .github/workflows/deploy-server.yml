@@ -55,9 +55,9 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
 
-      - name: Decode SSH Key
+      - name: Decode SSH Key (Using Base64)
         run: |
-          echo "${{ secrets.KEY }}" | base64 --decode > private-key.pem
+          echo "${{ secrets.KEY_BASE64 }}" | base64 --decode > private-key.pem
           chmod 600 private-key.pem
 
       - name: Copy .env to EC2
@@ -65,7 +65,7 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
-          key: ${{ secrets.KEY }}
+          key: "${{ secrets.KEY_BASE64 }}"
           source: ".env"
           target: "/home/ubuntu/"
 
@@ -74,10 +74,10 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
-          key: ${{ secrets.KEY }}
+          key: "${{ secrets.KEY_BASE64 }}"
           script: |
             CONTAINER_NAME="backend"
-            IMAGE_NAME="${{ secrets.DOCKER_REPO }}/backend:latest"
+            IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest"
 
             # 기존 컨테이너 삭제
             if [ "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
