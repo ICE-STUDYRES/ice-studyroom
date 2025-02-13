@@ -55,6 +55,28 @@ jobs:
         run: |
           echo "${{ secrets.ENV_FILE }}" > .env
 
+      - name: Copy .env to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: "${{ secrets.KEY }}"
+          source: ".env"
+          target: "/home/ubuntu/"
+
+      - name: Verify .env file exists on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: "${{ secrets.KEY }}"
+          script: |
+            if [ ! -f /home/ubuntu/.env ]; then
+              echo "Error: .env file is missing!"
+              exit 1
+            fi
+            echo ".env file successfully copied to EC2."
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
@@ -65,7 +87,18 @@ jobs:
             CONTAINER_NAME="backend"
             IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest"
 
-            # 기존 컨테이너 삭제
+            # backend 디렉토리 생성 (없으면 생성)
+            mkdir -p /home/ubuntu/backend/
+
+            # .env 파일이 존재하는지 확인 후 이동
+            if [ -f /home/ubuntu/.env ]; then
+              mv /home/ubuntu/.env /home/ubuntu/backend/.env
+            else
+              echo "Error: .env file is missing!"
+              exit 1
+            fi
+
+            # 기존 컨테이너 삭제 (실행 중일 때만 삭제)
             if [ "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
               sudo docker stop $CONTAINER_NAME
               sudo docker rm $CONTAINER_NAME
@@ -73,9 +106,6 @@ jobs:
 
             # 최신 이미지 가져오기
             sudo docker pull $IMAGE_NAME
-
-            # .env 이동
-            sudo mv /home/ubuntu/.env /home/ubuntu/backend/.env
 
             # 컨테이너 실행
             sudo docker run -d --name $CONTAINER_NAME -p 8080:8080 --restart always --env-file /home/ubuntu/backend/.env $IMAGE_NAME
