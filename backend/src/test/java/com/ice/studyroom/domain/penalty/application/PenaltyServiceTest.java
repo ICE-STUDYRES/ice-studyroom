@@ -55,7 +55,7 @@ class PenaltyServiceTest {
 		memberRepository.save(member);
 
 		// 2. 패널티 부여
-		penaltyService.assignPenalty(member, PenaltyReasonType.NO_SHOW);
+		penaltyService.assignPenalty(member, 1L, PenaltyReasonType.NO_SHOW);
 
 		// 3. 검증 - 멤버 상태 업데이트
 		Member updatedMember = memberRepository.findById(member.getId()).orElseThrow();

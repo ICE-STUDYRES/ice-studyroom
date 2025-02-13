@@ -1,5 +1,8 @@
 package com.ice.studyroom.domain.membership.application;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -13,7 +16,6 @@ import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvide
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
-import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.membership.presentation.dto.request.EmailVerificationRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberEmailVerificationRequest;
@@ -24,6 +26,8 @@ import com.ice.studyroom.domain.membership.presentation.dto.response.MemberEmail
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLookupResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberResponse;
+import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
+import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -36,6 +40,7 @@ public class MembershipService {
 	private final TokenService tokenService;
 	private final AuthenticationManager authenticationManager;
 	private final EmailVerificationService emailVerificationService;
+	private final PenaltyRepository penaltyRepository;
 
 	public MemberResponse createMember(MemberCreateRequest request) {
 		memberDomainService.registerMember(request);
@@ -81,7 +86,17 @@ public class MembershipService {
 	public MemberLookupResponse lookUpMember(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 		String userName = memberDomainService.getUserNameByEmail(Email.of(email));
-		return MemberLookupResponse.of(email, userName);
+		Member member = memberDomainService.getMemberByEmail(email);
+
+		// Member의 가장 최근 패널티 조회
+		Optional<Penalty> penalty = penaltyRepository.findTopByMemberIdAndPenaltyEndAfterOrderByPenaltyEndDesc(
+			member.getId(), LocalDateTime.now());
+
+		if(penalty.isEmpty() || penalty.get().isExpired()) {
+			return MemberLookupResponse.of(email, userName);
+		}
+
+		return MemberLookupResponse.of(email, userName, penalty.get().getReason(), penalty.get().getPenaltyEnd());
 	}
 
 	public MemberEmailResponse sendMail(EmailVerificationRequest request) {
