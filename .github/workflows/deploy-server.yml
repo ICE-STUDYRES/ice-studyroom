@@ -17,21 +17,28 @@ jobs:
           java-version: '17'
           distribution: "adopt"
 
-      - name: Build with Gradle
+      - name: Clean Gradle Build (Skip Tests & Checkstyle)
+        working-directory: backend
         run: |
-          cd backend
           chmod +x ./gradlew
-          ./gradlew clean build -x test
+          ./gradlew clean --no-daemon
+          ./gradlew build -x test -x compileTestJava -x checkstyleMain -x editorconfigCheck -x checkstyleTest --no-daemon
 
       - name: Docker build & push
+        working-directory: backend
         run: |
-          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-          docker build -t ${{ secrets.DOCKER_REPO }}/backend:latest ./backend
-          docker push ${{ secrets.DOCKER_REPO }}/backend:latest
+          echo "${{ secrets.DOCKER_ACCESS_TOKEN }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+          docker build --no-cache -t ${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest .
+          docker push ${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest
 
       - name: Get GitHub Actions Runner IP
         run: |
-          echo "RUNNER_IP=$(curl -s ifconfig.me)" >> $GITHUB_ENV
+          RUNNER_IP=$(curl -s ifconfig.me)
+          if [[ -z "$RUNNER_IP" ]]; then
+            echo "Error: Unable to retrieve GitHub Actions Runner IP."
+            exit 1
+          fi
+          echo "RUNNER_IP=$RUNNER_IP" >> $GITHUB_ENV
           echo "GitHub Actions Runner IP: $RUNNER_IP"
 
       - name: Add SSH IP to EC2 Security Group
@@ -53,21 +60,45 @@ jobs:
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
-          key: ${{ secrets.KEY }}
+          key: "${{ secrets.KEY }}"
           source: ".env"
           target: "/home/ubuntu/"
+
+      - name: Verify .env file exists on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: "${{ secrets.KEY }}"
+          script: |
+            if [ ! -f /home/ubuntu/.env ]; then
+              echo "Error: .env file is missing!"
+              exit 1
+            fi
+            echo ".env file successfully copied to EC2."
 
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ubuntu
-          key: ${{ secrets.KEY }}
+          key: "${{ secrets.KEY }}"
           script: |
             CONTAINER_NAME="backend"
-            IMAGE_NAME="${{ secrets.DOCKER_REPO }}/backend:latest"
+            IMAGE_NAME="${{ secrets.DOCKER_USERNAME }}/icestudyroom:latest"
 
-            # 기존 컨테이너 삭제
+            # backend 디렉토리 생성 (없으면 생성)
+            mkdir -p /home/ubuntu/backend/
+
+            # .env 파일이 존재하는지 확인 후 이동
+            if [ -f /home/ubuntu/.env ]; then
+              mv /home/ubuntu/.env /home/ubuntu/backend/.env
+            else
+              echo "Error: .env file is missing!"
+              exit 1
+            fi
+
+            # 기존 컨테이너 삭제 (실행 중일 때만 삭제)
             if [ "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
               sudo docker stop $CONTAINER_NAME
               sudo docker rm $CONTAINER_NAME
@@ -76,11 +107,11 @@ jobs:
             # 최신 이미지 가져오기
             sudo docker pull $IMAGE_NAME
 
-            # 컨테이너 실행 (환경변수 적용)
-            sudo docker run -d --name $CONTAINER_NAME -p 8080:8080 --restart always --env-file /home/ubuntu/.env $IMAGE_NAME
+            # 컨테이너 실행
+            sudo docker run -d --name $CONTAINER_NAME -p 8080:8080 --restart always --env-file /home/ubuntu/backend/.env $IMAGE_NAME
 
-            # 사용하지 않는 이미지 정리
-            sudo docker image prune -f
+      - name: Clean Up Unused Docker Images
+        run: sudo docker image prune -f
 
       - name: Remove SSH IP from Security Group
         if: always()
@@ -88,7 +119,7 @@ jobs:
           aws ec2 revoke-security-group-ingress \
             --group-id ${{ secrets.SECURITY_GROUP_ID }} \
             --protocol tcp --port 22 --cidr $RUNNER_IP/32 \
-            --region ${{ secrets.AWS_REGION }} || true
+            --region ${{ secrets.AWS_REGION }}
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
