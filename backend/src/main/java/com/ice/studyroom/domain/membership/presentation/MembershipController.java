@@ -1,7 +1,12 @@
 package com.ice.studyroom.domain.membership.presentation;
 
+import java.time.Duration;
+
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,12 +15,12 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.ice.studyroom.domain.identity.domain.JwtToken;
 import com.ice.studyroom.domain.membership.application.MembershipService;
 import com.ice.studyroom.domain.membership.presentation.dto.request.EmailVerificationRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberEmailVerificationRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.TokenRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.UpdatePasswordRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberEmailResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
@@ -26,6 +31,7 @@ import com.ice.studyroom.global.dto.response.ResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -68,10 +74,22 @@ public class MembershipController {
 	@ApiResponse(responseCode = "500", description = "로그인 실패")
 	@PostMapping("/login")
 	public ResponseEntity<ResponseDto<MemberLoginResponse>> login(
-		@Valid @RequestBody MemberLoginRequest request) {
+		@Valid @RequestBody MemberLoginRequest request,
+		HttpServletResponse response) {
+		JwtToken jwtToken = membershipService.login(request);
+
+		ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh_token", jwtToken.getRefreshToken())
+			.httpOnly(true)   // JavaScript에서 접근 불가 (XSS 방어)
+			.secure(false)     // 배포 시 true로 변경 예정, HTTPS 환경에서만 사용 가능
+			.sameSite("Strict") // CSRF 방어
+			.path("/api/users/refresh") // 특정 경로에서만 접근 가능
+			.maxAge(Duration.ofDays(7)) // 7일간 유지
+			.build();
+		response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
+
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.login(request)));
+			.body(ResponseDto.of(MemberLoginResponse.of(jwtToken)));
 	}
 
 	@Operation(summary = "토큰 재발급", description = "로그인 유지를 위한 토큰을 재발급해줍니다.")
@@ -79,11 +97,23 @@ public class MembershipController {
 	@ApiResponse(responseCode = "500", description = "토큰 발급 실패")
 	@PostMapping("/refresh")
 	public ResponseEntity<ResponseDto<MemberLoginResponse>> refresh(
-		@RequestHeader("Authorization") String authorizationHeader,
-		@Valid @RequestBody TokenRequest request) {
+		@CookieValue(value = "refresh_token") String refreshToken,
+		@RequestHeader("Authorization") String authorizationHeader) {
+
+		JwtToken jwtToken = membershipService.refresh(authorizationHeader, refreshToken);
+
+		ResponseCookie newRefreshTokenCookie = ResponseCookie.from("refresh_token", jwtToken.getRefreshToken())
+			.httpOnly(true)
+			.secure(true)
+			.sameSite("Strict")
+			.path("/api/users/refresh")
+			.maxAge(Duration.ofDays(7))
+			.build();
+
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.refresh(authorizationHeader, request)));
+			.header(HttpHeaders.SET_COOKIE, newRefreshTokenCookie.toString())
+			.body(ResponseDto.of(MemberLoginResponse.of(jwtToken)));
 	}
 
 	@PostMapping("/logout")
@@ -91,11 +121,12 @@ public class MembershipController {
 	@ApiResponse(responseCode = "200", description = "로그아웃 성공")
 	@ApiResponse(responseCode = "500", description = "로그아웃 실패")
 	public ResponseEntity<ResponseDto<MemberResponse>> logout(
-		@RequestHeader("Authorization") String authorizationHeader,
-		@Valid @RequestBody TokenRequest request) {
+		@CookieValue(value = "refresh_token") String refreshToken,
+		@RequestHeader("Authorization") String authorizationHeader
+		) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(membershipService.logout(authorizationHeader, request)));
+			.body(ResponseDto.of(membershipService.logout(authorizationHeader, refreshToken)));
 	}
 
 	@Operation(summary = "비밀번호 변경", description = "비밀번호 변경 요청을 처리합니다.")
