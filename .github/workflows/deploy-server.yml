@@ -77,6 +77,24 @@ jobs:
             fi
             echo ".env file successfully copied to EC2."
 
+      - name: Stop and Remove Existing Container
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: "${{ secrets.KEY }}"
+          script: |
+            CONTAINER_NAME="backend"
+
+            # 실행 중인 컨테이너 확인 후 중지 및 삭제
+            if [ "$(sudo docker ps -q -f name=$CONTAINER_NAME)" ]; then
+              echo "Stopping and removing existing container: $CONTAINER_NAME"
+              sudo docker stop $CONTAINER_NAME
+              sudo docker rm $CONTAINER_NAME
+            else
+              echo "No existing container found. Skipping removal."
+            fi
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
