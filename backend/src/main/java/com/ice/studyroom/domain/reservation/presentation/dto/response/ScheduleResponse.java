@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
 
 import lombok.AccessLevel;
@@ -28,4 +29,5 @@ public class ScheduleResponse {
 	private String reservedByName;
 	private LocalDateTime createdAt;
 	private LocalDateTime updatedAt;
+	private DayOfWeekStatus dayOfWeek;
 }

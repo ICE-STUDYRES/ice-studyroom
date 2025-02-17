@@ -3,6 +3,7 @@ package com.ice.studyroom.domain.reservation.presentation.dto.request;
 import java.time.LocalDate;
 import java.time.LocalTime;
 
+import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -19,4 +20,5 @@ public class CreateScheduleRequest {
 	private LocalTime startTime;
 	private LocalTime endTime;
 	private Integer capacity;
+	private DayOfWeekStatus dayOfWeek;
 }
