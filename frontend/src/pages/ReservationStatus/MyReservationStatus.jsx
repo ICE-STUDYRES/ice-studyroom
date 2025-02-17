@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, LogOut, Clock, QrCode, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useMainpageHandlers } from '../Mainpage/MainpageHandlers';
+import { useMainpageHandlers } from '../Mainpage/handlers/MainpageHandlers';
 import { QRCodeCanvas } from 'qrcode.react';
-import useQRCodeFetcher from '../Mainpage/QRCodeFetcher'; // ✅ QR 코드 데이터 가져오는 훅
+import useQRCodeFetcher from '../Mainpage/components/QRCodeFetcher';
 import { useNotification } from '../Notification/Notification';
-import { useTokenHandler } from "../Mainpage/TokenHandler";
+import { useTokenHandler } from "../Mainpage/handlers/TokenHandler";
 
 const MyReservationStatus = () => {
   const {

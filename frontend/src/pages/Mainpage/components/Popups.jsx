@@ -1,5 +1,5 @@
 import React from "react";
-import logo from "../../assets/images/hufslogo.png";
+import logo from "../../../assets/images/hufslogo.png";
 import { X } from "lucide-react";
 
 export const SignInPopup = ({ showSigninPopup, handleCloseSigninPopup, handleLogin, handleLoginInputChange, loginForm, handleSignUpClick }) => {

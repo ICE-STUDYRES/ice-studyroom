@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { useMainpageHandlers } from './MainpageHandlers';
-import { useMemberHandlers } from './MemberHandlers.jsx';
-import { usePenaltyHandlers } from './PenaltyHandlers.jsx';
-import ProfileDropdown from './ProfileDropdown';
-import { SignInPopup, SignUpPopup, NoticePopup, PasswordChangePopup } from "./Popups.jsx";
+import { useMainpageHandlers } from './handlers/MainpageHandlers';
+import { useMemberHandlers } from './handlers/MemberHandlers.jsx';
+import { usePenaltyHandlers } from './handlers/PenaltyHandlers.jsx';
+import ProfileDropdown from './components/ProfileDropdown';
+import { SignInPopup, SignUpPopup, NoticePopup, PasswordChangePopup } from "./components/Popups.jsx";
 import { LogIn, Home, QrCode } from 'lucide-react';
 import alertImage from "../../assets/images/Alert.png";
 

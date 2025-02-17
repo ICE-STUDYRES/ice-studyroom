@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useMainpageHandlers } from "../Mainpage/MainpageHandlers";
+import { useMainpageHandlers } from "../handlers/MainpageHandlers";
 
 const useQRCodeFetcher = (resId) => {
   const [qrCode, setQrCode] = useState(null);

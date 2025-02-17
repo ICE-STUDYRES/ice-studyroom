@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useTokenHandler } from '../Mainpage/TokenHandler';
+import { useTokenHandler } from '../Mainpage/handlers/TokenHandler';
 import { useNavigate } from "react-router-dom";
 import { useNotification } from '../Notification/Notification';
 

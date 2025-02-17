@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, LogOut, Clock, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useMainpageHandlers } from '../Mainpage/MainpageHandlers';
+import { useMainpageHandlers } from '../Mainpage/handlers/MainpageHandlers';
 
 const rooms = [
   { id: "305-1", name: "305-1", details: "4인실 | PC, 모니터", location: "3층", facilities: ["PC", "모니터"], capacity: 4, reservations: [] },
