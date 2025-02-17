@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
-import { useMainpageHandlers } from '../Mainpage/MainpageHandlers';
+import { useTokenHandler } from '../Mainpage/TokenHandler';
 import { useNavigate } from "react-router-dom";
 import { useNotification } from '../Notification/Notification';
-
 
 export const useStudyRoomBooking = () => {
   const [activeTab, setActiveTab] = useState("room");
@@ -33,7 +32,6 @@ export const useStudyRoomBooking = () => {
   const navigate = useNavigate();
   const { addNotification } = useNotification();
 
-
   const rooms = [
     {id:"305-1", name: "305-1", capacity: 4, facilities: ["PC", "모니터"], location: "3층" },
     {id:"305-2", name: "305-2", capacity: 4, facilities: ["PC", "모니터"], location: "3층" },
@@ -47,7 +45,7 @@ export const useStudyRoomBooking = () => {
 
   const {
     refreshTokens
-  } = useMainpageHandlers();
+  } = useTokenHandler();
 
   // 사용자 정보 가져오기
   const fetchUserInfo = async (retry = true) => {
