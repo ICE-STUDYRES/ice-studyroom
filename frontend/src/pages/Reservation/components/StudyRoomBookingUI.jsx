@@ -1,7 +1,8 @@
 import React from 'react';
 import { ChevronLeft, Clock, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useStudyRoomBooking } from './StudyRoomBookingHandler';
+import { userInfoManager } from '../handlers/userInfomanager';
+import { roomBookingManager } from '../handlers/roomBookingManager'; // ✅ useStudyRoomBooking → roomBookingManager 변경
 
 const StudyRoomBookingUI = () => {
   const {
@@ -11,16 +12,16 @@ const StudyRoomBookingUI = () => {
     selectedRoom,
     setSelectedRoom,
     bookedSlots,
-    userInfo,
     setUserInfo,
     rooms,
     timeSlots,
     handleReservation,
     handleTimeClick,
     canSelectTime,
-  } = useStudyRoomBooking();
+  } = roomBookingManager(); // ✅ 기존 useStudyRoomBooking → roomBookingManager() 호출로 변경
 
   const navigate = useNavigate();
+  const { userInfo } = userInfoManager();
 
   const getTimeRangeString = () => {
     if (selectedTimes.length === 0) return '시간을 선택해주세요';
@@ -46,8 +47,17 @@ const StudyRoomBookingUI = () => {
           <div className="space-y-3">
             {rooms.map((room) => {
               const roomData = bookedSlots[room.name] || {};
-              const roomType = roomData.roomType || "UNKNOWN"; // 기본값 설정
-              
+              const roomType = roomData.roomType || "UNKNOWN"; 
+
+              // 자동으로 시설과 위치 설정
+              const facilities = room.facilities.length > 0 ? room.facilities :
+                room.name.startsWith ("305") ? ["PC", "화이트보드"] : [];
+                room.name.startsWith("409") ? ["화이트보드", "대형 모니터", "PC"] : [];
+
+              const location = room.location !== "알 수 없음" ? room.location :
+                room.name.startsWith("409") ? "4층" : "알 수 없음";
+                room.name.startsWith("305") ? "3층" : "알 수 없음";
+
               return (
                 <button
                   key={room.id}
@@ -61,18 +71,14 @@ const StudyRoomBookingUI = () => {
                 >
                   <div className="p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      {/* 방 이름 */}
                       <span className="text-lg font-bold text-slate-900">{room.name}</span>
-                      <span className="text-sm text-gray-500 font-medium">{room.location}</span>
+                      <span className="text-sm text-gray-500 font-medium">{location}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* 수용 인원 */}
                       <span className="flex items-center gap-1 px-2 py-1 bg-gray-50 rounded-lg text-sm text-gray-600">
                         {room.capacity}인실
                       </span>
-      
-                      {/* 편의시설 */}
-                      {room.facilities.map((facility, index) => (
+                      {facilities.map((facility, index) => (
                         <span 
                           key={index}
                           className="px-2 py-1 text-sm font-medium text-gray-600 bg-gray-50 rounded-lg"
@@ -80,8 +86,6 @@ const StudyRoomBookingUI = () => {
                           {facility}
                         </span>
                       ))}
-      
-                      {/* INDIVIDUAL / GROUP 태그 추가 */}
                       <span className={`
                         px-2 py-1 text-sm font-medium rounded-lg
                         ${roomType === "INDIVIDUAL" ? "bg-gray-50 text-gray-600" : "bg-gray-50 text-gray-600"}
@@ -96,79 +100,73 @@ const StudyRoomBookingUI = () => {
           </div>
         );
       
+      case 'time':
+        return (
+          <div className="p-4 pb-32">
+            {!selectedRoom ? (
+              <div className="text-center py-8 text-gray-500">
+                스터디룸을 먼저 선택해주세요
+              </div>
+            ) : (
+              <>
+                {timeSlots.map((time) => {
+                  const roomData = bookedSlots[selectedRoom] || {};
+                  const slotData = roomData.slots?.[time] || {};
+                  const isBooked = slotData.available === false;
+                  const isSelected = selectedTimes.includes(time);
+                  const isSelectable = canSelectTime(time);
 
-        case 'time':
-          return (
-            <div className="p-4 pb-32">
-              {!selectedRoom ? (
-                <div className="text-center py-8 text-gray-500">
-                  스터디룸을 먼저 선택해주세요
-                </div>
-              ) : (
-                <>
-                  {timeSlots.map((time) => {
-                    const roomData = bookedSlots[selectedRoom] || {};
-                    const slotData = roomData.slots?.[time] || {}; // 특정 시간대 정보 가져오기
-                    const isBooked = slotData.available === false;
-                    const isSelected = selectedTimes.includes(time);
-                    const isSelectable = canSelectTime(time);
-        
-                    // INDIVIDUAL일 경우 특정 시간대의 남은 좌석 계산
-                    const isIndividual = roomData.roomType === "INDIVIDUAL";
-                    const currentRes = slotData.current_res || 0;
-                    const capacity = roomData.capacity || 0;
-                    const availableSeats = capacity - currentRes;
-        
-                    // 남은 좌석 색상 결정
-                    let seatTextColor = "text-gray-600"; // 기본 색상
-                    if (availableSeats === 0) seatTextColor = "text-red-600"; // 만석
-                    else if (availableSeats <= 2) seatTextColor = "text-orange-600"; // 좌석 부족
-        
-                    return (
-                      <button
-                        key={time}
-                        onClick={() => {
-                          if (isBooked) return;
-                          handleTimeClick(time);
-                        }}
-                        disabled={isBooked}
-                        className={`
-                          w-full mb-2 rounded-2xl border-2 transition-all flex justify-between items-center p-4
-                          ${isBooked 
-                            ? 'bg-gray-50 border-gray-100 cursor-not-allowed' 
-                            : isSelected
-                              ? 'bg-slate-900 border-transparent text-white'
-                              : !isSelectable
-                                ? 'bg-gray-50 border-gray-100 cursor-not-allowed'
-                                : 'bg-white border-gray-100 hover:border-gray-200'}
-                        `}
-                      >
-                        {/* 시계 아이콘 + 시간 */}
-                        <div className="flex items-center gap-2">
-                          <Clock className={`w-4 h-4 ${
-                            isSelected ? 'text-white' : isBooked || !isSelectable ? 'text-gray-400' : 'text-gray-600'
-                          }`} />
-                          <span className={`
-                            text-lg font-semibold // ✅ 폰트 크기, 두께 그대로 유지
-                            ${isSelected ? 'text-white' : isBooked || !isSelectable ? 'text-gray-400' : 'text-gray-900'}
-                          `}>
-                            {time}
-                          </span>
-                        </div>
-        
-                        {/* INDIVIDUAL이면 남은 좌석 표시 */}
-                        {isIndividual && (
-                          <span className={`text-sm font-medium ${seatTextColor}`}>
-                            잔여 좌석: {availableSeats} / {capacity}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </>
-              )}
-            </div>
-          );
+                  const isIndividual = roomData.roomType === "INDIVIDUAL";
+                  const currentRes = slotData.current_res || 0;
+                  const capacity = roomData.capacity || 0;
+                  const availableSeats = capacity - currentRes;
+
+                  let seatTextColor = "text-gray-600";
+                  if (availableSeats === 0) seatTextColor = "text-red-600";
+                  else if (availableSeats <= 2) seatTextColor = "text-orange-600";
+
+                  return (
+                    <button
+                      key={time}
+                      onClick={() => {
+                        if (isBooked) return;
+                        handleTimeClick(time);
+                      }}
+                      disabled={isBooked}
+                      className={`
+                        w-full mb-2 rounded-2xl border-2 transition-all flex justify-between items-center p-4
+                        ${isBooked 
+                          ? 'bg-gray-50 border-gray-100 cursor-not-allowed' 
+                          : isSelected
+                            ? 'bg-slate-900 border-transparent text-white'
+                            : !isSelectable
+                              ? 'bg-gray-50 border-gray-100 cursor-not-allowed'
+                              : 'bg-white border-gray-100 hover:border-gray-200'}
+                      `}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Clock className={`w-4 h-4 ${
+                          isSelected ? 'text-white' : isBooked || !isSelectable ? 'text-gray-400' : 'text-gray-600'
+                        }`} />
+                        <span className={`
+                          text-lg font-semibold
+                          ${isSelected ? 'text-white' : isBooked || !isSelectable ? 'text-gray-400' : 'text-gray-900'}
+                        `}>
+                          {time}
+                        </span>
+                      </div>
+                      {isIndividual && (
+                        <span className={`text-sm font-medium ${seatTextColor}`}>
+                          잔여 좌석: {availableSeats} / {capacity}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </>
+            )}
+          </div>
+        );
       
           case 'info':
             if (!selectedRoom || selectedTimes.length === 0) {
