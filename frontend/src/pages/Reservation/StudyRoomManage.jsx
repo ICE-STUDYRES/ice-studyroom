@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, Clock, LogOut, CalendarDays, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useMainpageHandlers } from '../Mainpage/MainpageHandlers';
 import axios from 'axios';
 import { useNotification } from '../Notification/Notification';
+import { useTokenHandler } from '../Mainpage/TokenHandler';
 
 const StudyRoomManage = () => {
   const { addNotification } = useNotification();
@@ -24,7 +24,7 @@ const StudyRoomManage = () => {
 
     const {
       refreshTokens
-    } = useMainpageHandlers();
+    } = useTokenHandler();
 
     useEffect(() => {
       const fetchBookingData = async () => {

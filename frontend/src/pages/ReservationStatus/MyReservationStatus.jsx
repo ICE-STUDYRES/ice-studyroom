@@ -5,15 +5,20 @@ import { useMainpageHandlers } from '../Mainpage/MainpageHandlers';
 import { QRCodeCanvas } from 'qrcode.react';
 import useQRCodeFetcher from '../Mainpage/QRCodeFetcher'; // ✅ QR 코드 데이터 가져오는 훅
 import { useNotification } from '../Notification/Notification';
-
+import { useTokenHandler } from "../Mainpage/TokenHandler";
 
 const MyReservationStatus = () => {
   const {
-    studentId,studentName,showQRModal,refreshTokens,
+    studentId,studentName,showQRModal,
     handleQRClick,
     handleCloseQRModal,
     handleLogout,
   } = useMainpageHandlers();
+
+  const {
+    refreshTokens,
+  } = useTokenHandler();
+
   const navigate = useNavigate();
   const [myReservations, setMyReservations] = useState([]);
   const [loading, setLoading] = useState(true);
