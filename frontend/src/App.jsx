@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import MainPage from './pages/Mainpage/Mainpage';
 import StudyRoomManage from './pages/Reservation/StudyRoomManage';
 import ReservationStatus from './pages/ReservationStatus/ReservationStatus';
-import StudyRoomBooking from './pages/Reservation/StudyRoomBookingUI';
+import StudyRoomBooking from './pages/Reservation/components/StudyRoomBookingUI';
 import MyReservationStatus from './pages/ReservationStatus/MyReservationStatus';
 import { Notification } from './pages/Notification/Notification';
 import './main.css';
