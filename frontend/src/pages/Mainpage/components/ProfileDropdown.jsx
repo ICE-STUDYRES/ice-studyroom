@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { User, LogOut, Key } from 'lucide-react';
-import { useMainpageHandlers } from './MainpageHandlers';
+import { useMainpageHandlers } from '../handlers/MainpageHandlers';
 
 const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
   const [isOpen, setIsOpen] = useState(false);

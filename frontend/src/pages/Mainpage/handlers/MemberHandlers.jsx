@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNotification } from '../Notification/Notification';
+import { useNotification } from '../../Notification/Notification';
 
 export const useMemberHandlers = () => {
     useEffect(() => {

@@ -3,7 +3,7 @@ import { ChevronLeft, Clock, LogOut, CalendarDays, AlertCircle, CheckCircle2, X 
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../Notification/Notification';
-import { useTokenHandler } from '../Mainpage/TokenHandler';
+import { useTokenHandler } from '../Mainpage/handlers/TokenHandler';
 
 const StudyRoomManage = () => {
   const { addNotification } = useNotification();
