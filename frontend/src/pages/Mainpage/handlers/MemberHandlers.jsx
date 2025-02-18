@@ -183,10 +183,16 @@ export const useMemberHandlers = () => {
         }
     };
 
+    const getRefreshTokenFromCookie = () => {
+        const cookies = document.cookie.split('; ');
+        const refreshTokenCookie = cookies.find(row => row.startsWith('refresh_token='));
+        return refreshTokenCookie ? refreshTokenCookie.split('=')[1] : null;
+    };
+
     const handleLogout = async () => {
         try {
             const accessToken = localStorage.getItem('accessToken');
-            const refreshToken = localStorage.getItem('refreshToken');
+            const refreshToken = getRefreshTokenFromCookie();
     
             if (!accessToken || !refreshToken) {
                 // console.warn("No tokens found, clearing storage and redirecting.");
@@ -198,11 +204,12 @@ export const useMemberHandlers = () => {
     
             const response = await axios.post(
                 '/api/users/logout',
-                { refreshToken }, 
+                {}, 
                 {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`
-                    }
+                    },
+                    withCredentials: true
                 }
             );
     
