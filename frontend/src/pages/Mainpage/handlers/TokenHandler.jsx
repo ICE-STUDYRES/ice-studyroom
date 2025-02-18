@@ -4,9 +4,15 @@ import { useMemberHandlers } from './MemberHandlers.jsx';
 export const useTokenHandler = () => {
     const { handleLogout } = useMemberHandlers();
 
+    const getRefreshTokenFromCookie = () => {
+        const cookies = document.cookie.split('; ');
+        const refreshTokenCookie = cookies.find(row => row.startsWith('refresh_token='));
+        return refreshTokenCookie ? refreshTokenCookie.split('=')[1] : null;
+    };
+
     const refreshTokens = async () => {
         try {
-            const refreshToken = localStorage.getItem('refreshToken');
+            const refreshToken = getRefreshTokenFromCookie();
             const accessToken = localStorage.getItem('accessToken');
 
             if (!refreshToken) {
@@ -17,11 +23,12 @@ export const useTokenHandler = () => {
 
             const response = await axios.post(
                 '/api/users/refresh',
-                { refreshToken },
+                { },
                 {
                     headers: {
                         'Authorization': `Bearer ${accessToken}`
-                    }
+                    },
+                    withCredentials: true
                 }
             );
 
