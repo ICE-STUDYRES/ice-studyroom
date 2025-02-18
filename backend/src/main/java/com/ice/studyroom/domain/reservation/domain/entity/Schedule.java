@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateScheduleRequest;
@@ -78,6 +79,10 @@ public class Schedule {
 	@Builder.Default
 	private LocalDateTime updatedAt = LocalDateTime.now();
 
+	@Enumerated(EnumType.STRING)
+	@Column(name = "day_of_week", nullable = false)
+	private DayOfWeekStatus dayOfWeek;
+
 	public boolean isAvailable() {
 		return status == ScheduleStatus.AVAILABLE;
 	}
@@ -114,6 +119,7 @@ public class Schedule {
 			.endTime(endTime)
 			.capacity(capacity)
 			.status(status)
+			.dayOfWeek(dayOfWeek)
 			.createdAt(createdAt)
 			.updatedAt(updatedAt)
 			.build();
@@ -126,6 +132,7 @@ public class Schedule {
 			.startTime(request.getStartTime())
 			.endTime(request.getEndTime())
 			.capacity(request.getCapacity())
+			.dayOfWeek(request.getDayOfWeek())
 			.build();
 	}
 }
