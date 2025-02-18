@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../../Notification/Notification';
-import {useMemberHandlers} from './MemberHandlers.jsx';
+import { useMemberHandlers } from './MemberHandlers.jsx';
 import { usePenaltyHandlers } from './PenaltyHandlers.jsx';
 
 export const useMainpageHandlers = () => {

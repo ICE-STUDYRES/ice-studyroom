@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ChevronLeft, LogOut, Clock, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { useMainpageHandlers } from '../Mainpage/handlers/MainpageHandlers';
+import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
 
 const rooms = [
   { id: "305-1", name: "305-1", details: "4인실 | PC, 모니터", location: "3층", facilities: ["PC", "모니터"], capacity: 4, reservations: [] },
@@ -20,16 +20,7 @@ const ReservationStatus = () => {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const {handleLogout} = useMainpageHandlers();
-
-  const handleLogoutClick = async () => {
-    try {
-      await handleLogout();
-      navigate('/');  // 메인 페이지로 이동
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
+  const {handleLogout} = useMemberHandlers();
 
   useEffect(() => {
     fetchSchedules();
@@ -138,7 +129,7 @@ const ReservationStatus = () => {
           <h1 className="font-semibold text-gray-900">정보통신공학과 스터디룸</h1>
         </div>
         <button 
-          onClick={handleLogoutClick}
+          onClick={handleLogout}
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
         >
           <LogOut className="w-4 h-4" />

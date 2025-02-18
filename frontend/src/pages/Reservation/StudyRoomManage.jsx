@@ -4,9 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../Notification/Notification';
 import { useTokenHandler } from '../Mainpage/handlers/TokenHandler';
+import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
 
 const StudyRoomManage = () => {
   const { addNotification } = useNotification();
+  const {
+    handleLogout
+  } = useMemberHandlers();
   const navigate = useNavigate();
   const [selectedExtension, setSelectedExtension] = useState(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -391,7 +395,9 @@ const StudyRoomManage = () => {
           </button>
           <h1 className="font-semibold text-gray-900">정보통신공학과 스터디룸</h1>
         </div>
-        <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
           <LogOut className="w-4 h-4" />
           로그아웃
         </button>

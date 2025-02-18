@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../../Notification/Notification';
 
@@ -10,6 +11,7 @@ export const useMemberHandlers = () => {
         }
       }, []);
       
+    const navigate = useNavigate();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [signupForm, setSignupForm] = useState({
         email: '',

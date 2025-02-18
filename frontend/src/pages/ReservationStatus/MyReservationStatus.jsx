@@ -6,46 +6,45 @@ import { QRCodeCanvas } from 'qrcode.react';
 import useQRCodeFetcher from '../Mainpage/components/QRCodeFetcher';
 import { useNotification } from '../Notification/Notification';
 import { useTokenHandler } from "../Mainpage/handlers/TokenHandler";
+import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
 
 const MyReservationStatus = () => {
   const {
-    studentId,studentName,showQRModal,
+    showQRModal,
     handleQRClick,
     handleCloseQRModal,
-    handleLogout,
   } = useMainpageHandlers();
 
   const {
     refreshTokens,
   } = useTokenHandler();
 
+  const {
+    handleLogout
+  } =useMemberHandlers();
+
   const navigate = useNavigate();
   const [myReservations, setMyReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sentQRCode, setSentQRCode] = useState(null); // ✅ 이미 전송된 QR 코드 저장
+  const [sentQRCode, setSentQRCode] = useState(null);
   const { addNotification } = useNotification();
-
-  // ✅ 예약 ID 가져오기
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
-
-  // ✅ 항상 최상단에서 Hook 호출 (조건문 안에서 실행 X)
   const { qrCode, error: qrError, loading: qrLoading} = useQRCodeFetcher(resId);
-  // ✅ QR 코드 리더기로 스캔하면 서버로 전송 (Enter 입력 감지)
+
   useEffect(() => {
-    let qrBuffer = ""; // ✅ QR 코드 데이터를 임시 저장할 버퍼
+    let qrBuffer = "";
   
     const handleScan = async (event) => {
       if (event.key === "Enter") {
-        if (!qrBuffer.trim()) return; // 빈 값 방지
+        if (!qrBuffer.trim()) return;
   
         let qrData = qrBuffer;
   
-        // ✅ QR 코드 데이터가 JSON 형식인지 확인
         try {
           const parsedData = JSON.parse(qrBuffer);
           if (parsedData?.data) {
-            qrData = parsedData.data; // ✅ JSON이면 `data` 필드 값 사용
+            qrData = parsedData.data;
           }
         } catch (err) {
           console.warn("⚠️ QR 코드 데이터가 JSON 형식이 아님. 그대로 사용함.");
@@ -66,31 +65,29 @@ const MyReservationStatus = () => {
 
   
         if (response.status === 403) {
-          addNotification("attendance", "notStarted", response.message); // ✅ 출석 시간이 아닐 때
+          addNotification("attendance", "notStarted", response.message);
         } else if (response.status === 401) {
-          addNotification("attendance", "expired", response.message); // ✅ 출석 시간 만료
+          addNotification("attendance", "expired", response.message);
         } else if (response.status === 200) {
           if (responseData.data === "ENTRANCE") {
-            addNotification("attendance", "success"); // ✅ 정상 출석
+            addNotification("attendance", "success");
           } else if (responseData.data === "LATE") {
-            addNotification("attendance", "late"); // ✅ 지각
+            addNotification("attendance", "late");
           }
         } else {
-          addNotification("attendance", "error", response.message); // ✅ 기타 오류
+          addNotification("attendance", "error", response.message);
         }
   
-        // ✅ 중복 스캔 방지
         setSentQRCode(qrData);
-        qrBuffer = ""; // ✅ 버퍼 초기화
+        qrBuffer = "";
       } else if (event.key !== "Shift") {
-        // ✅ Shift 키를 무시하고 QR 코드 문자만 버퍼에 추가
         qrBuffer += event.key;
       }
     };
   
     window.addEventListener("keydown", handleScan);
     return () => window.removeEventListener("keydown", handleScan);
-}, [setSentQRCode, addNotification]); // 📌 `sentQRCode`, `addNotification`이 변경될 때 실행
+}, [setSentQRCode, addNotification]);
 
   const handleLogoutClick = async () => {
     try {
@@ -139,8 +136,8 @@ const MyReservationStatus = () => {
 
         if (data.code === 'S200') {
           const reservations = data.data.reverse().map(item => ({
-            id: item.reservation.id, // ✅ 예약 ID 저장
-            status: item.reservation.status, // ✅ 방 상태 추가
+            id: item.reservation.id,
+            status: item.reservation.status,
             ...item
         }));
         
@@ -155,23 +152,15 @@ const MyReservationStatus = () => {
     }
 };
 
-  const formatDate = (date) => {
-    const days = ['일', '월', '화', '수', '목', '금', '토'];
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const dayOfWeek = days[date.getDay()];
-    
-    return `${year}.${month}.${day} (${dayOfWeek})`;
-  };
-
   const formatReservationDate = (dateString) => {
     const date = new Date(dateString);
-    return formatDate(date);
+    return new Intl.DateTimeFormat("ko-KR", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      weekday: "short",
+    }).format(date);
   };
-
-  const today = new Date();
-  const formattedDate = formatDate(today);
 
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
@@ -187,7 +176,7 @@ const MyReservationStatus = () => {
           <h1 className="font-semibold text-gray-900">내 예약 현황</h1>
         </div>
         <button 
-          onClick={handleLogoutClick}
+          onClick={handleLogout}
           className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700"
         >
           <LogOut className="w-4 h-4" />
@@ -199,7 +188,7 @@ const MyReservationStatus = () => {
       <div className="bg-white border-b">
         <div className="px-4 py-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold">예약 현황</h2>
-          <span className="text-sm text-gray-500">{formattedDate}</span>
+          <span className="text-sm text-gray-500">{new Date().toLocaleDateString()}</span>
         </div>
       </div>
 
