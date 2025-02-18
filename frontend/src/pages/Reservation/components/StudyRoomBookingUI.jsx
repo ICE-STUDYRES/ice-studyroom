@@ -2,7 +2,8 @@ import React from 'react';
 import { ChevronLeft, Clock, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { userInfoManager } from '../handlers/userInfomanager';
-import { roomBookingManager } from '../handlers/roomBookingManager'; // ✅ useStudyRoomBooking → roomBookingManager 변경
+import { roomBookingManager } from '../handlers/roomBookingManager';
+import { useMemberHandlers } from '../../Mainpage/handlers/MemberHandlers';
 
 const StudyRoomBookingUI = () => {
   const {
@@ -18,7 +19,11 @@ const StudyRoomBookingUI = () => {
     handleReservation,
     handleTimeClick,
     canSelectTime,
-  } = roomBookingManager(); // ✅ 기존 useStudyRoomBooking → roomBookingManager() 호출로 변경
+  } = roomBookingManager();
+
+  const {
+    handleLogout
+  } = useMemberHandlers();
 
   const navigate = useNavigate();
   const { userInfo } = userInfoManager();
@@ -282,7 +287,9 @@ const StudyRoomBookingUI = () => {
           </button>
           <h1 className="font-semibold text-gray-900">스터디룸 예약</h1>
         </div>
-        <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700">
           <LogOut className="w-4 h-4" />
           로그아웃
         </button>
