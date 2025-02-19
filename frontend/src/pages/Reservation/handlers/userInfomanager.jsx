@@ -13,7 +13,7 @@ export const userInfoManager = () => {
 
   const fetchUserInfo = async (retry = true) => {
     try {
-      let accessToken = localStorage.getItem("accessToken");
+      let accessToken = sessionStorage.getItem("accessToken");
       if (!accessToken) {
         addNotification('member', 'error');
         return;

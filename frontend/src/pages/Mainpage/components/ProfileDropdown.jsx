@@ -27,7 +27,7 @@ const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
 
   useEffect(() => {
     const fetchUserInfo = async () => {
-      let accessToken = localStorage.getItem('accessToken');
+      let accessToken = sessionStorage.getItem('accessToken');
       if (!accessToken) return;
   
       try {

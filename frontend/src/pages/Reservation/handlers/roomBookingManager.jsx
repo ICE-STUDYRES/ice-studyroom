@@ -77,7 +77,7 @@ export const roomBookingManager = () => {
     const roomType = roomData?.roomType;
     const apiEndpoint = roomType === "INDIVIDUAL" ? "/reservations/individual" : "/reservations/group";
 
-    const accessToken = localStorage.getItem("accessToken");
+    const accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       addNotification('member', 'error');
       return;
@@ -111,7 +111,7 @@ export const roomBookingManager = () => {
   const fetchSchedules = async (retry = true) => {
     setLoading(true);
     try {
-      let accessToken = localStorage.getItem("accessToken");
+      let accessToken = sessionStorage.getItem("accessToken");
       if (!accessToken) {
         addNotification('member', 'error');
         return;

@@ -65,7 +65,7 @@ const MainPage = () => {
     
         const getRecentReservation = async () => {
             try {
-                let token = localStorage.getItem('accessToken');
+                let token = sessionStorage.getItem('accessToken');
                 let response = await fetch('/api/reservations/my/latest', {
                     method: 'GET',
                     headers: {

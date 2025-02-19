@@ -5,7 +5,7 @@ import { useNotification } from '../../Notification/Notification';
 
 export const useMemberHandlers = () => {
     useEffect(() => {
-        const storedLoginStatus = localStorage.getItem("isLoggedIn");
+        const storedLoginStatus = sessionStorage.getItem("isLoggedIn");
         if (storedLoginStatus === "true") {
           setIsLoggedIn(true);
         }
@@ -125,11 +125,9 @@ export const useMemberHandlers = () => {
     
           if (response.data.code === 'S200') {
             const accessToken = response.data.data.accessToken;
-            const refreshToken = response.data.data.refreshToken;
     
-            localStorage.setItem('accessToken', accessToken);
-            localStorage.setItem('refreshToken', refreshToken);
-            localStorage.setItem('isLoggedIn', 'true');
+            sessionStorage.setItem('accessToken', accessToken);
+            sessionStorage.setItem('isLoggedIn', true);
     
             setIsLoggedIn(true);    
             setShowSigninPopup(false);
@@ -172,7 +170,7 @@ export const useMemberHandlers = () => {
         }
         try {
             const response = await axios.patch('/api/users/password', passwordChangeForm, {
-                headers: { 'Authorization': `Bearer ${localStorage.getItem('accessToken')}` }
+                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken')}` }
             });
             if (response.data.code === 'S200') {
                 alert('비밀번호가 성공적으로 변경되었습니다.');
@@ -183,20 +181,13 @@ export const useMemberHandlers = () => {
         }
     };
 
-    const getRefreshTokenFromCookie = () => {
-        const cookies = document.cookie.split('; ');
-        const refreshTokenCookie = cookies.find(row => row.startsWith('refresh_token='));
-        return refreshTokenCookie ? refreshTokenCookie.split('=')[1] : null;
-    };
-
     const handleLogout = async () => {
         try {
-            const accessToken = localStorage.getItem('accessToken');
-            const refreshToken = getRefreshTokenFromCookie();
+            const accessToken = sessionStorage.getItem('accessToken');
     
-            if (!accessToken || !refreshToken) {
+            if (!accessToken) {
                 // console.warn("No tokens found, clearing storage and redirecting.");
-                localStorage.clear();
+                sessionStorage.clear();
                 setIsLoggedIn(false);
                 navigate('/');
                 return;
@@ -217,12 +208,12 @@ export const useMemberHandlers = () => {
                 // console.warn("Logout request failed. Status:", response.status);
             }
     
-            localStorage.clear();
+            sessionStorage.clear();
             setIsLoggedIn(false);
             navigate('/');
         } catch (error) {
             console.error("Logout failed:", error);
-            localStorage.clear();
+            sessionStorage.clear();
             setIsLoggedIn(false);
             navigate('/');
         }

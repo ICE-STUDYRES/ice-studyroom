@@ -50,7 +50,7 @@ const MyReservationStatus = () => {
           console.warn("⚠️ QR 코드 데이터가 JSON 형식이 아님. 그대로 사용함.");
         }
   
-        const accessToken = localStorage.getItem("accessToken");
+        const accessToken = sessionStorage.getItem("accessToken");
         const response = await fetch(`/api/qr/recognize`, {
           method: "POST",
           headers: {
@@ -89,15 +89,6 @@ const MyReservationStatus = () => {
     return () => window.removeEventListener("keydown", handleScan);
 }, [setSentQRCode, addNotification]);
 
-  const handleLogoutClick = async () => {
-    try {
-      await handleLogout();
-      navigate('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
   useEffect(() => {
     fetchMyReservations();
   }, []);
@@ -105,8 +96,7 @@ const MyReservationStatus = () => {
   const fetchMyReservations = async (retry = true) => {
     setLoading(true);
     try {
-        let accessToken = localStorage.getItem('accessToken');
-        let refreshToken = localStorage.getItem('refreshToken');
+        let accessToken = sessionStorage.getItem('accessToken');
         if (!accessToken) {
             throw new Error('로그인이 필요합니다');
         }

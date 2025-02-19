@@ -13,7 +13,7 @@ export const useTokenHandler = () => {
     const refreshTokens = async () => {
         try {
             const refreshToken = getRefreshTokenFromCookie();
-            const accessToken = localStorage.getItem('accessToken');
+            const accessToken = sessionStorage.getItem('accessToken');
 
             if (!refreshToken) {
                 console.warn("No refresh token found. Logging out.");
@@ -38,9 +38,8 @@ export const useTokenHandler = () => {
                 return null;
             }
 
-            const { accessToken: newAccessToken, refreshToken: newRefreshToken } = response.data.data;
-            localStorage.setItem('accessToken', newAccessToken);
-            localStorage.setItem('refreshToken', newRefreshToken);
+            const { accessToken: newAccessToken } = response.data.data;
+            sessionStorage.setItem('accessToken', newAccessToken);
 
             console.log("Tokens refreshed successfully.");
             return newAccessToken;
