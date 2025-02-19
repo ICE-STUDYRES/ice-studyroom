@@ -4,15 +4,13 @@ import { useMemberHandlers } from './MemberHandlers.jsx';
 
 export const usePenaltyHandlers = () => {
     const { isLoggedIn } = useMemberHandlers();
-
-    const [penaltyRemainingDays, setPenaltyRemainingDays] = useState(null);
     const [penaltyEndAt, setPenaltyEndAt] = useState("");
     const [penaltyReason, setPenaltyReason] = useState(null);
 
     useEffect(() => {
         const fetchPenaltyData = async () => {
             try {
-                const token = localStorage.getItem('accessToken');
+                const token = sessionStorage.getItem('accessToken');
                 const response = await axios.get('/api/users', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });

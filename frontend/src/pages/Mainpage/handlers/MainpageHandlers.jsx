@@ -24,7 +24,7 @@ export const useMainpageHandlers = () => {
     useEffect(() => {
       const fetchUserData = async () => {
         try {
-          const token = localStorage.getItem('accessToken');
+          const token = sessionStorage.getItem('accessToken');
           const response = await axios.get('/api/users', {
             headers: {
               'Authorization': `Bearer ${token}`

@@ -13,7 +13,7 @@ const useQRCodeFetcher = (resId) => {
 
     setLoading(true);
     try {
-      let accessToken = localStorage.getItem("accessToken");
+      let accessToken = sessionStorage.getItem("accessToken");
       if (!accessToken) {
         setError("로그인이 필요합니다."); //수정 예정
         setLoading(false);
@@ -62,7 +62,7 @@ const useQRCodeFetcher = (resId) => {
 
     setLoading(true);
     try {
-      let accessToken = localStorage.getItem("accessToken");
+      let accessToken = sessionStorage.getItem("accessToken");
       if (!accessToken) {
 
 

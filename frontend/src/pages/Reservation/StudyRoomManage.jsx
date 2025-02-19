@@ -33,7 +33,7 @@ const StudyRoomManage = () => {
     useEffect(() => {
       const fetchBookingData = async () => {
         try {
-          let accessToken = localStorage.getItem('accessToken');
+          let accessToken = sessionStorage.getItem('accessToken');
           const response = await fetch('/api/reservations/my', {
             method: 'GET',
             headers: {
@@ -179,7 +179,7 @@ const StudyRoomManage = () => {
 
   const handleCancelReservation = async () => {
     try {
-      const accessToken = localStorage.getItem("accessToken");
+      const accessToken = sessionStorage.getItem("accessToken");
   
       if (!booking.id) {
         alert("취소할 예약이 없습니다.");
@@ -222,7 +222,7 @@ const StudyRoomManage = () => {
   
   const extendReservation = async () => {
     try {
-      let accessToken = localStorage.getItem("accessToken");
+      let accessToken = sessionStorage.getItem("accessToken");
       const response = await axios.patch(
         `/api/reservations/${booking.id}`,
         {},
