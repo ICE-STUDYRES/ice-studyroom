@@ -13,7 +13,6 @@ const StudyRoomBookingUI = () => {
     selectedRoom,
     setSelectedRoom,
     bookedSlots,
-    setUserInfo,
     rooms,
     timeSlots,
     handleReservation,
@@ -26,7 +25,7 @@ const StudyRoomBookingUI = () => {
   } = useMemberHandlers();
 
   const navigate = useNavigate();
-  const { userInfo } = userInfoManager();
+  const { userInfo, setUserInfo } = userInfoManager();
 
   const getTimeRangeString = () => {
     if (selectedTimes.length === 0) return '시간을 선택해주세요';
@@ -64,14 +63,14 @@ const StudyRoomBookingUI = () => {
                 room.name.startsWith("305") ? "3층" : "알 수 없음";
 
               return (
-                <button
-                  key={room.id}
-                  onClick={() => setSelectedRoom(room.name)}
-                  className={`
-                    w-full rounded-2xl border transition-all
-                    ${selectedRoom === room.name 
-                      ? 'bg-slate-50 border-2 border-slate-900'
-                      : 'bg-white border border-gray-100 hover:border-gray-200'}
+              <button
+              key={room.id}
+              onClick={() => setSelectedRoom(room.name)}
+              className={`
+                w-[calc(100%-16px)] mx-2 rounded-2xl border transition-all
+                ${selectedRoom === room.name 
+                  ? 'bg-slate-50 border-2 border-slate-900'
+                  : 'bg-white border border-gray-100 hover:border-gray-200'}
                   `}
                 >
                   <div className="p-4">
