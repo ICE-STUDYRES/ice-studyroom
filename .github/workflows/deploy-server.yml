@@ -126,7 +126,7 @@ jobs:
             sudo docker pull $IMAGE_NAME
 
             # 컨테이너 실행
-            sudo docker run -d --name $CONTAINER_NAME -p 8080:8080 --restart always --env-file /home/ubuntu/backend/.env $IMAGE_NAME
+            sudo docker run -d --name $CONTAINER_NAME -p 8080:8080 --restart always --env-file /home/ubuntu/backend/.env -e TZ=Asia/Seoul $IMAGE_NAME
 
       - name: Clean Up Unused Docker Images
         run: sudo docker image prune -f
