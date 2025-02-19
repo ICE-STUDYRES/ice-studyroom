@@ -57,7 +57,7 @@ jobs:
          aws-region: ${{ secrets.FE_AWS_REGION }}
 
      - name: Deploy to S3
-       run: aws s3 sync ./dist s3://studyroom-ice-webpage --delete
+       run: aws s3 sync ./dist s3://ice-studyroom --delete
 
      - name: Invalidate CloudFront Cache
        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.FE_CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
