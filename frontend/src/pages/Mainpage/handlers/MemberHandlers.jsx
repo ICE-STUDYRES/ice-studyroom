@@ -29,8 +29,8 @@ export const useMemberHandlers = () => {
     const [verificationSuccess, setVerificationSuccess] = useState(false);
     const [passwordChangeForm, setPasswordChangeForm] = useState({
         currentPassword: '',
-        newPassword: '',
-        confirmNewPassword: ''
+        updatedPassword: '',
+        updatedPasswordForCheck: ''
     });
     const [passwordChangeError, setPasswordChangeError] = useState('');
     const { addNotification } = useNotification();
@@ -116,8 +116,8 @@ export const useMemberHandlers = () => {
         setShowPasswordChangePopup(false);
         setPasswordChangeForm({
           currentPassword: '',
-          newPassword: '',
-          confirmNewPassword: ''
+          updatedPassword: '',
+          updatedPasswordForCheck: ''
         });
         setPasswordChangeError('');
       };
@@ -195,17 +195,27 @@ export const useMemberHandlers = () => {
 
     const handlePasswordChange = async (e) => {
         e.preventDefault();
-        if (passwordChangeForm.newPassword !== passwordChangeForm.confirmNewPassword) {
+        if (passwordChangeForm.updatedPassword !== passwordChangeForm.updatedPasswordForCheck) {
             setPasswordChangeError('새 비밀번호가 일치하지 않습니다.');
             return;
         }
+        if (!isValidPassword(passwordChangeForm.updatedPassword)) {
+            setPasswordChangeError('새 비밀번호에는 최소 1개 이상의 특수문자가 포함되어야 합니다.');
+            return;
+        }
         try {
+            const accessToken = sessionStorage.getItem('accessToken');
             const response = await axios.patch('/api/users/password', passwordChangeForm, {
-                headers: { 'Authorization': `Bearer ${sessionStorage.getItem('accessToken')}` }
+                headers: { 'Authorization': `Bearer ${accessToken}` }
             });
             if (response.data.code === 'S200') {
                 alert('비밀번호가 성공적으로 변경되었습니다.');
                 setShowPasswordChangePopup(false);
+                setPasswordChangeForm({
+                    currentPassword: '',
+                    updatedPassword: '',
+                    updatedPasswordForCheck: ''
+                });
             }
         } catch (error) {
             setPasswordChangeError('비밀번호 변경에 실패했습니다.');

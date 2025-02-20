@@ -240,8 +240,8 @@ export const PasswordChangePopup = ({ showPasswordChangePopup, handleClosePasswo
             />
             <input
               type="password"
-              name="newPassword"
-              value={passwordChangeForm.newPassword}
+              name="updatedPassword"
+              value={passwordChangeForm.updatedPassword}
               onChange={handlePasswordChangeInputChange}
               placeholder="새 비밀번호"
               className="w-full p-2 border rounded"
@@ -249,8 +249,8 @@ export const PasswordChangePopup = ({ showPasswordChangePopup, handleClosePasswo
             />
             <input
               type="password"
-              name="confirmNewPassword"
-              value={passwordChangeForm.confirmNewPassword}
+              name="updatedPasswordForCheck"
+              value={passwordChangeForm.updatedPasswordForCheck}
               onChange={handlePasswordChangeInputChange}
               placeholder="새 비밀번호 확인"
               className="w-full p-2 border rounded"
