@@ -22,13 +22,10 @@ import com.ice.studyroom.domain.membership.presentation.dto.request.MemberEmailV
 import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.request.UpdatePasswordRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberEmailResponse;
-import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLookupResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberResponse;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
-import com.ice.studyroom.global.exception.BusinessException;
-import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -49,9 +46,9 @@ public class MembershipService {
 	}
 
 	public JwtToken login(MemberLoginRequest request) {
-		if(memberDomainService.getMemberByEmail(request.email()) == null){
-			throw new BusinessException(StatusCode.NOT_FOUND, "아이디 혹은 비밀번호가 틀렸습니다.");
-		}
+
+		Member member = memberDomainService.getMemberByEmailForLogin(request.email());
+		memberDomainService.validatePasswordMatch(member, request.password());
 
 		Authentication authentication = authenticationManager.authenticate(
 			new UsernamePasswordAuthenticationToken(request.email(), request.password())
@@ -66,9 +63,7 @@ public class MembershipService {
 	public JwtToken refresh(String authorizationHeader, String refreshToken) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		JwtToken jwtToken = tokenService.rotateToken(email, refreshToken);
-
-		return jwtToken;
+		return tokenService.rotateToken(email, refreshToken);
 	}
 
 	public MemberResponse logout(String authorizationHeader, String refreshToken) {
