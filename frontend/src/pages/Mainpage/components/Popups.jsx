@@ -59,7 +59,7 @@ export const SignInPopup = ({ showSigninPopup, handleCloseSigninPopup, handleLog
   );
 };
 
-export const SignUpPopup = ({ showSignUpPopup, handleCloseSignUpPopup, handleSignup, handleSignupInputChange, signupForm, signupError, verificationMessage, isEmailVerified, handleSendVerification, handleVerifyCode, verificationSuccess }) => {
+export const SignUpPopup = ({ showSignUpPopup, handleCloseSignUpPopup, handleSignup, handleSignupInputChange, signupForm, signupError, verificationMessage, isEmailVerified, handleSendVerification, handleVerifyCode, verificationSuccess, formatTime, verificationTimer }) => {
   if (!showSignUpPopup) return null;
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleCloseSignUpPopup}>
@@ -101,7 +101,7 @@ export const SignUpPopup = ({ showSignUpPopup, handleCloseSignUpPopup, handleSig
                     <button
                       type="button"
                       onClick={() => handleSendVerification(signupForm.email)}
-                      className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded text-sm whitespace-nowrap"
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm whitespace-nowrap"
                     >
                       인증번호 전송
                     </button>
@@ -124,6 +124,9 @@ export const SignUpPopup = ({ showSignUpPopup, handleCloseSignUpPopup, handleSig
                         인증확인
                       </button>
                     </div>
+                    {verificationTimer > 0 && (
+                      <p className="text-red-500 text-sm">남은 시간: {formatTime(verificationTimer)}</p>
+                    )}
                   {verificationMessage && (
                     <p className={`text-sm ${verificationSuccess ? 'text-green-500' : 'text-red-500'}`}>
                       {verificationMessage}
