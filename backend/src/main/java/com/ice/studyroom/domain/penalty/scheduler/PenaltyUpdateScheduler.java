@@ -56,7 +56,7 @@ public class PenaltyUpdateScheduler {
 	}
 
 	@Transactional
-	@Scheduled(cron = "0 1 10-23,0 * * *") // 매일 10:01 ~ 23:01, 자정 00:01 실행
+	@Scheduled(cron = "0 1 10-23 * * *") // 매일 10:01 ~ 23:01
 	public void processNoShowPenalties() {
 		LocalTime now = LocalTime.now().withSecond(0).withNano(0);
 

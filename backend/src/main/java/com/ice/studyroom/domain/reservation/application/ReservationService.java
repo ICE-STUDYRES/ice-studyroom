@@ -25,6 +25,7 @@ import com.ice.studyroom.domain.identity.domain.service.QRCodeService;
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
 import com.ice.studyroom.domain.identity.infrastructure.security.QRCodeUtil;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
@@ -42,6 +43,7 @@ import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRec
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetReservationsResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetReservationsResponse.Participant;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
 import com.ice.studyroom.global.exception.AttendanceException;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
@@ -60,6 +62,7 @@ public class ReservationService {
 	private final ScheduleRepository scheduleRepository;
 	private final QRCodeService qrCodeService;
 	private final PenaltyService penaltyService;
+	private final MemberDomainService memberDomainService;
 
 	//todo : N+1 문제 해결
 	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
@@ -109,7 +112,7 @@ public class ReservationService {
 	}
 
 	@Transactional
-	public ReservationStatus qrEntrance(QrEntranceRequest request) {
+	public QrEntranceResponse qrEntrance(QrEntranceRequest request) {
 		// 이미지를 저장.
 		String qrCode = request.qrCode();
 		// 이 qr 코드가 유효한지와 정보를 얻는다.
@@ -119,6 +122,7 @@ public class ReservationService {
 		QRDataResponse qrData = qrCodeService.getQRData(qrKey);
 		Long reservationId = qrData.getReservationId();
 		String memberEmail = qrData.getEmail();
+		Member member = memberDomainService.getMemberByEmail(memberEmail);
 
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"존재하지 않는 예약입니다."));
@@ -134,7 +138,7 @@ public class ReservationService {
 			//해당 멤버에게 패널티 부여
 			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(memberEmail)), reservationId, PenaltyReasonType.LATE);
 		}
-		return status;
+		return new QrEntranceResponse(status, member.getName(), member.getStudentNum());
 	}
 
 	@Transactional

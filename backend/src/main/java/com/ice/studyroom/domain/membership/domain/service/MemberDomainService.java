@@ -1,5 +1,8 @@
 package com.ice.studyroom.domain.membership.domain.service;
 
+import java.util.Objects;
+import java.util.Optional;
+
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -20,17 +23,12 @@ public class MemberDomainService {
 	private final PasswordEncoder passwordEncoder;
 	private final VerificationCodeCacheService verificationCodeCacheService;
 
-	public Member registerMember(MemberCreateRequest request) {
-		// 1. 이메일 중복 체크
+	public void registerMember(MemberCreateRequest request) {
 		validateEmailUniqueness(Email.of(request.email()));
-
-		// 2. 이메일 인증 확인
 		checkVerification(request.isAuthenticated());
-
-		// 3. 인증 코드 검증
 		validateVerificationCode(request.email(), request.authenticationCode());
+		validateStudentNumberUniqueness(request.studentNum());
 
-		// 4. 회원 생성
 		Member member = Member.create(
 			Email.of(request.email()),
 			request.name(),
@@ -39,10 +37,7 @@ public class MemberDomainService {
 			passwordEncoder
 		);
 
-		// 5. 저장
 		memberRepository.save(member);
-
-		return member;
 	}
 
 	public void validateEmailUniqueness(Email email) {
@@ -51,8 +46,26 @@ public class MemberDomainService {
 		}
 	}
 
+	private void validateStudentNumberUniqueness(String studentNum) {
+		if (memberRepository.existsByStudentNum(studentNum)) {
+			throw new BusinessException(StatusCode.CONFLICT, "이미 사용 중인 학번입니다.");
+		}
+	}
+
 	public Member getMemberByEmail(String email) {
-		return memberRepository.getMemberByEmail(Email.of(email));
+		return Optional.ofNullable(memberRepository.getMemberByEmail(Email.of(email)))
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 이메일을 가진 유저는 존재하지 않습니다."));
+	}
+
+	public Member getMemberByEmailForLogin(String email) {
+		return Optional.ofNullable(memberRepository.getMemberByEmail(Email.of(email)))
+			.orElseThrow(() -> new BusinessException(StatusCode.BAD_REQUEST, "아이디 혹은 비밀번호가 일치하지 않습니다."));
+	}
+
+	public void validatePasswordMatch(Member member, String password){
+		if(!member.isPasswordValid(password, passwordEncoder)){
+			throw new BusinessException(StatusCode.BAD_REQUEST, "아이디 혹은 비밀번호가 일치하지 않습니다.");
+		}
 	}
 
 	public String getUserNameByEmail(Email email) {
@@ -61,34 +74,30 @@ public class MemberDomainService {
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 이메일을 가진 유저는 존재하지 않습니다."));
 	}
 
-	public void checkVerification(boolean isAuthenticated) {
+	private void checkVerification(boolean isAuthenticated) {
 		if (!isAuthenticated) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "이메일 인증을 진행해주세요.");
 		}
 	}
 
-	public void validateVerificationCode(String email, String authenticationCode) {
-		if (!verificationCodeCacheService.getVerificationCode(email).equals(authenticationCode)) {
+	private void validateVerificationCode(String email, String authenticationCode) {
+		if (!Objects.equals(verificationCodeCacheService.getVerificationCode(email), authenticationCode)) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "인증 코드가 유효하지 않거나 만료되었습니다.");
 		}
 	}
 
 	public void updateMemberPassword(Member member, String currentPassword, String newPassword,
 		String confirmPassword) {
-		// 1. 현재 비밀번호 확인
 		if (!member.isPasswordValid(currentPassword, passwordEncoder)) {
 			throw new BusinessException(StatusCode.UNAUTHORIZED, "기존 비밀번호가 일치하지 않습니다.");
 		}
 
-		// 2. 새 비밀번호 검증
 		if (!newPassword.equals(confirmPassword)) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "새로운 비밀번호가 서로 일치하지 않습니다.");
 		}
 
-		// 3. 새 비밀번호 인코딩 후 업데이트
 		member.changePassword(passwordEncoder.encode(newPassword));
 
-		// 4. 저장
 		memberRepository.save(member);
 	}
 
