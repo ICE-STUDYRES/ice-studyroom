@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotification } from "../../Notification/Notification";
-import { userInfoManager } from "./userInfomanager";
+import { useTokenHandler } from "../../Mainpage/handlers/TokenHandler";
 
 export const roomBookingManager = () => {
   const [activeTab, setActiveTab] = useState("room");
@@ -11,9 +11,14 @@ export const roomBookingManager = () => {
   const [timeSlots, setTimeSlots] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
   const { addNotification } = useNotification();
-  const { userInfo } = userInfoManager();
+  const { refreshTokens } = useTokenHandler();
+  const [userInfo, setUserInfo] = useState({
+    mainUser: { name: "", email: "" },
+    participants: [],
+  });
 
   // 예약 가능 여부 확인
   const canSelectTime = (time) => {
@@ -47,7 +52,7 @@ export const roomBookingManager = () => {
   };
 
   // 예약 처리
-  const handleReservation = async () => {
+  const handleReservation = async (updatedUserInfo) => {
     if (!selectedRoom || selectedTimes.length === 0 || !userInfo.mainUser.email) {
       addNotification("reservation", "missingFields");
       return;
@@ -73,6 +78,7 @@ export const roomBookingManager = () => {
       endTime: selectedTimes[selectedTimes.length - 1].split("~")[1],
     };
 
+    console.log(requestData);
     const roomData = bookedSlots[roomId]; 
     const roomType = roomData?.roomType;
     const apiEndpoint = roomType === "INDIVIDUAL" ? "/reservations/individual" : "/reservations/group";
@@ -201,11 +207,63 @@ export const roomBookingManager = () => {
     }
   };
 
+  const fetchUserInfo = async (retry = true) => {
+    try {
+      let accessToken = sessionStorage.getItem("accessToken");
+      if (!accessToken) {
+        addNotification('member', 'error');
+        return;
+      }
+  
+      const response = await fetch("/api/users", {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+  
+      if (response.status === 401 && retry) {
+        accessToken = await refreshTokens();
+        
+        if (accessToken) {
+          return fetchUserInfo(false); // 한 번만 재시도
+        } else {
+          console.error("Token refresh failed. Logging out.");
+          return;
+        }
+      }
+  
+      if (!response.ok) throw new Error("사용자 정보를 가져오는 데 실패했습니다.");
+  
+      const responseData = await response.json();
+  
+      if (responseData.code !== "S200") {
+        throw new Error(responseData.message || "알 수 없는 오류");
+      }
+  
+      setUserInfo((prev) => ({
+        ...prev,
+        mainUser: {
+          name: responseData.data.name,
+          email: responseData.data.email,
+        },
+      }));
+    } catch (err) {
+      setError(err.message);
+      console.error("사용자 정보 오류:", err.message);
+    }
+  };
+
   useEffect(() => {
+    fetchUserInfo();
     fetchSchedules();
   }, []);
 
   return {
+    error,
+    setUserInfo,
+    fetchUserInfo,
+    userInfo,
     activeTab,
     setActiveTab,
     selectedTimes,
