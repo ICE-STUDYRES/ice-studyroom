@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, LogOut, Clock, QrCode, X } from "lucide-react";
+import { ChevronLeft, LogOut, Clock, QrCode, X, Scan } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMainpageHandlers } from '../Mainpage/handlers/MainpageHandlers';
 import { QRCodeCanvas } from 'qrcode.react';
 import useQRCodeFetcher from '../Mainpage/components/QRCodeFetcher';
-import { useNotification } from '../Notification/Notification';
 import { useTokenHandler } from "../Mainpage/handlers/TokenHandler";
 import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
 
@@ -27,67 +26,13 @@ const MyReservationStatus = () => {
   const [myReservations, setMyReservations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sentQRCode, setSentQRCode] = useState(null);
-  const { addNotification } = useNotification();
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
   const { qrCode, error: qrError, loading: qrLoading} = useQRCodeFetcher(resId);
 
-  useEffect(() => {
-    let qrBuffer = "";
-  
-    const handleScan = async (event) => {
-      if (event.key === "Enter") {
-        if (!qrBuffer.trim()) return;
-  
-        let qrData = qrBuffer;
-  
-        try {
-          const parsedData = JSON.parse(qrBuffer);
-          if (parsedData?.data) {
-            qrData = parsedData.data;
-          }
-        } catch (err) {
-          console.warn("⚠️ QR 코드 데이터가 JSON 형식이 아님. 그대로 사용함.");
-        }
-  
-        const accessToken = sessionStorage.getItem("accessToken");
-        const response = await fetch(`/api/qr/recognize`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ qrCode: qrData }),
-        });
-        console.log(response);
-        const responseData = await response.json();
-        handleCloseQRModal();
+  const handleQRScannerClick = () => {
+    navigate('/attendance');
+  };
 
-  
-        if (response.status === 403) {
-          addNotification("attendance", "notStarted", response.message);
-        } else if (response.status === 401) {
-          addNotification("attendance", "expired", response.message);
-        } else if (response.status === 200) {
-          if (responseData.data === "ENTRANCE") {
-            addNotification("attendance", "success");
-          } else if (responseData.data === "LATE") {
-            addNotification("attendance", "late");
-          }
-        } else {
-          addNotification("attendance", "error", response.message);
-        }
-  
-        setSentQRCode(qrData);
-        qrBuffer = "";
-      } else if (event.key !== "Shift") {
-        qrBuffer += event.key;
-      }
-    };
-  
-    window.addEventListener("keydown", handleScan);
-    return () => window.removeEventListener("keydown", handleScan);
-}, [setSentQRCode, addNotification]);
 
   useEffect(() => {
     fetchMyReservations();
@@ -191,7 +136,16 @@ const MyReservationStatus = () => {
           >
             <QrCode className="w-32 h-32" />
           </button>
-          <p className="text-sm text-gray-500">스터디룸 입실 시 QR코드를 스캔해주세요</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-gray-500">스터디룸 입실 시 QR코드를 스캔해주세요</p>
+            <button 
+              onClick={handleQRScannerClick}
+              className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
+            >
+              QR스캐너
+              <Scan className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
