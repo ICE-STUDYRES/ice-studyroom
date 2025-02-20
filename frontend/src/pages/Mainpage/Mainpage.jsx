@@ -47,6 +47,8 @@ const MainPage = () => {
         handleCloseSigninPopup,
         handleCloseSignUpPopup,
         handleClosePasswordChangePopup,
+        formatTime,
+        verificationTimer,
       } = useMemberHandlers();
 
       const {
@@ -273,6 +275,8 @@ const MainPage = () => {
         handleSendVerification={handleSendVerification}
         handleVerifyCode={handleVerifyCode}
         verificationSuccess={verificationSuccess}
+        formatTime={formatTime}
+        verificationTimer={verificationTimer}
       />
 
       <NoticePopup 
