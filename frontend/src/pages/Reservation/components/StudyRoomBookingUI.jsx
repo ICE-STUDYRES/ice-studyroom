@@ -1,7 +1,6 @@
 import React from 'react';
 import { ChevronLeft, Clock, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { userInfoManager } from '../handlers/userInfomanager';
 import { roomBookingManager } from '../handlers/roomBookingManager';
 import { useMemberHandlers } from '../../Mainpage/handlers/MemberHandlers';
 
@@ -18,6 +17,8 @@ const StudyRoomBookingUI = () => {
     handleReservation,
     handleTimeClick,
     canSelectTime,
+    userInfo,
+    setUserInfo,
   } = roomBookingManager();
 
   const {
@@ -25,12 +26,11 @@ const StudyRoomBookingUI = () => {
   } = useMemberHandlers();
 
   const navigate = useNavigate();
-  const { userInfo, setUserInfo } = userInfoManager();
 
   const getTimeRangeString = () => {
     if (selectedTimes.length === 0) return '시간을 선택해주세요';
     if (selectedTimes.length === 1) return selectedTimes[0];
-
+    
     const sortedTimes = selectedTimes.sort();
     const startTime = sortedTimes[0].split('~')[0];
     const endTime = sortedTimes[sortedTimes.length - 1].split('~')[1];
