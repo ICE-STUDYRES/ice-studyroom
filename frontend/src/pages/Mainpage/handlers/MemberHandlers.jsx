@@ -37,6 +37,13 @@ export const useMemberHandlers = () => {
     const [showSigninPopup, setShowSigninPopup] = useState(false);
     const [showSignUpPopup, setShowSignUpPopup] = useState(false);
     const [showPasswordChangePopup, setShowPasswordChangePopup] = useState(false);
+    const [verificationTimer, setVerificationTimer] = useState(0);
+    const [isTimerRunning, setIsTimerRunning] = useState(false);
+
+    const isValidPassword = (password) => {
+        const specialCharacterRegex = /[!@#$%^&*(),.?":{}|<>]/;
+        return specialCharacterRegex.test(password);
+    };
 
     const handleSignUpClick = () => {
         setShowSignUpPopup(true);
@@ -62,8 +69,8 @@ export const useMemberHandlers = () => {
             setSignupError('비밀번호가 일치하지 않습니다.');
             return;
         }
-        if (!signupForm.authenticationCode || signupForm.authenticationCode.trim() === '') {
-            setSignupError('인증번호를 입력해주세요.');
+        if (!isValidPassword(signupForm.password)) {
+            setSignupError('비밀번호에는 최소 1개 이상의 특수문자가 포함되어야 합니다.');
             return;
         }
         if (!signupForm.isAuthenticated) {
@@ -77,11 +84,12 @@ export const useMemberHandlers = () => {
                 setSignupForm({
                     email: '', password: '', confirmPassword: '', name: '', studentNum: '', authenticationCode: '', isAuthenticated: false
                 });
+                setShowSignUpPopup(false);
             } else {
                 addNotification('signup', 'error', response.data.message);
             }
         } catch (error) {
-            setVerificationMessage('회원가입 실패');
+            setSignupError('회원가입 실패');
         }
     };
 
@@ -138,13 +146,33 @@ export const useMemberHandlers = () => {
     };
 
     const handleSendVerification = async (email) => {
-        setVerificationMessage('');
+        setVerificationTimer(300);
+        setIsTimerRunning(true);
+        setVerificationSuccess(false);
         try {
             const response = await axios.post('/api/users/email-verification', { email });
-            setVerificationMessage(response.data.message || '인증 메일이 전송되었습니다.');
+            addNotification('verification', 'success', '인증번호가 발송되었습니다. 5분 내에 입력하세요.');
         } catch (error) {
-            setVerificationMessage('인증 메일 전송 중 오류가 발생했습니다.');
+            addNotification('verification', 'error', '인증번호 발송 실패');
+            setVerificationTimer(0);
+            setIsTimerRunning(false);
         }
+    };
+
+    useEffect(() => {
+        if (isTimerRunning && verificationTimer > 0) {
+            const timer = setInterval(() => {
+                setVerificationTimer((prev) => prev - 1);
+            }, 1000);
+            return () => clearInterval(timer);
+        }
+    }, [isTimerRunning, verificationTimer]);
+
+    const formatTime = (seconds) => {
+        if (seconds <= 0) return '';
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
     };
 
     const handleVerifyCode = async (email, code) => {
@@ -153,9 +181,12 @@ export const useMemberHandlers = () => {
             if (response.data.code === 'S200') {
                 setIsEmailVerified(true);
                 setVerificationSuccess(true);
+                setVerificationTimer(0);
+                setIsTimerRunning(false);
                 setSignupForm(prev => ({ ...prev, isAuthenticated: true }));
+                setVerificationMessage('인증이 완료되었습니다.');
             } else {
-                setVerificationMessage(response.data.message || '인증 코드 확인 실패');
+                setVerificationMessage('인증 코드가 올바르지 않습니다.');
             }
         } catch (error) {
             setVerificationMessage('서버 오류로 인증 코드를 확인하지 못했습니다.');
@@ -237,6 +268,8 @@ export const useMemberHandlers = () => {
         handleSignup,
         handleSendVerification,
         handleVerifyCode,
+        formatTime,
+        verificationTimer,
         //비밀번호 변경
         passwordChangeForm,
         passwordChangeError,
