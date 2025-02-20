@@ -12,6 +12,7 @@ import com.ice.studyroom.domain.reservation.application.ReservationService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 import com.ice.studyroom.global.type.StatusCode;
 
@@ -31,7 +32,7 @@ public class QrController {
 	@ApiResponse(responseCode = "403", description = "예약한 스터디룸 시작 시간 이전")
 	@ApiResponse(responseCode = "401", description = "예약한 스터디룸 종료 시간 이후")
 	@PostMapping("/recognize")
-	public ResponseEntity<ResponseDto<ReservationStatus>> qrEntrance(
+	public ResponseEntity<ResponseDto<QrEntranceResponse>> qrEntrance(
 		@Valid @RequestBody QrEntranceRequest request) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
