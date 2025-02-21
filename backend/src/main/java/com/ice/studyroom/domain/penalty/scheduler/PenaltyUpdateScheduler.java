@@ -58,15 +58,17 @@ public class PenaltyUpdateScheduler {
 
 	@Scheduled(cron = "0 1 10-23 * * 1-5") // 평일 10:01 ~ 23:01
 	public void processNoShowPenalties() {
-		LocalDate todayDate = LocalDate.now(); //오늘 날짜
-		LocalTime todayTime = LocalTime.now().withSecond(0).withNano(0); //현재 시간
+		LocalDateTime now = LocalDateTime.now();
+		LocalDate todayDate = now.toLocalDate();  //오늘 날짜
+		LocalTime todayTime = now.toLocalTime().withSecond(0).withNano(0); //현재 시간
+
 		log.info("Processing no-show penalties for date: {} and time: {}", todayDate, todayTime);
 
 		List<Reservation> expiredReservations = reservationRepository
 			.findByScheduleDateAndEndTimeBetween(todayDate, todayTime.minusMinutes(2), todayTime);
 
 		expiredReservations.forEach(reservation -> {
-			penaltyService.checkReservationNoShow(reservation, LocalDateTime.of(todayDate, todayTime));
+			penaltyService.checkReservationNoShow(reservation, now);
 		});
 	}
 }
