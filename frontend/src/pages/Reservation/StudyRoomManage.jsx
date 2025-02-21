@@ -110,6 +110,10 @@ const StudyRoomManage = () => {
     if (!booking.endTime) return [];
   
     const [endHour, endMinute] = booking.endTime.split(':').map(Number);
+
+    if (endHour === 22 && endMinute === 0) {
+      return [];
+    }
   
     // 연장 시간 (종료 시간 +1시간)
     const extendedHour = endHour + 1;
@@ -317,7 +321,8 @@ const StudyRoomManage = () => {
               <div>
                 <div className="text-sm text-gray-600 mb-1">예약자</div>
                 <div className="flex items-center gap-1">
-                  <span className="font-medium text-gray-900">{booking.userName}</span>
+                  <span className="font-medium text-gray-900">{booking.participants[0].name}</span>
+                  <span className="text-sm text-gray-500">({booking.participants[0].studentNum})</span>
                 </div>
               </div>
               
