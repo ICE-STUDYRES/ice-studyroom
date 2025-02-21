@@ -3,23 +3,10 @@ import { ChevronLeft, LogOut, Clock, Users, ChevronDown, ChevronUp } from "lucid
 import { useNavigate } from "react-router-dom";
 import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
 
-const rooms = [
-  { id: "305-1", name: "305-1", details: "4인실 | PC, 모니터", location: "3층", facilities: ["PC", "모니터"], capacity: 4, reservations: [] },
-  { id: "305-2", name: "305-2", details: "4인실 | PC, 모니터", location: "3층", facilities: ["PC", "모니터"], capacity: 4, reservations: [] },
-  { id: "305-3", name: "305-3", details: "4인실 | PC, 모니터", location: "3층", facilities: ["PC", "모니터"], capacity: 4, reservations: [] },
-  { id: "305-4", name: "305-4", details: "4인실 | PC, 모니터", location: "3층", facilities: ["PC", "모니터"], capacity: 4, reservations: [] },
-  { id: "305-5", name: "305-5", details: "4인실 | PC, 모니터", location: "3층", facilities: ["PC", "모니터"], capacity: 4, reservations: [] },
-  { id: "305-6", name: "305-6", details: "4인실 | PC, 모니터", location: "3층", facilities: ["PC", "모니터"], capacity: 4, reservations: [] },
-  { id: "409-1", name: "409-1", details: "4인실 | PC, 대형 모니터", location: "4층", facilities: ["PC", "대형 모니터", "화이트보드"], capacity: 6, reservations: [] },
-  { id: "409-2", name: "409-2", details: "4인실 | PC, 대형 모니터", location: "4층", facilities: ["PC", "대형 모니터", "화이트보드"], capacity: 6, reservations: [] },
-];
-
 const ReservationStatus = () => {
   const navigate = useNavigate();
   const [expandedRooms, setExpandedRooms] = useState({});
   const [schedules, setSchedules] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const {handleLogout} = useMemberHandlers();
 
   useEffect(() => {
@@ -38,58 +25,49 @@ const ReservationStatus = () => {
       } else {
         throw new Error(data.message);
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+    } catch {
     }
-  };
-
-  const mergeReservations = (reservations) => {
-    if (!reservations.length) return [];
-  
-    const merged = [];
-    let prev = reservations[0];
-  
-    for (let i = 1; i < reservations.length; i++) {
-      const curr = reservations[i];
-  
-      // ✅ 같은 사용자가 예약했고, 시간이 연속되면 병합
-      if (prev.reserver === curr.reserver && prev.time.split('-')[1] === curr.time.split('-')[0]) {
-        prev = {
-          ...prev,
-          time: `${prev.time.split('-')[0]}-${curr.time.split('-')[1]}`, // 시간 병합
-          participants: Math.max(prev.participants, curr.participants), // 참가자 수 유지
-        };
-      } else {
-        merged.push(prev);
-        prev = curr;
-      }
-    }
-    merged.push(prev);
-  
-    return merged;
   };
   
   const mapSchedulesToRooms = (scheduleData) => {
-    const mappedRooms = rooms.map((room) => {
-      const roomSchedules = scheduleData
-        .filter((schedule) => schedule.roomNumber === room.id && schedule.currentRes >= 1)
-        .map((schedule) => ({
+    const roomsMap = {};
+    
+    scheduleData.forEach((schedule) => {
+      const roomId = schedule.roomNumber;
+      let location = schedule.location;
+      if (!location) {
+        if (roomId.startsWith("3")) {
+          location = "3층";
+        } else if (roomId.startsWith("4")) {
+          location = "4층";
+        } else {
+          location = "알 수 없음";
+        }
+      }
+      
+      if (!roomsMap[roomId]) {
+        roomsMap[roomId] = {
+          id: roomId,
+          name: roomId,
+          location: location,
+          facilities: schedule.facilities || [],
+          capacity: schedule.capacity || 0,
+          reservations: [],
+        };
+      }
+      
+      if (schedule.currentRes >= 1) {
+        roomsMap[roomId].reservations.push({
           time: `${schedule.startTime.slice(0, 5)}-${schedule.endTime.slice(0, 5)}`,
-          reserver: schedule.reserverEmail, // 예약자 정보 추가
-          participants: schedule.currentRes, // ✅ currentRes 값으로 참가자 수 표시
+          reserver: schedule.reserverEmail,
+          participants: schedule.currentRes,
           status: schedule.status,
           available: schedule.available,
-        }))
-        .sort((a, b) => a.time.localeCompare(b.time)); // ✅ 시간 순 정렬 (필수)
-  
-      return {
-        ...room,
-        reservations: mergeReservations(roomSchedules), // 병합 로직 적용
-      };
+        });
+      }
     });
-  
+
+    const mappedRooms = Object.values(roomsMap);
     setSchedules(mappedRooms);
   };
 
