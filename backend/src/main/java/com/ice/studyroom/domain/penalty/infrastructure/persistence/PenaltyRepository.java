@@ -1,6 +1,8 @@
 package com.ice.studyroom.domain.penalty.infrastructure.persistence;
 
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -16,7 +18,5 @@ public interface PenaltyRepository extends JpaRepository<Penalty, Long> {
 
 	List<Penalty> findByMemberIdAndPenaltyEndAfter(Long memberId, LocalDateTime currentTime);
 
-	@Modifying(clearAutomatically = true)
-	@Query("UPDATE Penalty p SET p.status = 'EXPIRED' WHERE p.penaltyEnd < :now AND p.status = 'VALID'")
-	int expireOldPenalties(@Param("now") LocalDateTime now);
+	List<Penalty> findByStatus(PenaltyStatus status);
 }
