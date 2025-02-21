@@ -2,14 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../../Notification/Notification';
-import { useMemberHandlers } from './MemberHandlers.jsx';
 import { usePenaltyHandlers } from './PenaltyHandlers.jsx';
 
 export const useMainpageHandlers = () => {
-  const {
-    isLoggedIn,
-  } = useMemberHandlers();
-
   const {
     setPenaltyEndAt,
     setPenaltyReason,
@@ -20,14 +15,14 @@ export const useMainpageHandlers = () => {
     const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
     const [showQRModal, setShowQRModal] = useState(false);
     const { addNotification } = useNotification();
+    const accessToken = sessionStorage.getItem('accessToken');
 
     useEffect(() => {
       const fetchUserData = async () => {
         try {
-          const token = sessionStorage.getItem('accessToken');
           const response = await axios.get('/api/users', {
             headers: {
-              'Authorization': `Bearer ${token}`
+              'Authorization': `Bearer ${accessToken}`
             }
           });
     
@@ -53,14 +48,14 @@ export const useMainpageHandlers = () => {
         }
       };
     
-      if (isLoggedIn) {
+      if (sessionStorage.getItem('accessToken')) {
         fetchUserData();
       }
-    }, [isLoggedIn]);
+    }, [accessToken]);
 
     const navigate = useNavigate();  
     const handleReservationClick = () => {
-      if (isLoggedIn) {
+      if (accessToken) {
         navigate('/reservation/room');
       } else {
         addNotification('member', 'error');
@@ -69,7 +64,7 @@ export const useMainpageHandlers = () => {
     const handleMyReservationStatusClick = () => navigate('/MyReservationStatus');
     const handleReservationStatusClick = () => navigate('/ReservationStatus');
     const handleReservationManageClick = () => {
-      if (isLoggedIn) {
+      if (accessToken) {
         navigate('/reservation/manage');
       } else {
         addNotification('member', 'error');
@@ -78,7 +73,7 @@ export const useMainpageHandlers = () => {
     const handleNoticeClick = () => setShowNotice(true);
     const handleCloseNotice = () => setShowNotice(false);
     const handlePenaltyClick = () => {
-      if (isLoggedIn) {
+      if (accessToken) {
         setShowPenaltyPopup(true);
       } else {
         addNotification('member', 'error');
