@@ -3,7 +3,7 @@ import { useMainpageHandlers } from './handlers/MainpageHandlers';
 import { useMemberHandlers } from './handlers/MemberHandlers.jsx';
 import { usePenaltyHandlers } from './handlers/PenaltyHandlers.jsx';
 import ProfileDropdown from './components/ProfileDropdown';
-import { SignInPopup, SignUpPopup, NoticePopup, PasswordChangePopup } from "./components/Popups.jsx";
+import { NoticePopup, PasswordChangePopup } from "./components/Popups.jsx";
 import { LogIn, Home, QrCode } from 'lucide-react';
 import alertImage from "../../assets/images/Alert.png";
 
@@ -20,42 +20,24 @@ const MainPage = () => {
       } = useMainpageHandlers();
 
       const {
-        isLoggedIn,
-        signupForm,
-        signupError,
         loginForm,
-        isEmailVerified,
-        verificationMessage,
-        verificationSuccess,
         passwordChangeForm,
         passwordChangeError,
-        handleSignupInputChange,
-        handleLogin,
-        handleLoginInputChange,
         handleLogout,
-        handleSignup,
-        handleSendVerification,
-        handleVerifyCode,
         handlePasswordChange,
         handlePasswordChangeClick,
         handlePasswordChangeInputChange,
-        showSigninPopup,
-        showSignUpPopup,
         showPasswordChangePopup,
-        handleSignUpClick,
         handleLoginClick,
-        handleCloseSigninPopup,
-        handleCloseSignUpPopup,
         handleClosePasswordChangePopup,
-        formatTime,
-        verificationTimer,
       } = useMemberHandlers();
 
       const {
         penaltyReason,
         penaltyEndAt,
       } = usePenaltyHandlers();
-
+      
+      const accessToken = sessionStorage.getItem('accessToken');
       const [recentReservation, setRecentReservation] = useState({
         date: null,
         roomNumber: null,
@@ -63,15 +45,15 @@ const MainPage = () => {
       const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
 
       useEffect(() => {
-        if (!isLoggedIn) return; // isLoggedIn이 false면 실행하지 않음
+        if (!accessToken) return;
     
         const getRecentReservation = async () => {
             try {
-                let token = sessionStorage.getItem('accessToken');
+
                 let response = await fetch('/api/reservations/my/latest', {
                     method: 'GET',
                     headers: {
-                        'Authorization': `Bearer ${token}`,
+                        'Authorization': `Bearer ${accessToken}`,
                         'Content-Type': 'application/json'
                     }
                 });
@@ -100,7 +82,7 @@ const MainPage = () => {
         };
     
         getRecentReservation();
-    }, [isLoggedIn]); // isLoggedIn이 변경될 때 실행됨    
+    }, [accessToken]);
 
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
@@ -117,7 +99,7 @@ const MainPage = () => {
           </button>
           <h1 className="font-semibold text-gray-900">정보통신공학과</h1>
         </div>
-        {isLoggedIn ? (
+        {accessToken ? (
           <div className="flex items-center gap-2">
             <ProfileDropdown
               userName={loginForm.email} // 실제 사용자 이름으로 교체 필요
@@ -145,7 +127,7 @@ const MainPage = () => {
       {/* 예약 및 패널티 현황 */}
       <div className="px-4 py-4">
         <div className="w-full rounded-2xl border border-gray-100 bg-white p-4">
-          {isLoggedIn ? (
+          {accessToken ? (
             <>
               <div className="flex justify-between items-start mb-4">
                 <h3 className="text-lg font-semibold">이용 현황</h3>
@@ -254,31 +236,7 @@ const MainPage = () => {
           </button>
         </div>
       </div>
-      <SignInPopup 
-        showSigninPopup={showSigninPopup} 
-        handleCloseSigninPopup={handleCloseSigninPopup} 
-        handleLogin={handleLogin} 
-        handleLoginInputChange={handleLoginInputChange} 
-        loginForm={loginForm} 
-        handleSignUpClick={handleSignUpClick}
-      />
-
-      <SignUpPopup 
-        showSignUpPopup={showSignUpPopup} 
-        handleCloseSignUpPopup={handleCloseSignUpPopup} 
-        handleSignup={handleSignup} 
-        handleSignupInputChange={handleSignupInputChange} 
-        signupForm={signupForm} 
-        signupError={signupError}
-        verificationMessage={verificationMessage}
-        isEmailVerified={isEmailVerified}
-        handleSendVerification={handleSendVerification}
-        handleVerifyCode={handleVerifyCode}
-        verificationSuccess={verificationSuccess}
-        formatTime={formatTime}
-        verificationTimer={verificationTimer}
-      />
-
+      
       <NoticePopup 
         showNotice={showNotice} 
         handleCloseNotice={handleCloseNotice} 

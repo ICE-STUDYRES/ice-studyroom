@@ -4,15 +4,8 @@ import axios from 'axios';
 import { useNotification } from '../../Notification/Notification';
 
 export const useMemberHandlers = () => {
-    useEffect(() => {
-        const storedLoginStatus = sessionStorage.getItem("isLoggedIn");
-        if (storedLoginStatus === "true") {
-          setIsLoggedIn(true);
-        }
-      }, []);
-      
     const navigate = useNavigate();
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const accessToken = sessionStorage.getItem('accessToken');
     const [signupForm, setSignupForm] = useState({
         email: '',
         password: '',
@@ -34,23 +27,16 @@ export const useMemberHandlers = () => {
     });
     const [passwordChangeError, setPasswordChangeError] = useState('');
     const { addNotification } = useNotification();
-    const [showSigninPopup, setShowSigninPopup] = useState(false);
-    const [showSignUpPopup, setShowSignUpPopup] = useState(false);
     const [showPasswordChangePopup, setShowPasswordChangePopup] = useState(false);
     const [verificationTimer, setVerificationTimer] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
 
     const isValidPassword = (password) => {
-        const specialCharacterRegex = /[!@#$%^&*(),.?":{}|<>]/;
+        const specialCharacterRegex = /[`~!@#$%^&*()_+-={};:'",<.>/?|]/;
         return specialCharacterRegex.test(password);
     };
 
-    const handleSignUpClick = () => {
-        setShowSignUpPopup(true);
-        setShowSigninPopup(false);
-      };
-
-    const handleLoginClick = () => setShowSigninPopup(true);
+    const handleLoginClick = () => navigate('/Signin');
 
     const handleSignupInputChange = (e) => {
         const { name, value } = e.target;
@@ -84,7 +70,7 @@ export const useMemberHandlers = () => {
                 setSignupForm({
                     email: '', password: '', confirmPassword: '', name: '', studentNum: '', authenticationCode: '', isAuthenticated: false
                 });
-                setShowSignUpPopup(false);
+                navigate('/signin');
             } else {
                 addNotification('signup', 'error', response.data.message);
             }
@@ -110,8 +96,6 @@ export const useMemberHandlers = () => {
     }));
     };
 
-    const handleCloseSigninPopup = () => setShowSigninPopup(false);    
-    const handleCloseSignUpPopup = () => setShowSignUpPopup(false);
     const handleClosePasswordChangePopup = () => {
         setShowPasswordChangePopup(false);
         setPasswordChangeForm({
@@ -122,28 +106,32 @@ export const useMemberHandlers = () => {
         setPasswordChangeError('');
       };
 
-    const handleLogin = async (e) => {
+      const handleLogin = async (e) => {
         e.preventDefault();
       
         try {
-          const response = await axios.post('/api/users/login', {
-            email: loginForm.email,
-            password: loginForm.password,
-          });
+            const response = await axios.post('/api/users/login', {
+                email: loginForm.email,
+                password: loginForm.password,
+            });
     
-          if (response.data.code === 'S200') {
-            const accessToken = response.data.data.accessToken;
+            if (response.data.code === 'S200') {
+                const accessToken = response.data.data.accessToken;
+                const role = response.data.data.role;
     
-            sessionStorage.setItem('accessToken', accessToken);
-            sessionStorage.setItem('isLoggedIn', true);
+                sessionStorage.setItem('accessToken', accessToken);
     
-            setIsLoggedIn(true);    
-            setShowSigninPopup(false);
-          }
+                if (role === 'ROLE_USER') {
+                    navigate('/');
+                } else if (role === 'ROLE_ADMIN') {
+                    navigate('/'); //추후 admin으로 변경
+                }
+            }
         } catch (error) {
-          console.error('Login error:', error);
+            console.error('Login error:', error);
         }
     };
+    
 
     const handleSendVerification = async (email) => {
         setVerificationTimer(300);
@@ -224,12 +212,9 @@ export const useMemberHandlers = () => {
 
     const handleLogout = async () => {
         try {
-            const accessToken = sessionStorage.getItem('accessToken');
-    
             if (!accessToken) {
                 // console.warn("No tokens found, clearing storage and redirecting.");
                 sessionStorage.clear();
-                setIsLoggedIn(false);
                 navigate('/');
                 return;
             }
@@ -250,20 +235,16 @@ export const useMemberHandlers = () => {
             }
     
             sessionStorage.clear();
-            setIsLoggedIn(false);
-            navigate('/');
+            window.location.reload();
         } catch (error) {
             console.error("Logout failed:", error);
             sessionStorage.clear();
-            setIsLoggedIn(false);
-            navigate('/');
+            window.location.reload();
         }
     };  
 
     return {
         //로그인 로그아웃
-        isLoggedIn,
-        setIsLoggedIn,
         loginForm,
         handleLogin,
         handleLoginInputChange,
@@ -287,13 +268,8 @@ export const useMemberHandlers = () => {
         handlePasswordChangeClick,
         handlePasswordChangeInputChange,
         //회원 관련 팝업창
-        showSigninPopup,
-        showSignUpPopup,
         showPasswordChangePopup,
-        handleSignUpClick,
         handleLoginClick,
-        handleCloseSignUpPopup,
-        handleCloseSigninPopup,
         handleClosePasswordChangePopup,
     };
 };
