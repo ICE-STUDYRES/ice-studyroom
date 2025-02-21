@@ -7,6 +7,7 @@ import StudyRoomBooking from './pages/Reservation/components/StudyRoomBookingUI'
 import MyReservationStatus from './pages/ReservationStatus/MyReservationStatus';
 import { Notification } from './pages/Notification/Notification';
 import AttendanceSystem from './pages/ReservationStatus/AttendanceSystem';
+import Adminpage from './pages/Mainpage/Adminpage/Adminpage';
 import Signin from './pages/Mainpage/components/Signin';
 import Signup from './pages/Mainpage/components/Signup';
 import './main.css';
@@ -18,6 +19,7 @@ function App() {
         <Routes>
           <Route path="/" element={<MainPage />} />
           <Route path="/reservation/room" element={<StudyRoomBooking/>} />
+          <Route path="/adminpage" element={<Adminpage/>} />
           <Route path="/attendance" element={<AttendanceSystem/>} />
           <Route path="/reservation/manage" element={<StudyRoomManage/>} />
           <Route path="/ReservationStatus" element={<ReservationStatus/>} />
