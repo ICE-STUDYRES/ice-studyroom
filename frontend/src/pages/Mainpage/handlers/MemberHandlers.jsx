@@ -124,7 +124,7 @@ export const useMemberHandlers = () => {
                 if (role === 'ROLE_USER') {
                     navigate('/');
                 } else if (role === 'ROLE_ADMIN') {
-                    navigate('/'); //추후 admin으로 변경
+                    navigate('/adminpage'); //추후 admin으로 변경
                 }
             }
         } catch (error) {
