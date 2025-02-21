@@ -28,6 +28,16 @@ export const roomBookingManager = () => {
     const isBooked = bookedSlots[roomId]?.slots?.[time]?.available === false;
     if (isBooked) return false;
 
+    // 현재 시간 가져오기
+    const now = new Date();
+    const currentTime = now.toTimeString().slice(0, 5); // HH:mm 형식
+
+    // 선택하려는 타임슬롯의 시작 시간 가져오기
+    const [startTime] = time.split("~");
+
+    // 현재 시간보다 이전이면 선택 불가
+    if (startTime < currentTime) return false;
+
     if (selectedTimes.length === 0) return true;
 
     const timeIndex = timeSlots.indexOf(time);
@@ -35,11 +45,12 @@ export const roomBookingManager = () => {
 
     if (selectedTimes.includes(time)) return true;
     if (selectedTimes.length === 1) {
-      return Math.abs(timeIndex - selectedTimeIndexes[0]) === 1;
-    }
+    return Math.abs(timeIndex - selectedTimeIndexes[0]) === 1;
+  }
 
     return false;
   };
+
 
   // 시간 클릭 처리
   const handleTimeClick = (time) => {

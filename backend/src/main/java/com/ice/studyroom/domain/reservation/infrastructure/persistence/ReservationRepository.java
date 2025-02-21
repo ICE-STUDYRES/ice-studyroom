@@ -16,7 +16,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
 	Optional<Reservation> findFirstByUserEmailOrderByCreatedAtDesc(String email);
 
+	//todo: 테스트 코드에 사용되는 거 수정
 	List<Reservation> findByEndTimeBetween(LocalTime time1, LocalTime time2);
+
+	List<Reservation> findByScheduleDateAndEndTimeBetween(LocalDate scheduleDate, LocalTime time1, LocalTime time2);
 
 	List<Reservation> findByRoomNumberAndScheduleDateAndStartTime(String roomNumber, LocalDate scheduleDate, LocalTime startTime);
 }

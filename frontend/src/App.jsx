@@ -8,8 +8,9 @@ import MyReservationStatus from './pages/ReservationStatus/MyReservationStatus';
 import { Notification } from './pages/Notification/Notification';
 import AttendanceSystem from './pages/ReservationStatus/AttendanceSystem';
 import Adminpage from './pages/Mainpage/Adminpage/Adminpage';
+import Signin from './pages/Mainpage/components/Signin';
+import Signup from './pages/Mainpage/components/Signup';
 import './main.css';
-
 
 function App() {
   return (
@@ -23,6 +24,8 @@ function App() {
           <Route path="/reservation/manage" element={<StudyRoomManage/>} />
           <Route path="/ReservationStatus" element={<ReservationStatus/>} />
           <Route path="/MyReservationStatus" element={<MyReservationStatus/>}/>
+          <Route path="/Signin" element={<Signin/>}/>
+          <Route path="/Signup" element={<Signup/>}/>
         </Routes>
       </Router> 
     </Notification>
