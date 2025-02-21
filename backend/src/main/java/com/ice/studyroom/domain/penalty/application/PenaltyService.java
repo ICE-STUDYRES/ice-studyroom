@@ -44,7 +44,7 @@ public class PenaltyService {
 
 	private LocalDateTime calculatePenaltyEnd(int durationDays) {
 		LocalDate penaltyEndDate = LocalDate.now().plusDays(durationDays);
-		return LocalDateTime.of(penaltyEndDate, LocalTime.MAX); // 23:59:59
+		return LocalDateTime.of(penaltyEndDate, LocalTime.of(23, 59, 59)); // 23:59:59
 	}
 
 	@Transactional
