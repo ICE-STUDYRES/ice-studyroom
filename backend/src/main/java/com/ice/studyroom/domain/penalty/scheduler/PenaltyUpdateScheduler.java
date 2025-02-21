@@ -31,7 +31,7 @@ public class PenaltyUpdateScheduler {
 	private final PenaltyService penaltyService;
 
 	@Transactional
-	@Scheduled(cron = "0 27 23 * * *") // 매일 00:00에 실행
+	@Scheduled(cron = "0 0 0 * * *") // 매일 00:00에 실행
 	public void updateMemberPenalty() {
 		log.info("Processing update member penalty at {} ", LocalDateTime.now());
 
@@ -48,16 +48,17 @@ public class PenaltyUpdateScheduler {
 		log.info("Member Penalty updated successfully at {}", LocalDateTime.now());
 	}
 
-	@Scheduled(cron = "0 1 10-23 * * 1-5") // 평일 10:01 ~ 23:01
+	//@Scheduled(cron = "0 1 10-23 * * 1-5") // 평일 10:01 ~ 23:01
+	@Scheduled(cron = "0 1 10-23 * * *") // 테스트를 위한 임시 적용
 	public void processNoShowPenalties() {
-		LocalDateTime now = LocalDateTime.now().withSecond(0).withNano(0);
+		LocalDateTime now = LocalDateTime.now();
 		LocalDate todayDate = now.toLocalDate();  //오늘 날짜
 		LocalTime todayTime = now.toLocalTime(); //현재 시간
 
 		log.info("Processing no-show penalties for date: {} and time: {}", todayDate, todayTime);
 
 		List<Reservation> expiredReservations = reservationRepository
-			.findByScheduleDateAndEndTimeBetween(todayDate, todayTime.minusMinutes(2), todayTime);
+			.findByScheduleDateAndEndTime(todayDate, todayTime.minusMinutes(1));
 
 		expiredReservations.forEach(reservation -> {
 			penaltyService.checkReservationNoShow(reservation, now);
