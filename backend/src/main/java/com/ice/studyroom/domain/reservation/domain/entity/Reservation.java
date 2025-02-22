@@ -97,13 +97,10 @@ public class Reservation {
 		if (now.isBefore(startDateTime)) {
 			return ReservationStatus.RESERVED;
 		} else if (minutesDifference <= 30) {
-			markStatus(ReservationStatus.ENTRANCE);
 			return ReservationStatus.ENTRANCE;
 		} else if (minutesDifference <= minutesDurationOfReservation) {
-			markStatus(ReservationStatus.LATE);
 			return ReservationStatus.LATE;
 		} else {
-			markStatus(ReservationStatus.NO_SHOW);
 			return ReservationStatus.NO_SHOW;
 		}
 	}

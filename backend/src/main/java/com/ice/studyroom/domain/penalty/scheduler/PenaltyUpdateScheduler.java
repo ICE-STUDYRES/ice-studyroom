@@ -52,9 +52,8 @@ public class PenaltyUpdateScheduler {
 		log.info("Member Penalty updated successfully at {}", LocalDateTime.now());
 	}
 
-	//@Scheduled(cron = "0 1 10-23 * * 1-5") // 평일 10:01 ~ 23:01
 	@Transactional
-	@Scheduled(cron = "0 40,42,44 10-23 * * *") // 테스트를 위한 임시 적용
+	@Scheduled(cron = "0 1 10-23 * * 1-5") // 평일 10:01 ~ 23:01
 	public void processNoShowPenalties() {
 		log.info("Processing no-show penalties at {}", LocalDateTime.now());
 
@@ -70,7 +69,7 @@ public class PenaltyUpdateScheduler {
 		expiredReservations.forEach(reservation -> {
 			if (reservation.getStatus() == ReservationStatus.RESERVED
 				&& reservation.checkAttendanceStatus(now) == ReservationStatus.NO_SHOW) {
-
+				reservation.markStatus(ReservationStatus.NO_SHOW);
 				Member member = memberDomainService.getMemberByEmail(reservation.getUserEmail());
 				penaltyService.assignPenalty(member, reservation.getId(), PenaltyReasonType.NO_SHOW);
 				log.info("해당 유저가 노쇼로 인해 7일 패널티가 부여되었습니다. 이름 : {} 학번 : {}", member.getName(), member.getStudentNum());

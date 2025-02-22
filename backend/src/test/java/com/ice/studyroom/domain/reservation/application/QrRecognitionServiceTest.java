@@ -32,6 +32,7 @@ class QrRecognitionServiceTest {
 		Reservation reservation = ReservationTestHelper.createReservationWithEnterTime(startTime);
 		// when
 		ReservationStatus status = reservation.checkAttendanceStatus(enterTime);
+		reservation.markStatus(status);
 
 		// then
 		assertEquals(ReservationStatus.RESERVED, status);
@@ -49,6 +50,7 @@ class QrRecognitionServiceTest {
 		Reservation reservation = ReservationTestHelper.createReservationWithEnterTime(startTime);
 		// when
 		ReservationStatus status = reservation.checkAttendanceStatus(startTime);
+		reservation.markStatus(status);
 
 		// then
 		assertEquals(ReservationStatus.ENTRANCE, status);
@@ -67,6 +69,7 @@ class QrRecognitionServiceTest {
 		Reservation reservation = ReservationTestHelper.createReservationWithEnterTime(startTime);
 		// when
 		ReservationStatus status = reservation.checkAttendanceStatus(enterTime);
+		reservation.markStatus(status);
 
 		// then
 		assertEquals(ReservationStatus.ENTRANCE, status);
@@ -102,6 +105,7 @@ class QrRecognitionServiceTest {
 		Reservation reservation = ReservationTestHelper.createReservationWithEnterTime(startTime);
 		// when
 		ReservationStatus status = reservation.checkAttendanceStatus(enterTime);
+		reservation.markStatus(status);
 
 		// then
 		assertEquals(ReservationStatus.RESERVED, status);

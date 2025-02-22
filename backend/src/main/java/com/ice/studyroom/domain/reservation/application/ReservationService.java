@@ -129,6 +129,7 @@ public class ReservationService {
 
 		LocalDateTime now = LocalDateTime.now();
 		ReservationStatus status = reservation.checkAttendanceStatus(now);
+		reservation.markStatus(status);
 
 		if (status == ReservationStatus.RESERVED) {
 			throw new AttendanceException("출석 시간이 아닙니다.", HttpStatus.FORBIDDEN);
