@@ -95,6 +95,10 @@ jobs:
               echo "No existing container found. Skipping removal."
             fi
 
+            # ** 사용하지 않는 이전 컨테이너 정리 **
+            echo "Removing unused stopped containers..."
+            sudo docker container prune -f
+
       - name: Deploy to EC2
         uses: appleboy/ssh-action@master
         with:
@@ -129,7 +133,19 @@ jobs:
             sudo docker run -d --name $CONTAINER_NAME -p 8080:8080 --restart always --env-file /home/ubuntu/backend/.env -e TZ=Asia/Seoul $IMAGE_NAME
 
       - name: Clean Up Unused Docker Images
-        run: sudo docker image prune -f
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.HOST }}
+          username: ubuntu
+          key: "${{ secrets.KEY }}"
+          script: |
+            echo "Cleaning up unused Docker images..."
+            
+            # ** 사용되지 않는 중간 이미지 정리 **
+            sudo docker rmi $(docker images -f "dangling=true" -q) || true
+            
+            # ** 24시간 이전의 사용되지 않는 이미지 삭제 **
+            sudo docker image prune -af --filter "until=24h"
 
       - name: Remove SSH IP from Security Group
         if: always()
