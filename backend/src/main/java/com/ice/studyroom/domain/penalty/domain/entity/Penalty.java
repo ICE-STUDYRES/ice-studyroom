@@ -65,6 +65,14 @@ public class Penalty extends BaseTimeEntity {
 	private PenaltyStatus status = PenaltyStatus.VALID;
 
 	public boolean isExpired() {
-		return LocalDateTime.now().isAfter(penaltyEnd);
+		if(LocalDateTime.now().isAfter(penaltyEnd)){
+			expirePenalty();
+			return true;
+		}
+		return false;
+	}
+
+	private void expirePenalty() {
+		this.status = PenaltyStatus.EXPIRED;
 	}
 }
