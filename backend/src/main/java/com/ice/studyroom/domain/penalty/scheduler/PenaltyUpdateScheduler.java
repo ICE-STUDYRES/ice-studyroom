@@ -49,7 +49,7 @@ public class PenaltyUpdateScheduler {
 	}
 
 	//@Scheduled(cron = "0 1 10-23 * * 1-5") // 평일 10:01 ~ 23:01
-	@Scheduled(cron = "0 33,34,35 10-23 * * *") // 테스트를 위한 임시 적용
+	@Scheduled(cron = "0 48,50,52 10-23 * * *") // 테스트를 위한 임시 적용
 	public void processNoShowPenalties() {
 		log.info("Processing no-show penalties at {}", LocalDateTime.now());
 
