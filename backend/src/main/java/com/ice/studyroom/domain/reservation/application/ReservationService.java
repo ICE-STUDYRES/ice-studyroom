@@ -327,7 +327,7 @@ public class ReservationService {
 			scheduleRepository.findById(reservation.getSecondScheduleId()).ifPresent(Schedule::cancel);
 		}
 
-		reservation.cancelReservation();
+		reservation.markStatus(ReservationStatus.CANCELLED);
 		return new CancelReservationResponse(id);
 	}
 
