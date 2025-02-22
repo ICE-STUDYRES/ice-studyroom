@@ -444,7 +444,8 @@ const StudyRoomManage = () => {
                   <div>
                     <div className="text-sm text-gray-600 mb-1">예약자</div>
                   <div className="flex items-center gap-1">
-                    <span className="font-medium text-gray-900">{booking.userName}</span>
+                    <span className="font-medium text-gray-900">{booking.participants[0].name}</span>
+                    <span className="text-sm text-gray-500">({booking.participants[0].studentNum})</span>
                   </div>
                   </div>
 
@@ -473,9 +474,9 @@ const StudyRoomManage = () => {
               <span className="font-semibold text-slate-900">연장 안내</span>
             </div>
             <p className="text-sm text-gray-600">
-              연장은 예약 종료 10분 전부터 가능합니다.
-              <br />
-              (현재 예약: {booking.endTime} 종료 → {booking.extendDeadline}부터 연장 가능)
+              연장은 사용 종료 10분 전부터 가능합니다.
+              {/* <br />
+              (현재 예약: {booking.endTime} 종료 → {booking.extendDeadline}부터 연장 가능)  임시로 삭제*/}
             </p>
           </div>
         </div>
