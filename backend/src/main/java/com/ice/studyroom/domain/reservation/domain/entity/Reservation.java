@@ -88,23 +88,8 @@ public class Reservation {
 
 	// 정상 입실인지 지각인지 노쇼인지 판단하는 코드
 	public ReservationStatus checkAttendanceStatus(LocalDateTime now) {
-		if (scheduleDate == null) {
-			throw new IllegalStateException("Reservation scheduleDate 이 올바르게 설정되지 않았습니다.");
-		}
-		if(startTime == null) {
-			throw new IllegalStateException("Reservation startTime 이 올바르게 설정되지 않았습니다.");
-		}
-
-		if (endTime == null) {
-			throw new IllegalStateException("Reservation endTime 이 올바르게 설정되지 않았습니다.");
-		}
-
 		LocalDateTime startDateTime = LocalDateTime.of(scheduleDate, startTime);
 		LocalDateTime endDateTime = LocalDateTime.of(scheduleDate, endTime);
-
-		if (now == null) {
-			throw new IllegalArgumentException("현재 시간이 null입니다.");
-		}
 
 		long minutesDifference = Duration.between(startDateTime, now).toMinutes();
 		long minutesDurationOfReservation = Duration.between(startDateTime, endDateTime).toMinutes();
@@ -123,20 +108,17 @@ public class Reservation {
 		}
 	}
 
-	private void markStatus(ReservationStatus status) {
+	public void markStatus(ReservationStatus status) {
 		this.status = status;
-		this.enterTime = LocalDateTime.now();
 		this.updatedAt = LocalDateTime.now();
+		if(status != ReservationStatus.CANCELLED && status != ReservationStatus.NO_SHOW) {
+			this.enterTime = LocalDateTime.now();
+		}
 	}
 
 	public void extendReservation(Long secondScheduleId, LocalTime endTime) {
 		this.secondScheduleId = secondScheduleId;
 		this.endTime = endTime;
-		this.updatedAt = LocalDateTime.now();
-	}
-
-	public void cancelReservation() {
-		this.status = ReservationStatus.CANCELLED;
 		this.updatedAt = LocalDateTime.now();
 	}
 

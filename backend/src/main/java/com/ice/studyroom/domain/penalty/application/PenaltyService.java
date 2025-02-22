@@ -25,7 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 public class PenaltyService {
 
 	private final PenaltyRepository penaltyRepository;
-	private final MemberDomainService memberDomainService;
 	private final ReservationRepository reservationRepository;
 
 	@Transactional
@@ -45,17 +44,5 @@ public class PenaltyService {
 	private LocalDateTime calculatePenaltyEnd(int durationDays) {
 		LocalDate penaltyEndDate = LocalDate.now().plusDays(durationDays);
 		return LocalDateTime.of(penaltyEndDate, LocalTime.of(23, 59, 59)); // 23:59:59
-	}
-
-	@Transactional
-	public void checkReservationNoShow(Reservation reservation, LocalDateTime now) {
-		if (reservation.getStatus() == ReservationStatus.RESERVED
-			&& reservation.checkAttendanceStatus(now) == ReservationStatus.NO_SHOW) {
-
-			Member member = memberDomainService.getMemberByEmail(reservation.getUserEmail());
-			assignPenalty(member, reservation.getId(), PenaltyReasonType.NO_SHOW);
-			log.info("해당 유저가 노쇼로 인해 7일 패널티가 부여되었습니다. 이름 : {} 학번 : {}", member.getName(), member.getStudentNum());
-		}
-		log.info("Processed no-show for reservation: {}", reservation.getId());
 	}
 }
