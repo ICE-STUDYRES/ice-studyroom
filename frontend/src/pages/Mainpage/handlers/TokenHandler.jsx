@@ -22,7 +22,7 @@ export const useTokenHandler = () => {
             }
 
             const response = await axios.post(
-                '/api/users/refresh',
+                '/api/users/auth/refresh',
                 { },
                 {
                     headers: {

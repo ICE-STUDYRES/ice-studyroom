@@ -220,7 +220,7 @@ export const useMemberHandlers = () => {
             }
     
             const response = await axios.post(
-                '/api/users/logout',
+                '/api/users/auth/logout',
                 {}, 
                 {
                     headers: {
