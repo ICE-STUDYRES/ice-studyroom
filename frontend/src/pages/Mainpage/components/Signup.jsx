@@ -1,8 +1,9 @@
-import React from "react";
+import { React, useState } from "react";
 import logo from "../../../assets/images/hufslogo.png";
 import { useNavigate } from "react-router-dom";
 import { useMemberHandlers } from "../handlers/MemberHandlers";
 import { Home } from 'lucide-react';
+import TermsAndPrivacyModal  from "../components/TermsandPrivacy";
 
 const SignUpPage = () => {
     const {
@@ -20,6 +21,8 @@ const SignUpPage = () => {
     } = useMemberHandlers();
 
     const navigate = useNavigate();
+    const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+    const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
 
     return (
         <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
@@ -136,13 +139,34 @@ const SignUpPage = () => {
                                 required
                             />
                         </div>
+                        {/* 이용약관 동의 체크박스 & 모달 */}
+                        <div className="flex items-center space-x-2">
+                            <input 
+                                type="checkbox"
+                                id="terms"
+                                checked={isTermsAccepted}
+                                onChange={(e) => setIsTermsAccepted(e.target.checked)}
+                                disabled={!isTermsAccepted}
+                                className="w-4 h-4 border rounded"
+                            />
+                            <label htmlFor="terms" className="text-sm text-gray-600">
+                                <button 
+                                    type="button" 
+                                    onClick={() => setIsTermsModalOpen(true)} 
+                                    className="text-blue-500 hover:underline"
+                                >
+                                    이용약관 보기
+                                </button> 및 개인정보 처리방침에 동의합니다.
+                            </label>
+                        </div>
+
                         {signupError && (
                             <p className="text-red-500 text-sm">{signupError}</p>
                         )}
                         <button 
                             type="submit" 
                             className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-gray-400 disabled:hover:bg-gray-400"
-                            disabled={!isEmailVerified}
+                            disabled={!isEmailVerified || !isTermsAccepted}
                         >
                             회원가입
                         </button>
@@ -162,6 +186,14 @@ const SignUpPage = () => {
                     </button>
                 </div>
             </div>
+            {/* 이용약관 모달 */}
+            <TermsAndPrivacyModal  
+                isOpen={isTermsModalOpen} 
+                onClose={() => setIsTermsModalOpen(false)} 
+                onAccept={() => setIsTermsAccepted(true)}
+                onReject={() => setIsTermsAccepted(false)}
+                isTermsAccepted={isTermsAccepted}
+            />
         </div>
     );
 };
