@@ -80,7 +80,7 @@ public class MembershipController {
 
 		ResponseCookie refreshTokenCookie = ResponseCookie.from("refresh_token", jwtToken.getRefreshToken())
 			.httpOnly(true)   // JavaScript에서 접근 불가 (XSS 방어)
-			.secure(false)     // 배포 시 true로 변경 예정, HTTPS 환경에서만 사용 가능
+			.secure(true)     // 배포 시 true로 변경 예정, HTTPS 환경에서만 사용 가능
 			.sameSite("Strict") // CSRF 방어
 			.path("/api/users/refresh") // 특정 경로에서만 접근 가능
 			.maxAge(Duration.ofDays(7)) // 7일간 유지
