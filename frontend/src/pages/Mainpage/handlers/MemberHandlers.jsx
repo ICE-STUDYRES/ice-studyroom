@@ -36,7 +36,7 @@ export const useMemberHandlers = () => {
         return specialCharacterRegex.test(password);
     };
 
-    const handleLoginClick = () => navigate('/Signin');
+    const handleLoginClick = () => navigate('/auth/signin');
 
     const handleSignupInputChange = (e) => {
         const { name, value } = e.target;
@@ -70,7 +70,7 @@ export const useMemberHandlers = () => {
                 setSignupForm({
                     email: '', password: '', confirmPassword: '', name: '', studentNum: '', authenticationCode: '', isAuthenticated: false
                 });
-                navigate('/signin');
+                navigate('/auth/signin');
             } else {
                 addNotification('signup', 'error', response.data.message);
             }
