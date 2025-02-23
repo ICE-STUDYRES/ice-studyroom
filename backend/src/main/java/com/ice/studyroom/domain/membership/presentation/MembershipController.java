@@ -82,7 +82,7 @@ public class MembershipController {
 			.httpOnly(true)   // JavaScript에서 접근 불가 (XSS 방어)
 			.secure(true)     // 배포 시 true로 변경 예정, HTTPS 환경에서만 사용 가능
 			.sameSite("Strict") // CSRF 방어
-			.path("/api/users/login") // 특정 경로에서만 접근 가능
+			.path("/api/users/auth") // 특정 경로에서만 접근 가능
 			.maxAge(Duration.ofDays(7)) // 7일간 유지
 			.build();
 		response.addHeader(HttpHeaders.SET_COOKIE, refreshTokenCookie.toString());
@@ -95,7 +95,7 @@ public class MembershipController {
 	@Operation(summary = "토큰 재발급", description = "로그인 유지를 위한 토큰을 재발급해줍니다.")
 	@ApiResponse(responseCode = "200", description = "토큰 발급 성공")
 	@ApiResponse(responseCode = "500", description = "토큰 발급 실패")
-	@PostMapping("/refresh")
+	@PostMapping("/auth/refresh")
 	public ResponseEntity<ResponseDto<MemberLoginResponse>> refresh(
 		@CookieValue(value = "refresh_token") String refreshToken,
 		@RequestHeader("Authorization") String authorizationHeader) {
@@ -106,7 +106,7 @@ public class MembershipController {
 			.httpOnly(true)
 			.secure(true)
 			.sameSite("Strict")
-			.path("/api/users/refresh")
+			.path("/api/users/auth")
 			.maxAge(Duration.ofDays(7))
 			.build();
 
@@ -116,7 +116,7 @@ public class MembershipController {
 			.body(ResponseDto.of(MemberLoginResponse.of(jwtToken)));
 	}
 
-	@PostMapping("/logout")
+	@PostMapping("/auth/logout")
 	@Operation(summary = "로그아웃", description = "로그아웃 요청을 처리합니다.")
 	@ApiResponse(responseCode = "200", description = "로그아웃 성공")
 	@ApiResponse(responseCode = "500", description = "로그아웃 실패")
