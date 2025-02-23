@@ -180,7 +180,7 @@ const SignUpPage = () => {
 
                     <button 
                         className="w-full p-3 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-                        onClick={() => navigate("/signin")}
+                        onClick={() => navigate("/auth/signin")}
                     >
                         로그인
                     </button>

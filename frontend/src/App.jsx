@@ -22,10 +22,10 @@ function App() {
           <Route path="/adminpage" element={<Adminpage/>} />
           <Route path="/attendance" element={<AttendanceSystem/>} />
           <Route path="/reservation/manage" element={<StudyRoomManage/>} />
-          <Route path="/ReservationStatus" element={<ReservationStatus/>} />
-          <Route path="/MyReservationStatus" element={<MyReservationStatus/>}/>
-          <Route path="/Signin" element={<Signin/>}/>
-          <Route path="/Signup" element={<Signup/>}/>
+          <Route path="/reservation/status" element={<ReservationStatus/>} />
+          <Route path="/reservation/my-status" element={<MyReservationStatus/>}/>
+          <Route path="/auth/signin" element={<Signin/>}/>
+          <Route path="/auth/signup" element={<Signup/>}/>
         </Routes>
       </Router> 
     </Notification>
