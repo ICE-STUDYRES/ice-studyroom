@@ -31,7 +31,7 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
 		HttpServletResponse httpResponse = (HttpServletResponse)response;
 
 		String requestURI = httpRequest.getRequestURI();
-		boolean isRefreshTokenRequest = "/api/users/refresh".equals(requestURI);
+		boolean isRefreshTokenRequest = "/api/users/auth/refresh".equals(requestURI);
 
 		// 1. Request Header에서 JWT 토큰 추출
 		String token = resolveToken((HttpServletRequest)request);
