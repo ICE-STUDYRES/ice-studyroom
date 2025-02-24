@@ -127,16 +127,21 @@ public class ReservationService {
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"존재하지 않는 예약입니다."));
 
+		if(reservation.getStatus() == ReservationStatus.CANCELLED){
+			throw new BusinessException(StatusCode.BAD_REQUEST, "취소된 예약입니다.");
+		} else if(reservation.getStatus() == ReservationStatus.ENTRANCE || reservation.getStatus() == ReservationStatus.LATE){
+			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 입실처리 된 예약입니다.");
+		}
+
 		LocalDateTime now = LocalDateTime.now();
 		ReservationStatus status = reservation.checkAttendanceStatus(now);
 		reservation.markStatus(status);
 
 		if (status == ReservationStatus.RESERVED) {
-			throw new AttendanceException("출석 시간이 아닙니다.", HttpStatus.FORBIDDEN);
+			throw new BusinessException(StatusCode.BAD_REQUEST, "출석 시간이 아닙니다.");
 		} else if (status == ReservationStatus.NO_SHOW) {
-			throw new AttendanceException("출석 시간이 만료되었습니다.", HttpStatus.GONE);
+			throw new BusinessException(StatusCode.BAD_REQUEST, "출석 시간이 만료되었습니다.");
 		} else if(status == ReservationStatus.LATE){
-			//해당 멤버에게 패널티 부여
 			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(memberEmail)), reservationId, PenaltyReasonType.LATE);
 		}
 		return new QrEntranceResponse(status, member.getName(), member.getStudentNum());
