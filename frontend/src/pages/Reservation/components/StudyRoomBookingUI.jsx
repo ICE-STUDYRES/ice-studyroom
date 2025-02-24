@@ -27,6 +27,7 @@ const StudyRoomBookingUI = () => {
 
   const navigate = useNavigate();
 
+
   const getTimeRangeString = () => {
     if (selectedTimes.length === 0) return '시간을 선택해주세요';
     if (selectedTimes.length === 1) return selectedTimes[0];
@@ -65,7 +66,10 @@ const StudyRoomBookingUI = () => {
               return (
               <button
               key={room.id}
-              onClick={() => setSelectedRoom(room.name)}
+              onClick={() => {
+                setSelectedRoom(room.name);
+                setActiveTab('time');
+              }}
               className={`
                 w-[calc(100%-16px)] mx-2 rounded-2xl border transition-all
                 ${selectedRoom === room.name 
@@ -98,7 +102,7 @@ const StudyRoomBookingUI = () => {
                       </span>
                     </div>
                   </div>
-                </button>
+                </button> 
               );
             })}
           </div>
