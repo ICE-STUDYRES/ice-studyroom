@@ -267,12 +267,13 @@ export const useMemberHandlers = () => {
             }
     
             sessionStorage.clear();
-            // window.location.reload();
+            navigate('/');
         } catch (error) {
             console.error("Logout failed:", error);
             sessionStorage.clear();
-            // window.location.reload();
+            navigate('/');
         }
+        console.log(sessionStorage.getItem('accessToken'));
     };  
 
     return {
