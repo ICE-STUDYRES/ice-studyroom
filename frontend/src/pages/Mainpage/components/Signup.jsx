@@ -13,11 +13,13 @@ const SignUpPage = () => {
         verificationTimer,
         verificationMessage,
         signupError,
+        verificationError,
         isEmailVerified,
         handleSendVerification,
         formatTime,
         handleVerifyCode,
         verificationSuccess,
+        isSendingEmail
     } = useMemberHandlers();
 
     const navigate = useNavigate();
@@ -81,15 +83,30 @@ const SignUpPage = () => {
                                     placeholder="이메일을 입력해주세요"
                                     className="col-span-2 p-2.5 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
                                     required
+                                    disabled={isSendingEmail} // 🔹 이메일 전송 중이면 입력도 잠시 비활성화
                                 />
                                 <button
                                     type="button"
                                     onClick={() => handleSendVerification(signupForm.email)}
-                                    className="bg-blue-500 hover:bg-blue-600 text-white p-2.5 rounded-lg text-sm transition-colors font-medium"
+                                    className={`p-2.5 rounded-lg text-sm font-medium transition-colors ${
+                                        isSendingEmail
+                                            ? 'bg-gray-400 text-white cursor-not-allowed' // 🔹 비활성화 상태
+                                            : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                    }`}
+                                    disabled={isSendingEmail} // 🔹 전송 중에는 버튼 비활성화
                                 >
-                                    인증번호 전송
+                                    {isSendingEmail ? '메일 발송 중...' : '인증번호 전송'}
                                 </button>
                             </div>
+
+                            {/* 🔹 메일이 발송 중일 때 문구 추가 */}
+                            {isSendingEmail && (
+                                <p className="text-blue-500 text-sm mt-1">메일을 보내는 중입니다. 잠시만 기다려주세요...</p>
+                            )}
+                                {/* ⬇️ 인증 관련 오류 메시지 표시 ⬇️ */}
+                                {verificationError && (
+                                    <p className="text-red-500 text-sm mt-1">{verificationError}</p>
+                                )}
                             <div className="grid grid-cols-3 gap-2">
                                 <input
                                     type="text"
