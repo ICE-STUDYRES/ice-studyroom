@@ -101,5 +101,9 @@ public class MemberDomainService {
 		memberRepository.save(member);
 	}
 
+	public boolean isMemberPenalty(String email) {
+		Member member = getMemberByEmail(email);
+		return member.isPenalty();
+	}
 }
 
