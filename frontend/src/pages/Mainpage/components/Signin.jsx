@@ -8,7 +8,8 @@ const SignInPage = () => {
     const {
         loginForm,
         handleLogin,
-        handleLoginInputChange
+        handleLoginInputChange,
+        loginError
     } = useMemberHandlers();
     
     const navigate = useNavigate();
@@ -62,6 +63,12 @@ const SignInPage = () => {
                                 required
                             />
                         </div>
+
+                        {/* 🔹 로그인 오류 메시지 표시 */}
+                        {loginError && (
+                            <p className="text-red-500 text-sm mt-1">{loginError}</p>
+                        )}
+
                         <button 
                             type="submit" 
                             className="w-full bg-blue-500 text-white p-3 rounded-lg hover:bg-blue-600 transition-colors font-medium"
