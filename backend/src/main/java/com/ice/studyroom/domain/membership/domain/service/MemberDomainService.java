@@ -92,6 +92,10 @@ public class MemberDomainService {
 			throw new BusinessException(StatusCode.UNAUTHORIZED, "기존 비밀번호가 일치하지 않습니다.");
 		}
 
+		if(newPassword.equals(currentPassword)) {
+			throw new BusinessException(StatusCode.BAD_REQUEST, "기존 비밀번호와 새로운 비밀번호가 동일합니다.");
+		}
+
 		if (!newPassword.equals(confirmPassword)) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "새로운 비밀번호가 서로 일치하지 않습니다.");
 		}
