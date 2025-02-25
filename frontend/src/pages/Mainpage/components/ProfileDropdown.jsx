@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { User, LogOut, Key } from 'lucide-react';
-import { useMainpageHandlers } from '../handlers/MainpageHandlers';
+import { useTokenHandler } from "../handlers/TokenHandler";
 
 const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,8 +9,8 @@ const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
   const dropdownRef = useRef(null);
 
   const {
-    refreshTokens
-  } = useMainpageHandlers();
+    refreshTokens,
+  } = useTokenHandler();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -27,41 +27,44 @@ const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
 
   useEffect(() => {
     const fetchUserInfo = async () => {
-      let accessToken = sessionStorage.getItem('accessToken');
-      if (!accessToken) return;
-  
-      try {
-        let response = await fetch('/api/users', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${accessToken}`,
-            'Content-Type': 'application/json',
-          },
-        });
-  
-        if (response.status === 401) { // 토큰 만료
-          console.warn('토큰이 만료됨. 새로고침 시도.');
-          const newToken = await refreshTokens();
-          if (newToken) {
-            return fetchUserInfo(); // 새 토큰으로 재시도
-          } else {
-            console.error('토큰 갱신 실패. 로그아웃 필요.');
-            return;
-          }
+        let accessToken = sessionStorage.getItem('accessToken');
+        if (!accessToken) return;
+
+        try {
+            let response = await fetch('/api/users', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+
+            if (response.status === 401) {
+                console.warn('토큰이 만료됨. 새로고침 시도.');
+
+                accessToken = await refreshTokens();
+
+                if (accessToken) {
+                    return fetchUserInfo();
+                } else {
+                    console.error('토큰 갱신 실패. 로그아웃 필요.');
+                    return;
+                }
+            }
+
+            const result = await response.json();
+            if (result.code === 'S200' && result.data) {
+                setUserName(result.data.name);
+                setUserEmail(result.data.email);
+            }
+        } catch (error) {
+            console.error('🚨 사용자 정보 가져오기 실패:', error);
         }
-  
-        const result = await response.json();
-        if (result.code === 'S200' && result.data) {
-          setUserName(result.data.name);
-          setUserEmail(result.data.email);
-        }
-      } catch (error) {
-        console.error('사용자 정보 가져오기 실패:', error);
-      }
     };
 
     fetchUserInfo();
-  }, []);
+
+}, []);
 
   return (
     <div className="relative" ref={dropdownRef}>

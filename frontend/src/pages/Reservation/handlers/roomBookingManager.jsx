@@ -89,12 +89,8 @@ export const roomBookingManager = () => {
       endTime: selectedTimes[selectedTimes.length - 1].split("~")[1],
     };
 
-    console.log(requestData);
-    const roomData = bookedSlots[roomId]; 
-    const roomType = roomData?.roomType;
-    const apiEndpoint = roomType === "INDIVIDUAL" ? "/reservations/individual" : "/reservations/group";
-
-    const accessToken = sessionStorage.getItem("accessToken");
+    const apiEndpoint = bookedSlots[roomId]?.roomType === "INDIVIDUAL" ? "/reservations/individual" : "/reservations/group";
+    let accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
       addNotification('member', 'error');
       return;
@@ -110,8 +106,13 @@ export const roomBookingManager = () => {
         body: JSON.stringify(requestData),
       });
 
-      const responseData = await response.json();
+      if (response.status === 401) {
+        const newAccessToken = await refreshTokens();
+        if (!newAccessToken) return;
+        return handleReservation();
+      }
 
+      const responseData = await response.json();
       if (!response.ok || responseData.code !== "S200") {
         throw new Error(responseData.message);
       }
@@ -123,9 +124,8 @@ export const roomBookingManager = () => {
       addNotification("reservation", "error", error.message);
     }
   };
-
-  // Schedule 불러오기 및 상태 업데이트
-  const fetchSchedules = async (retry = true) => {
+  
+  const fetchSchedules = async () => {
     setLoading(true);
     try {
       let accessToken = sessionStorage.getItem("accessToken");
@@ -140,10 +140,10 @@ export const roomBookingManager = () => {
         },
       });
 
-      if (response.status === 401 && retry) {
-        accessToken = await refreshTokens();
-        if (accessToken) return fetchSchedules(false);
-        return;
+      if (response.status === 401) {
+        const newAccessToken = await refreshTokens();
+        if (!newAccessToken) return;
+        return fetchSchedules();
       }
 
       if (!response.ok) throw new Error("스케줄 정보를 가져오는 데 실패했습니다.");
@@ -153,66 +153,41 @@ export const roomBookingManager = () => {
         throw new Error(responseData.message || "알 수 없는 오류");
       }
 
-      // 데이터를 가공하여 상태 업데이트
       const mappedData = responseData.data.reduce((acc, item) => {
         let { roomNumber, roomType, startTime, endTime, id: scheduleId, available, currentRes, capacity, facilities, location } = item;
 
-        // ✅ facilities 및 location 자동 설정
         if (!facilities) {
-          if (roomNumber.startsWith("305")) {
-            facilities = ["PC", "화이트보드"];
-          } else if (roomNumber.startsWith("409")) {
-            facilities = ["화이트보드", "대형 모니터", "PC"];
-          } else {
-            facilities = [];
-          }
+          facilities = roomNumber.startsWith("305") ? ["PC", "화이트보드"] : roomNumber.startsWith("409") ? ["화이트보드", "대형 모니터", "PC"] : [];
         }
 
         if (!location) {
-            if (roomNumber.startsWith("305")) {
-                location = "3층";
-            } else if (roomNumber.startsWith("409")) {
-                location = "4층";
-            } else {
-                location = "알 수 없음";
-            }
+          location = roomNumber.startsWith("305") ? "3층" : roomNumber.startsWith("409") ? "4층" : "알 수 없음";
         }
-        
 
-        // `rooms` 목록 업데이트 (중복 방지)
         if (!acc.rooms.find((room) => room.name === roomNumber)) {
           acc.rooms.push({ id: roomNumber, name: roomNumber, capacity, facilities, location });
         }
 
-        // 시간 범위 변환 (예: "18:00~19:00")
         const timeRange = `${startTime.substring(0, 5)}~${endTime.substring(0, 5)}`;
 
-        // `bookedSlots`에 추가
         if (!acc.bookedSlots[roomNumber]) {
-          acc.bookedSlots[roomNumber] = { 
-            roomType, 
-            slots: {}, 
-            capacity
-          };
+          acc.bookedSlots[roomNumber] = { roomType, slots: {}, capacity };
         }
 
         acc.bookedSlots[roomNumber].slots[timeRange] = {
-          available: Boolean(available),  // 서버에서 오는 값을 그대로 유지
+          available: Boolean(available),
           scheduleId,
           current_res: currentRes ?? 0
         };
 
-        // `timeSlots`에 시간 추가 (중복 제거)
         if (!acc.timeSlots.includes(timeRange)) acc.timeSlots.push(timeRange);
 
         return acc;
       }, { bookedSlots: {}, timeSlots: [], rooms: [] });
 
-      // 상태 업데이트
       setBookedSlots(mappedData.bookedSlots);
       setTimeSlots([...new Set(mappedData.timeSlots)].sort());
       setRooms(mappedData.rooms);
-
     } finally {
       setLoading(false);
     }
@@ -220,50 +195,43 @@ export const roomBookingManager = () => {
 
   const fetchUserInfo = async (retry = true) => {
     try {
-      let accessToken = sessionStorage.getItem("accessToken");
-      if (!accessToken) {
-        addNotification('member', 'error');
-        return;
-      }
-  
-      const response = await fetch("/api/users", {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-  
-      if (response.status === 401 && retry) {
-        accessToken = await refreshTokens();
-        
-        if (accessToken) {
-          return fetchUserInfo(false); // 한 번만 재시도
-        } else {
-          console.error("Token refresh failed. Logging out.");
-          return;
+        let accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken) {
+            addNotification('member', 'error');
+            return;
         }
-      }
-  
-      if (!response.ok) throw new Error("사용자 정보를 가져오는 데 실패했습니다.");
-  
-      const responseData = await response.json();
-  
-      if (responseData.code !== "S200") {
-        throw new Error(responseData.message || "알 수 없는 오류");
-      }
-  
-      setUserInfo((prev) => ({
-        ...prev,
-        mainUser: {
-          name: responseData.data.name,
-          email: responseData.data.email,
-        },
-      }));
+
+        const response = await fetch("/api/users", {
+            method: "GET",
+            headers: {
+                Authorization: `Bearer ${accessToken}`,
+            },
+        });
+
+        if (response.status === 401 && retry) {
+          console.warn('토큰이 만료됨. 새로고침 시도.');
+            return handleTokenRefresh(fetchUserInfo);
+        }
+
+        if (!response.ok) throw new Error("사용자 정보를 가져오는 데 실패했습니다.");
+
+        const responseData = await response.json();
+        if (responseData.code !== "S200") {
+            throw new Error(responseData.message || "알 수 없는 오류");
+        }
+
+        setUserInfo((prev) => ({
+            ...prev,
+            mainUser: {
+                name: responseData.data.name,
+                email: responseData.data.email,
+            },
+        }));
     } catch (err) {
-      setError(err.message);
-      console.error("사용자 정보 오류:", err.message);
+        setError(err.message);
+        console.error("🚨 사용자 정보 오류:", err.message);
     }
-  };
+};
 
   useEffect(() => {
     fetchUserInfo();

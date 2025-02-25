@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../../Notification/Notification';
 import { usePenaltyHandlers } from './PenaltyHandlers.jsx';
+import { useTokenHandler } from "./TokenHandler";
 
 export const useMainpageHandlers = () => {
   const {
@@ -10,6 +11,10 @@ export const useMainpageHandlers = () => {
     setPenaltyReason,
     penaltyReasonMap,
   } = usePenaltyHandlers();
+
+    const {
+      refreshTokens,
+    } = useTokenHandler();
 
     const [showNotice, setShowNotice] = useState(false);
     const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
@@ -19,39 +24,54 @@ export const useMainpageHandlers = () => {
 
     useEffect(() => {
       const fetchUserData = async () => {
-        try {
-          const response = await axios.get('/api/users', {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`
-            }
-          });
-    
-          if (response.data && response.data.data) {
-            const { penaltyEndAt, penaltyReasonType } = response.data.data;
-    
-            if (penaltyEndAt) {
-              const endDate = new Date(penaltyEndAt);
-              const today = new Date();
-    
-              const formattedEndAt = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-              const remainingDays = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
-    
-              setPenaltyEndAt(`${formattedEndAt} (${remainingDays}일 남음)`);
-            } else {
-              setPenaltyEndAt("");
-            }
-    
-            setPenaltyReason(penaltyReasonMap[penaltyReasonType]);
+          try {
+              let accessToken = sessionStorage.getItem('accessToken');
+              if (!accessToken) {
+                  console.warn("❌ No access token. User needs to log in.");
+                  return;
+              }
+  
+              const response = await axios.get('/api/users', {
+                  headers: { Authorization: `Bearer ${accessToken}` }
+              });
+  
+              if (response.status === 401) {
+                console.warn('토큰이 만료됨. 새로고침 시도.');
+  
+                  accessToken = await refreshTokens();
+                  if (accessToken) {
+                      return fetchUserData();
+                  } else {
+                    console.error('토큰 갱신 실패. 로그아웃 필요.');
+                      return;
+                  }
+              }
+  
+              if (response.data && response.data.data) {
+                  const { penaltyEndAt, penaltyReasonType } = response.data.data;
+  
+                  if (penaltyEndAt) {
+                      const endDate = new Date(penaltyEndAt);
+                      const today = new Date();
+  
+                      const formattedEndAt = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+                      const remainingDays = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
+  
+                      setPenaltyEndAt(`${formattedEndAt} (${remainingDays}일 남음)`);
+                  } else {
+                      setPenaltyEndAt("");
+                  }
+  
+                  setPenaltyReason(penaltyReasonMap[penaltyReasonType]);
+              }
+          } catch (error) {
+              console.error("🚨 Error fetching user data:", error);
           }
-        } catch (error) {
-          console.error("Error fetching user data:", error);
-        }
       };
-    
-      if (sessionStorage.getItem('accessToken')) {
-        fetchUserData();
-      }
-    }, [accessToken]);
+  
+      fetchUserData();
+  
+  }, []);
 
     const navigate = useNavigate();  
     const handleReservationClick = () => {
@@ -83,21 +103,21 @@ export const useMainpageHandlers = () => {
     const handleQRClick = () => setShowQRModal(true);
     const handleCloseQRModal = () => setShowQRModal(false);
 
-  return {
-// 팝업
-    showNotice,
-    showPenaltyPopup,
-    showQRModal,
-    handleNoticeClick,
-    handleCloseNotice,
-    handlePenaltyClick,
-    handleClosePenaltyPopup,
-    handleQRClick,
-    handleCloseQRModal,
-// 페이지 이동
-    handleReservationClick,
-    handleReservationStatusClick,
-    handleMyReservationStatusClick,
-    handleReservationManageClick,
+    return {
+      // 팝업
+      showNotice,
+      showPenaltyPopup,
+      showQRModal,
+      handleNoticeClick,
+      handleCloseNotice,
+      handlePenaltyClick,
+      handleClosePenaltyPopup,
+      handleQRClick,
+      handleCloseQRModal,
+      // 페이지 이동
+      handleReservationClick,
+      handleReservationStatusClick,
+      handleMyReservationStatusClick,
+      handleReservationManageClick,
+    };
   };
-};

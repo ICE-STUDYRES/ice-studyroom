@@ -5,7 +5,6 @@ import { useNotification } from '../../Notification/Notification';
 
 export const useMemberHandlers = () => {
     const navigate = useNavigate();
-    const accessToken = sessionStorage.getItem('accessToken');
     const [signupForm, setSignupForm] = useState({
         email: '',
         password: '',
@@ -53,7 +52,7 @@ export const useMemberHandlers = () => {
       
     const handleSignup = async (e) => {
         e.preventDefault();
-        setSignupError(''); // 기존 오류 메시지 초기화
+        setSignupError('');
     
         if (!signupForm.email.endsWith('@hufs.ac.kr')) {
             setSignupError('학교 이메일(@hufs.ac.kr)만 사용 가능합니다.');
@@ -215,6 +214,7 @@ export const useMemberHandlers = () => {
 
     const handlePasswordChange = async (e) => {
         e.preventDefault();
+    
         if (passwordChangeForm.updatedPassword !== passwordChangeForm.updatedPasswordForCheck) {
             setPasswordChangeError('새 비밀번호가 일치하지 않습니다.');
             return;
@@ -222,12 +222,29 @@ export const useMemberHandlers = () => {
         if (!isValidPassword(passwordChangeForm.updatedPassword)) {
             setPasswordChangeError('새 비밀번호는 최소 8자 이상이며, 영문 소문자, 숫자, 특수문자(@$!%*?&)를 포함해야 합니다.');
             return;
-        }       
+        }
+    
         try {
-            const accessToken = sessionStorage.getItem('accessToken');
+            let accessToken = sessionStorage.getItem('accessToken');
+            if (!accessToken) {
+                console.warn("No access token found. Attempting refresh...");
+                accessToken = await refreshTokens();
+                if (!accessToken) return;
+            }
+    
             const response = await axios.patch('/api/users/password', passwordChangeForm, {
                 headers: { 'Authorization': `Bearer ${accessToken}` }
             });
+    
+            if (response.status === 401) {
+                const newAccessToken = await refreshTokens();
+                if (newAccessToken) {
+                    return handlePasswordChange(e);
+                } else {
+                    return;
+                }
+            }
+    
             if (response.data.code === 'S200') {
                 alert('비밀번호가 성공적으로 변경되었습니다.');
                 setShowPasswordChangePopup(false);
@@ -238,20 +255,23 @@ export const useMemberHandlers = () => {
                 });
             }
         } catch (error) {
+            console.error("Error changing password:", error);
             setPasswordChangeError('비밀번호 변경에 실패했습니다.');
         }
-    };
+    };    
 
     const handleLogout = async () => {
         try {
+            let accessToken = sessionStorage.getItem('accessToken');
+    
             if (!accessToken) {
-                // console.warn("No tokens found, clearing storage and redirecting.");
+                console.warn("No tokens found, clearing storage and redirecting.");
                 sessionStorage.clear();
                 navigate('/');
                 return;
             }
     
-            const response = await axios.post(
+            let response = await axios.post(
                 '/api/users/auth/logout',
                 {}, 
                 {
@@ -262,19 +282,36 @@ export const useMemberHandlers = () => {
                 }
             );
     
-            if (response.status !== 200) {  // response.ok 대신 response.status 사용
-                // console.warn("Logout request failed. Status:", response.status);
+            if (response.status === 401) { // 토큰 만료 시 새로고침 후 재요청
+                console.warn("Access token expired. Refreshing tokens...");
+                accessToken = await refreshTokens();
+    
+                if (accessToken) {
+                    console.log("Retrying logout with new token...");
+                    response = await axios.post(
+                        '/api/users/auth/logout',
+                        {}, 
+                        {
+                            headers: {
+                                'Authorization': `Bearer ${accessToken}`
+                            },
+                            withCredentials: true
+                        }
+                    );
+                }
             }
     
-            sessionStorage.clear();
-            navigate('/');
+            if (response.status !== 200) { 
+                console.warn("Logout request failed. Status:", response.status);
+            }
+    
         } catch (error) {
             console.error("Logout failed:", error);
+        } finally {
             sessionStorage.clear();
             navigate('/');
         }
-        console.log(sessionStorage.getItem('accessToken'));
-    };  
+    };
 
     return {
         //로그인 로그아웃
