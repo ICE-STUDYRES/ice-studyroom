@@ -91,10 +91,6 @@ export const roomBookingManager = () => {
 
     const apiEndpoint = bookedSlots[roomId]?.roomType === "INDIVIDUAL" ? "/reservations/individual" : "/reservations/group";
     let accessToken = sessionStorage.getItem("accessToken");
-    if (!accessToken) {
-      addNotification('member', 'error');
-      return;
-    }
 
     try {
       const response = await fetch("/api" + apiEndpoint, {
@@ -129,10 +125,6 @@ export const roomBookingManager = () => {
     setLoading(true);
     try {
       let accessToken = sessionStorage.getItem("accessToken");
-      if (!accessToken) {
-        addNotification('member', 'error');
-        return;
-      }
 
       const response = await fetch("/api/schedules", {
         headers: {
@@ -193,14 +185,9 @@ export const roomBookingManager = () => {
     }
   };
 
-  const fetchUserInfo = async (retry = true) => {
+  const fetchUserInfo = async () => {
     try {
         let accessToken = sessionStorage.getItem("accessToken");
-        if (!accessToken) {
-            addNotification('member', 'error');
-            return;
-        }
-
         const response = await fetch("/api/users", {
             method: "GET",
             headers: {
@@ -208,9 +195,10 @@ export const roomBookingManager = () => {
             },
         });
 
-        if (response.status === 401 && retry) {
-          console.warn('토큰이 만료됨. 새로고침 시도.');
-            return handleTokenRefresh(fetchUserInfo);
+        if (response.status === 401) {
+          const newAccessToken = await refreshTokens();
+          if (!newAccessToken) return;
+          return fetchUserInfo();
         }
 
         if (!response.ok) throw new Error("사용자 정보를 가져오는 데 실패했습니다.");
