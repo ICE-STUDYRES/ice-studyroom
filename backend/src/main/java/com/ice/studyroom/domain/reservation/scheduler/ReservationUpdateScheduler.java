@@ -24,7 +24,7 @@ public class ReservationUpdateScheduler {
 	private final ReservationRepository reservationRepository;
 
 	@Transactional
-	@Scheduled(cron = "0 49 10-23 * * 1-5")
+	@Scheduled(cron = "0 1 10-23 * * 1-5")
 	public void updateCompleteReservations(){
 
 		LocalDateTime now = LocalDateTime.now();
