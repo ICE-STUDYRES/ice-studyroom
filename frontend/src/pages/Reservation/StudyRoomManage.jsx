@@ -41,11 +41,11 @@ const StudyRoomManage = () => {
             }
           });
     
-          if (response.status === 401) { // Unauthorized 발생 시
+          if (response.status === 401) {
             console.warn('토큰이 만료됨. 새로고침 시도.');
             const newAccessToken = await refreshTokens();
             if (newAccessToken) {
-              return fetchBookingData(); // 새 토큰으로 다시 실행
+              return fetchBookingData();
             } else {
               console.error('토큰 갱신 실패. 로그아웃 필요.');
               return;
@@ -55,10 +55,11 @@ const StudyRoomManage = () => {
           const result = await response.json();
     
           if (result.code === 'S200' && result.data.length > 0) {
-            // ✅ `status === "RESERVED"` 또는 `reserved === true`인 예약만 필터링
             const reservedBookings = result.data.filter(
-              booking => booking.reservation?.status === "RESERVED" || booking.reservation?.reserved === true
-            );
+              booking => 
+                booking.reservation?.status === "ENTRANCE" || 
+                booking.reservation?.reserved === true
+            );            
     
             if (reservedBookings.length > 0) {
               const bookingData = getNearestBooking(reservedBookings);
@@ -77,7 +78,7 @@ const StudyRoomManage = () => {
                 });
               }
             } else {
-              setBooking({}); // 예약이 없으면 초기화
+              setBooking({});
             }
           }
         } catch (error) {
