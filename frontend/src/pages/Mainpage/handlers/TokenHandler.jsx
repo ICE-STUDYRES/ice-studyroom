@@ -1,33 +1,28 @@
 import axios from 'axios';
 import { useMemberHandlers } from './MemberHandlers.jsx';
 
+let isRefreshing = false;   // 🔹 현재 토큰 갱신 중인지 추적
+let refreshSubscribers = []; // 🔹 토큰이 갱신되면 대기 중인 요청을 실행
+
 export const useTokenHandler = () => {
     const { handleLogout } = useMemberHandlers();
 
-    const getRefreshTokenFromCookie = () => {
-        const cookies = document.cookie.split('; ');
-        const refreshTokenCookie = cookies.find(row => row.startsWith('refresh_token='));
-        return refreshTokenCookie ? refreshTokenCookie.split('=')[1] : null;
-    };
-
     const refreshTokens = async () => {
+        if (isRefreshing) {
+            return new Promise((resolve) => {
+                refreshSubscribers.push(resolve);
+            });
+        }
+
+        isRefreshing = true;
+
         try {
-            const refreshToken = getRefreshTokenFromCookie();
             const accessToken = sessionStorage.getItem('accessToken');
-
-            if (!refreshToken) {
-                console.warn("No refresh token found. Logging out.");
-                handleLogout();
-                return null;
-            }
-
             const response = await axios.post(
                 '/api/users/auth/refresh',
-                { },
+                {},
                 {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    },
+                    headers: { 'Authorization': `Bearer ${accessToken}` },
                     withCredentials: true
                 }
             );
@@ -41,15 +36,18 @@ export const useTokenHandler = () => {
             const { accessToken: newAccessToken } = response.data.data;
             sessionStorage.setItem('accessToken', newAccessToken);
 
+            // 🔹 대기 중이던 요청들 재실행
+            refreshSubscribers.forEach((callback) => callback(newAccessToken));
+            refreshSubscribers = [];
+
             console.log("Tokens refreshed successfully.");
             return newAccessToken;
         } catch (error) {
             console.error("Error refreshing token:", error.response?.data || error);
-
-            if (error.response?.status === 401) {
-                handleLogout();
-            }
+            handleLogout();
             return null;
+        } finally {
+            isRefreshing = false;
         }
     };
 
