@@ -82,7 +82,13 @@ export const useMainpageHandlers = () => {
       }
     };
     const handleMyReservationStatusClick = () => navigate('/reservation/my-status');
-    const handleReservationStatusClick = () => navigate('/reservation/status');
+    const handleReservationStatusClick = () => {
+      if (accessToken) {
+        navigate('/reservation/status');
+      } else {
+        addNotification('member', 'error');
+      }
+    };
     const handleReservationManageClick = () => {
       if (accessToken) {
         navigate('/reservation/manage');
