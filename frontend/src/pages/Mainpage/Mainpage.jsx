@@ -6,11 +6,11 @@ import ProfileDropdown from './components/ProfileDropdown';
 import { NoticePopup, PasswordChangePopup } from "./components/Popups.jsx";
 import { LogIn, Home, QrCode } from 'lucide-react';
 import alertImage from "../../assets/images/Alert.png";
+import { useTokenHandler } from "./handlers/TokenHandler";
 
 const MainPage = () => {
     const {
         showNotice,
-        refreshTokens,
         handleReservationClick,
         handleReservationStatusClick,
         handleMyReservationStatusClick,
@@ -36,6 +36,10 @@ const MainPage = () => {
         penaltyReason,
         penaltyEndAt,
       } = usePenaltyHandlers();
+
+      const {
+        refreshTokens,
+      } = useTokenHandler();
       
       const accessToken = sessionStorage.getItem('accessToken');
       const [recentReservation, setRecentReservation] = useState({
@@ -45,11 +49,14 @@ const MainPage = () => {
       const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
 
       useEffect(() => {
-        if (!accessToken) return;
-    
         const getRecentReservation = async () => {
             try {
-
+                let accessToken = sessionStorage.getItem('accessToken');
+                if (!accessToken) {
+                    console.warn("❌ No access token. User needs to log in.");
+                    return;
+                }
+    
                 let response = await fetch('/api/reservations/my/latest', {
                     method: 'GET',
                     headers: {
@@ -58,12 +65,16 @@ const MainPage = () => {
                     }
                 });
     
-                if (response.status === 401) { // 토큰 만료
-                    const newToken = await refreshTokens();
-                    if (newToken) {
-                        return getRecentReservation(); // 새 토큰으로 재시도
+                if (response.status === 401) {
+                  console.warn('토큰이 만료됨. 새로고침 시도.');
+                    
+                    accessToken = await refreshTokens();
+    
+                    if (accessToken) {
+                        return getRecentReservation();
                     } else {
-                        return;
+                      console.error('토큰 갱신 실패. 로그아웃 필요.');
+                      return;
                     }
                 }
     
@@ -77,12 +88,13 @@ const MainPage = () => {
                     setRecentReservation({ date: null, roomNumber: null });
                 }
             } catch (err) {
-                console.error("Failed to fetch recent reservation:", err);
+                console.error("🚨 Failed to fetch recent reservation:", err);
             }
         };
     
         getRecentReservation();
-    }, [accessToken]);
+    
+    }, []);
 
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
