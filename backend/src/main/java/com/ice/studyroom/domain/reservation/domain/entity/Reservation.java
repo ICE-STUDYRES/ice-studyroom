@@ -108,7 +108,8 @@ public class Reservation {
 	public void markStatus(ReservationStatus status) {
 		this.status = status;
 		this.updatedAt = LocalDateTime.now();
-		if(status != ReservationStatus.CANCELLED && status != ReservationStatus.NO_SHOW) {
+		if(status != ReservationStatus.CANCELLED && status != ReservationStatus.NO_SHOW
+			&& status != ReservationStatus.COMPLETED) {
 			this.enterTime = LocalDateTime.now();
 		}
 	}
