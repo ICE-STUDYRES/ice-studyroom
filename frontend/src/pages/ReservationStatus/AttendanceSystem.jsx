@@ -38,7 +38,7 @@ const QRAttendanceUI = () => {
             <CheckCircle className="w-32 h-32 text-green-500 mb-8" />
             
             <div className="mb-10">
-              <h2 className="text-6xl font-bold text-blue-800 mb-6">{studentData.name}</h2>
+              <h2 className="text-6xl font-bold text-gray-700 mb-6">{studentData.name}</h2>
               <p className="text-5xl text-green-600 font-semibold">출석했습니다</p>
             </div>
             
@@ -55,18 +55,18 @@ const QRAttendanceUI = () => {
       case 'complete-late':
         return (
           <div className="attendance-result py-16 flex flex-col items-center animate-fadeIn">
-            <CheckCircle className="w-32 h-32 text-yellow-500 mb-8" />
+            <CheckCircle className="w-32 h-32 text-yellow-400 mb-8" />
             
             <div className="mb-10">
-              <h2 className="text-6xl font-bold text-blue-800 mb-6">{studentData.name}</h2>
-              <p className="text-5xl text-yellow-600 font-semibold">지각했습니다</p>
+              <h2 className="text-6xl font-bold text-gray-700 mb-6">{studentData.name}</h2>
+              <p className="text-5xl text-yellow-500 font-semibold">지각했습니다</p>
             </div>
             
             <div className="text-2xl text-gray-600 mt-4">
               {currentTime}
             </div>
             
-            <p className="text-xl text-blue-600 mt-8">
+            <p className="text-xl text-yellow-500 mt-8">
               내 예약 현황에서 출석 현황을 확인해주세요
             </p>
           </div>

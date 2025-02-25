@@ -63,7 +63,7 @@ export const roomBookingManager = () => {
   };
 
   // 예약 처리
-  const handleReservation = async (updatedUserInfo) => {
+  const handleReservation = async () => {
     if (!selectedRoom || selectedTimes.length === 0 || !userInfo.mainUser.email) {
       addNotification("reservation", "missingFields");
       return;
