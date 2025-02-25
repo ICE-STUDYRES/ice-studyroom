@@ -49,7 +49,7 @@ const StudyRoomBookingUI = () => {
     switch (activeTab) {
       case 'room':
         return (
-          <div className="space-y-3">
+          <div className="space-y-3 pb-32">
             {rooms.map((room) => {
               const roomData = bookedSlots[room.name] || {};
               const roomType = roomData.roomType || "UNKNOWN"; 
@@ -68,7 +68,6 @@ const StudyRoomBookingUI = () => {
               key={room.id}
               onClick={() => {
                 setSelectedRoom(room.name);
-                setActiveTab('time');
               }}
               className={`
                 w-[calc(100%-16px)] mx-2 rounded-2xl border transition-all
