@@ -41,25 +41,30 @@ const AttendanceHandler = () => {
             body: JSON.stringify({ qrCode: qrData }),
           });
           
-          console.log(responseData);
-          const responseData = await response.json();
-          
+
+          let responseData;
+          const contentType = response.headers.get("content-type");
+      
+          if (contentType && contentType.includes("application/json")) {
+              responseData = await response.json();
+          } else {
+              responseData = await response.text(); // JSON이 아닐 경우 텍스트로 처리
+              console.warn("⚠️ 서버가 JSON이 아닌 응답을 반환함:", responseData);
+          }
+      
           // 현재 시간 설정
           updateCurrentTime();
           
           // API 응답을 받은 후에 상태 변경
-          if (response.status === 403) {
-            setStudentData({ name: "수업 시작 전", message: responseData.message });
-            setScanState('complete-error');
-          } else if (response.status === 401) {
-            setStudentData({ name: "만료된 QR", message: responseData.message });
+          if (response.status === 400) {
+            setStudentData({ name: "출석 오류", message: responseData.message});
             setScanState('complete-error');
           } else if (response.status === 200) {
-            if (responseData.data === "ENTRANCE") {
-              setStudentData({ name: responseData.studentName || "학생", studentId: responseData.studentId });
+            if (responseData.data.status === "ENTRANCE") {
+              setStudentData({ name: responseData.data.userName || "학생", studentId: responseData.data.userNumber });
               setScanState('complete-present');
-            } else if (responseData.data === "LATE") {
-              setStudentData({ name: responseData.studentName || "학생", studentId: responseData.studentId });
+            } else if (responseData.data.status === "LATE") {
+              setStudentData({ name: responseData.data.userName || "학생", studentId: responseData.data.userNumber });
               setScanState('complete-late');
             }
           } else {
@@ -70,7 +75,7 @@ const AttendanceHandler = () => {
           setSentQRCode(qrData);
           
         } catch (error) {
-          console.error("QR 인식 중 오류 발생:", error);
+
           setStudentData({ name: "오류 발생", message: "네트워크 오류" });
           setScanState('complete-error');
           updateCurrentTime();
@@ -124,7 +129,9 @@ const AttendanceHandler = () => {
     
     setCurrentTime(`${dateString} ${timeString}`);
   };
-  
+  useEffect(() => {
+}, [studentData]);
+
   const resetScanner = () => {
     setScanState('initial');
     setStudentData(null);
