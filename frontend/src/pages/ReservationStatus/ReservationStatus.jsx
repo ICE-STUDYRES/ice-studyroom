@@ -15,7 +15,12 @@ const ReservationStatus = () => {
 
   const fetchSchedules = async () => {
     try {
-      const response = await fetch('/api/schedules');
+      const accessToken = sessionStorage.getItem('accessToken')
+      const response = await fetch('/api/schedules', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch schedules');
       }
