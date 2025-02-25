@@ -57,6 +57,7 @@ const StudyRoomManage = () => {
           if (result.code === 'S200' && result.data.length > 0) {
             const reservedBookings = result.data.filter(
               booking => 
+                booking.reservation?.status === "RESERVED" || 
                 booking.reservation?.status === "ENTRANCE" || 
                 booking.reservation?.reserved === true
             );            
