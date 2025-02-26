@@ -15,7 +15,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -41,7 +40,7 @@ import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceR
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetReservationsResponse;
-import com.ice.studyroom.domain.reservation.presentation.dto.response.GetReservationsResponse.Participant;
+import com.ice.studyroom.domain.reservation.presentation.dto.response.ParticipantResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
 import com.ice.studyroom.global.exception.AttendanceException;
@@ -67,8 +66,23 @@ public class ReservationService {
 	//todo : N+1 문제 해결
 	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		// 최근 예약 가져오기
+		Optional<Reservation> recentReservation = reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(email);
+
+		// 최근 예약에서 scheduleId 추출 후 Schedule 조회
+		Schedule schedule = recentReservation
+			.map(Reservation::getFirstScheduleId) // scheduleId 가져오기
+			.flatMap(scheduleRepository::findById) // scheduleId로 조회
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
+
+		if (schedule.getRoomType().equals(RoomType.INDIVIDUAL)) {
+			return recentReservation
+				.map(reservation -> List.of(GetReservationsResponse.from(reservation, List.of()))) // 빈 리스트 반환
+				.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "최근 예약을 찾을 수 없습니다."));
+		}
+
 		List<Reservation> reservations = reservationRepository.findByUserEmail(email);
-		Map<String, List<Participant>> reservationParticipantsMap = new HashMap<>();
+		Map<String, List<ParticipantResponse>> reservationParticipantsMap = new HashMap<>();
 
 		for (Reservation reservation : reservations) {
 			String key = reservation.getRoomNumber() + "_" + reservation.getScheduleDate() + "_" + reservation.getStartTime();
@@ -77,9 +91,9 @@ public class ReservationService {
 				List<Reservation> sameReservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
 					reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
 
-				List<Participant> participants = sameReservations.stream()
+				List<ParticipantResponse> participants = sameReservations.stream()
 					.map(sameRes -> memberRepository.findByEmail(Email.of(sameRes.getUserEmail()))
-						.map(Participant::from)
+						.map(ParticipantResponse::from)
 						.orElse(null))
 					.filter(Objects::nonNull)
 					.collect(Collectors.toList());
