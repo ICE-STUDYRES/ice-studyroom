@@ -218,7 +218,7 @@ const StudyRoomBookingUI = () => {
                 {/* 개인 예약일 경우 안내 메시지 디자인 개선 */}
                 {isIndividual ? (
                   <div className="flex items-center justify-center p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 font-medium text-sm">
-                    🚫 개인 방에서는 참여자 추가가 불가능합니다.
+                    🚫 개인 예약용 방에서는 참여자 추가가 불가능합니다.
                   </div>
                 ) : (
                   <div className="space-y-4">
