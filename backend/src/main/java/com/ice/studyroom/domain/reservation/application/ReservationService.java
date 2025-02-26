@@ -342,7 +342,7 @@ public class ReservationService {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		if (!reservation.matchEmail(email)) {
-			throw new BusinessException(StatusCode.NOT_FOUND,"이전에 예약이 되지 않았습니다.");
+			throw new BusinessException(StatusCode.NOT_FOUND, "이전에 예약이 되지 않았습니다.");
 		}
 
 		LocalDateTime now = LocalDateTime.now();
@@ -351,7 +351,7 @@ public class ReservationService {
 		if (now.isAfter(endTime)) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "연장 가능한 시간이 지났습니다.");
 		} else if (now.isBefore(endTime.minusMinutes(10))) {
-			throw new BusinessException(StatusCode.BAD_REQUEST,"연장은 퇴실 시간 10분 전부터 가능합니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "연장은 퇴실 시간 10분 전부터 가능합니다.");
 		}
 
 		//방 번호, 오늘 날짜, 시작하는 시간으로 다음 스케줄을 찾는다.
@@ -363,7 +363,7 @@ public class ReservationService {
 		}
 
 		if (!nextSchedule.isCurrentResLessThanCapacity() || !nextSchedule.isAvailable()) {
-			throw new BusinessException(StatusCode.BAD_REQUEST,"이미 예약이 완료된 스터디룸입니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 예약이 완료된 스터디룸입니다.");
 		}
 
 		//요청한 예약과 동일한 예약을 모두 가져온다.
@@ -379,8 +379,14 @@ public class ReservationService {
 				throw new BusinessException(StatusCode.FORBIDDEN, "패널티가 있는 멤버로 인해 연장이 불가능합니다.");
 			}
 		}
-
 		if (nextSchedule.getRoomType() == RoomType.GROUP) {
+			for (Reservation res : reservations) {
+				//1명이라도 입실하지 않은 경우
+				if(res.getStatus() == ReservationStatus.RESERVED){
+					throw new BusinessException(StatusCode.BAD_REQUEST, "입실 처리 되어있지 않은 유저가 있어 연장이 불가능합니다.");
+				}
+			}
+
 			for (Reservation res : reservations) {
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 				reservationRepository.save(res);
@@ -389,8 +395,10 @@ public class ReservationService {
 			nextSchedule.reserve();
 			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + reservationEmails.size());
 			scheduleRepository.save(nextSchedule);
-
 		}else{
+			if(reservation.getStatus() == ReservationStatus.RESERVED){
+				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 연장은 입실 후 가능합니다.");
+			}
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 			reservationRepository.save(reservation);
 			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + 1);
