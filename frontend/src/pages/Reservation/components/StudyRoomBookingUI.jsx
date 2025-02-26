@@ -175,41 +175,52 @@ const StudyRoomBookingUI = () => {
           </div>
         );
       
-          case 'info':
-            if (!selectedRoom || selectedTimes.length === 0) {
-              return (
-                <div className="text-center py-8 text-gray-500">
-                  스터디룸과 시간을 먼저 선택해주세요
-                </div>
-              );
-            }
-    
-            const maxParticipants = rooms.find(room => room.name === selectedRoom)?.capacity - 1 || 0;
-    
+        case 'info':
+          if (!selectedRoom || selectedTimes.length === 0) {
             return (
-              <div className="space-y-6 p-4">
-                <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900">예약자 정보</h3>
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      value={userInfo.mainUser.name}
-                      readOnly
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
-                      placeholder="이름"
-                    />
-                    <input
-                      type="text"
-                      value={userInfo.mainUser.email}
-                      readOnly
-                      className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
-                      placeholder="이메일"
-                    />
-                  </div>
+              <div className="text-center py-8 text-gray-500">
+                스터디룸과 시간을 먼저 선택해주세요
+              </div>
+            );
+          }
+        
+          // 방 데이터 가져오기
+          const roomData = bookedSlots[selectedRoom] || {};
+          const isIndividual = roomData?.roomType === "INDIVIDUAL"; // 방 타입이 개인인지 확인
+          const maxParticipants = isIndividual ? 0 : (roomData?.capacity - 1 || 0);
+        
+          return (
+            <div className="space-y-6 p-4">
+              <div className="space-y-6">
+                <h3 className="text-lg font-bold text-slate-900">예약자 정보</h3>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={userInfo.mainUser.name}
+                    readOnly
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
+                    placeholder="이름"
+                  />
+                  <input
+                    type="text"
+                    value={userInfo.mainUser.email}
+                    readOnly
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2 bg-gray-100 text-gray-500 cursor-not-allowed"
+                    placeholder="이메일"
+                  />
                 </div>
-    
-                <div className="space-y-6">
-                  <h3 className="text-lg font-bold text-slate-900">참여자 정보</h3>
+              </div>
+        
+              {/* 참여자 정보 */}
+              <div className="space-y-6">
+                <h3 className="text-lg font-bold text-slate-900">참여자 정보</h3>
+                
+                {/* 개인 예약일 경우 안내 메시지 디자인 개선 */}
+                {isIndividual ? (
+                  <div className="flex items-center justify-center p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 font-medium text-sm">
+                    🚫 개인 방에서는 참여자 추가가 불가능합니다.
+                  </div>
+                ) : (
                   <div className="space-y-4">
                     {userInfo.participants.map((participant, index) => (
                       <div key={index} className="space-y-2 relative">
@@ -248,31 +259,39 @@ const StudyRoomBookingUI = () => {
                       </div>
                     ))}
                   </div>
-    
-                  {userInfo.participants.length < maxParticipants && (
-                    <button
-                      onClick={() =>
-                        setUserInfo({
-                          ...userInfo,
-                          participants: [...userInfo.participants, { name: '', email: '' }],
-                        })
-                      }
-                      className="w-full py-2 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-gray-400 hover:text-gray-600 transition-colors"
-                    >
-                      + 참여자 추가
-                    </button>
-                  )}
-                </div>
-    
-                {/* 예약하기 버튼 (이전에는 하단에 있던 버튼을 여기로 이동) */}
-                <button
-                  onClick={handleReservation}
-                  className="w-full bg-slate-900 text-white py-3 text-sm font-medium rounded-xl hover:bg-slate-800 transition-colors"
-                >
-                  예약하기
-                </button>
+                )}
+        
+                {/* 참여자 추가 버튼 (개인 예약 방에서는 아예 숨김) */}
+                {!isIndividual && (
+                  <button
+                    onClick={() =>
+                      setUserInfo({
+                        ...userInfo,
+                        participants: [...userInfo.participants, { name: '', email: '' }],
+                      })
+                    }
+                    disabled={userInfo.participants.length >= maxParticipants}
+                    className={`
+                      w-full py-2 border-2 border-dashed rounded-lg text-gray-500 transition-colors
+                      ${userInfo.participants.length >= maxParticipants 
+                        ? "cursor-not-allowed border-gray-300 text-gray-400 bg-gray-100" 
+                        : "hover:border-gray-400 hover:text-gray-600"}
+                    `}
+                  >
+                    + 참여자 추가
+                  </button>
+                )}
               </div>
-            );
+        
+              {/* 예약하기 버튼 */}
+              <button
+                onClick={handleReservation}
+                className="w-full bg-slate-900 text-white py-3 text-sm font-medium rounded-xl hover:bg-slate-800 transition-colors"
+              >
+                예약하기
+              </button>
+            </div>
+          );
     
           default:
             return null;
