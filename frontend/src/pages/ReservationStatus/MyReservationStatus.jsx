@@ -6,8 +6,10 @@ import { QRCodeCanvas } from 'qrcode.react';
 import useQRCodeFetcher from '../Mainpage/components/QRCodeFetcher';
 import { useTokenHandler } from "../Mainpage/handlers/TokenHandler";
 import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
+import { useNotification } from '../Notification/Notification';
 
 const MyReservationStatus = () => {
+  const { addNotification } = useNotification();
   const {
     showQRModal,
     handleQRClick,
@@ -28,7 +30,6 @@ const MyReservationStatus = () => {
   const [error, setError] = useState(null);
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
   const { qrCode, error: qrError, loading: qrLoading} = useQRCodeFetcher(resId);
-
 
   useEffect(() => {
     fetchMyReservations();
@@ -57,6 +58,11 @@ const MyReservationStatus = () => {
             } else {
                 console.error("❌ Token refresh failed. Logging out.");
             }
+        }
+
+        if (response.status === 403) {
+          navigate('/');
+          addNotification("penalty", "error");
         }
 
         if (!response.ok) {
