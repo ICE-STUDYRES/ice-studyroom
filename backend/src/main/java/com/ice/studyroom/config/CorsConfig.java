@@ -14,7 +14,7 @@ public class CorsConfig {
 			@Override
 			public void addCorsMappings(CorsRegistry registry) {
 				registry.addMapping("/**")
-					.allowedOriginPatterns("*")
+					.allowedOriginPatterns("https://ice-studyroom.com")
 					.allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
 					.allowedHeaders("*")
 					.allowCredentials(true);
