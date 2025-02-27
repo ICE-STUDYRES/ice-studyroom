@@ -25,14 +25,11 @@ public class PenaltyCheckInterceptor implements HandlerInterceptor {
 		IOException {
 		String authorizationHeader = request.getHeader("Authorization");
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		if(request.getMethod().equals("OPTIONS")){
-			return true;
-		}
 
 		if(memberDomainService.isMemberPenalty(email)){
 			log.info("PenaltyCheckInterceptor 작동 - 이메일 : {} 이 제재를 받은 상태입니다.", email);
 			log.info("url : {}", request.getRequestURI());
-			throw new BusinessException(StatusCode.UNAUTHORIZED, "제재를 받은 사용자입니다.");
+			throw new BusinessException(StatusCode.PENALIZED_USER, "제재를 받은 사용자입니다.");
 		}
 		return true;
 	}
