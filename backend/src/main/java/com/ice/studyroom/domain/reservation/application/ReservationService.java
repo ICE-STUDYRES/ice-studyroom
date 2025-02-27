@@ -66,20 +66,6 @@ public class ReservationService {
 	//todo : N+1 문제 해결
 	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		// 최근 예약 가져오기
-		Optional<Reservation> recentReservation = reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(email);
-
-		// 최근 예약에서 scheduleId 추출 후 Schedule 조회
-		Schedule schedule = recentReservation
-			.map(Reservation::getFirstScheduleId) // scheduleId 가져오기
-			.flatMap(scheduleRepository::findById) // scheduleId로 조회
-			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
-
-		if (schedule.getRoomType().equals(RoomType.INDIVIDUAL)) {
-			return recentReservation
-				.map(reservation -> List.of(GetReservationsResponse.from(reservation, List.of()))) // 빈 리스트 반환
-				.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "최근 예약을 찾을 수 없습니다."));
-		}
 
 		List<Reservation> reservations = reservationRepository.findByUserEmail(email);
 		Map<String, List<ParticipantResponse>> reservationParticipantsMap = new HashMap<>();
@@ -88,17 +74,24 @@ public class ReservationService {
 			String key = reservation.getRoomNumber() + "_" + reservation.getScheduleDate() + "_" + reservation.getStartTime();
 
 			if (!reservationParticipantsMap.containsKey(key)) {
-				List<Reservation> sameReservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
-					reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
-
-				List<ParticipantResponse> participants = sameReservations.stream()
-					.map(sameRes -> memberRepository.findByEmail(Email.of(sameRes.getUserEmail()))
-						.map(ParticipantResponse::from)
-						.orElse(null))
-					.filter(Objects::nonNull)
-					.collect(Collectors.toList());
-
-				reservationParticipantsMap.put(key, participants);
+				Schedule schedule = scheduleRepository.findById(reservation.getFirstScheduleId())
+					.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
+				if (schedule.getRoomType() == RoomType.GROUP) {
+					List<Reservation> sameReservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
+						reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
+					List<ParticipantResponse> participants = sameReservations.stream()
+						.map(sameRes -> memberRepository.findByEmail(Email.of(sameRes.getUserEmail()))
+							.map(ParticipantResponse::from)
+							.orElse(null))
+						.filter(Objects::nonNull)
+						.collect(Collectors.toList());
+					reservationParticipantsMap.put(key, participants);
+				}
+				// 그룹예약인지 개인 예약인지 확인
+				// 그룹 예약이면 findByFirstScheduleId
+				// 참여자를 찾기 위해서 아래 로직이 수행됨
+				// 개인 예약이면
+				// 참여자를 찾을 필요가 없다.
 			}
 		}
 
