@@ -50,6 +50,11 @@ const StudyRoomManage = () => {
               return;
             }
           }
+
+          if (response.status === 403) {
+            navigate('/');
+            addNotification("penalty", "error");
+          }
     
           const result = await response.json();
     
