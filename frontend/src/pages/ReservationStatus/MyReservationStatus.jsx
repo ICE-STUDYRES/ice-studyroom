@@ -173,7 +173,7 @@ const MyReservationStatus = () => {
                   <Clock className="w-4 h-4 text-gray-400" />
                   <span>{reservation.startTime.slice(0, 5)}-{reservation.endTime.slice(0, 5)}</span>
                   <span className={
-                    ['RESERVED', 'ENTRANCE'].includes(status) ? 'text-blue-700' :
+                    ['RESERVED', 'ENTRANCE', 'COMPLETED'].includes(status) ? 'text-blue-700' :
                     ['CANCELLED', 'NO_SHOW', 'LATE'].includes(status) ? 'text-red-500' :
                     'text-gray-700'                    
                   }>
@@ -182,6 +182,7 @@ const MyReservationStatus = () => {
                     status === 'NO_SHOW' ? '노쇼' :
                     status === 'LATE' ? '지각' :
                     status == 'ENTRANCE' ? '출석됨' :
+                    status == 'COMPLETED' ? '정상 출석' :
                     '알 수 없음'}
                   </span>
                 </div>
@@ -211,7 +212,7 @@ const MyReservationStatus = () => {
             ) : qrCode ? (
               <>
               <QRCodeCanvas 
-                value={qrCode} // ✅ QR코드 데이터 적용
+                value={qrCode} 
                 size={256} 
                 level={"H"} 
                 includeMargin={true} 
