@@ -9,15 +9,15 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 public class CorsConfig {
 	@Bean
 	public WebMvcConfigurer corsConfigurer() {
-		// todo : 추후 front 도메인으로 변경 필요
 		return new WebMvcConfigurer() {
 			@Override
 			public void addCorsMappings(CorsRegistry registry) {
 				registry.addMapping("/**")
-					.allowedOriginPatterns("*")
+					.allowedOrigins("https://ice-studyroom.com")
 					.allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
 					.allowedHeaders("*")
-					.allowCredentials(true);
+					.allowCredentials(true)
+					.exposedHeaders("Authorization", "Content-Type");
 			}
 		};
 	}
