@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { ChevronLeft, LogOut, Clock, Users, ChevronDown, ChevronUp } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
+import { useNotification } from '../Notification/Notification';
 
 const ReservationStatus = () => {
+  const { addNotification } = useNotification();
   const navigate = useNavigate();
   const [expandedRooms, setExpandedRooms] = useState({});
   const [schedules, setSchedules] = useState([]);
@@ -21,6 +23,12 @@ const ReservationStatus = () => {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+
+      if (response.status === 403) {
+        navigate('/');
+        addNotification("penalty", "error");
+      }
+
       if (!response.ok) {
         throw new Error('Failed to fetch schedules');
       }

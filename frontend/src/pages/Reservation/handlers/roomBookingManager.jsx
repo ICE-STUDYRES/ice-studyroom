@@ -138,6 +138,11 @@ export const roomBookingManager = () => {
         return fetchSchedules();
       }
 
+      if (response.status === 403) {
+        navigate('/');
+        addNotification("penalty", "error");
+      }
+
       if (!response.ok) throw new Error("스케줄 정보를 가져오는 데 실패했습니다.");
 
       const responseData = await response.json();
