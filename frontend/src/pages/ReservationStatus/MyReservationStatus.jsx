@@ -29,10 +29,6 @@ const MyReservationStatus = () => {
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
   const { qrCode, error: qrError, loading: qrLoading} = useQRCodeFetcher(resId);
 
-  const handleQRScannerClick = () => {
-    navigate('/attendance');
-  };
-
 
   useEffect(() => {
     fetchMyReservations();
@@ -138,13 +134,6 @@ const MyReservationStatus = () => {
           </button>
           <div className="flex items-center gap-2">
             <p className="text-sm text-gray-500">스터디룸 입실 시 QR코드를 스캔해주세요</p>
-            <button 
-              onClick={handleQRScannerClick}
-              className="flex items-center gap-1 px-3 py-1 text-sm text-gray-600 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors"
-            >
-              QR스캐너
-              <Scan className="w-4 h-4" />
-            </button>
           </div>
         </div>
       </div>
