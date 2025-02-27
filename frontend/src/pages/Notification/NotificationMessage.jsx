@@ -3,6 +3,13 @@ import { CheckCircle, Clock, XCircle, UserPlus } from 'lucide-react';
 
 //  알림 메시지 (카테고리별 success / error)
 export const NOTIFICATION_MESSAGES = {
+  penalty: {
+    error: {
+      type: 'penalty',
+      title: '접근 제한',
+      description: '패널티 해제 후 이용 가능합니다',
+    }
+  },
   member: {
     error: {
       type: 'member',
