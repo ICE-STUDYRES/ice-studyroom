@@ -20,7 +20,6 @@ const StudyRoomManage = () => {
     date: '',
     time: '',
     userName: '',
-    userEmail: '',
     participants: [{ studentNum: '', name: '' }],
     endTime: '',
     extendDeadline: '',
@@ -71,7 +70,6 @@ const StudyRoomManage = () => {
                   date: bookingData.scheduleDate || '',
                   time: `${getFormattedTime(bookingData.startTime)}~${getFormattedTime(bookingData.endTime)}`,
                   userName: bookingData.userName || '',
-                  userEmail: bookingData.userEmail || '',
                   userId: bookingData.studentId || '',
                   participants: Array.isArray(bookingData.participants) ? bookingData.participants : [],
                   endTime: getFormattedTime(bookingData.endTime),
@@ -97,11 +95,9 @@ const StudyRoomManage = () => {
     const now = new Date();
     const [endHour, endMinute] = booking.endTime.split(':').map(Number);
   
-    // 연장 가능 시작 시간 (예약 종료 10분 전)
     const extensionStartTime = new Date();
     extensionStartTime.setHours(endHour, endMinute - 10, 0, 0);
   
-    // 예약 종료 시간
     const extensionEndTime = new Date();
     extensionEndTime.setHours(endHour, endMinute, 0, 0);
   
@@ -117,7 +113,6 @@ const StudyRoomManage = () => {
       return [];
     }
   
-    // 연장 시간 (종료 시간 +1시간)
     const extendedHour = endHour + 1;
     const startTime = `${String(endHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
     const endTime = `${String(extendedHour).padStart(2, '0')}:${String(endMinute).padStart(2, '0')}`;
@@ -129,7 +124,7 @@ const StudyRoomManage = () => {
 
   const getFormattedTime = (time) => {
     if (!time) return '';
-    return time.slice(0, 5); // "HH:MM:SS" → "HH:MM"
+    return time.slice(0, 5); 
   };
 
   const getExtendDeadline = (endTime) => {
@@ -137,7 +132,6 @@ const StudyRoomManage = () => {
   
     let [endHour, endMinute] = endTime.split(':').map(Number);
   
-    // 10분 전으로 계산
     endMinute -= 10;
     if (endMinute < 0) {
       endMinute += 60;
@@ -153,7 +147,7 @@ const StudyRoomManage = () => {
     const now = new Date();
   
     return reservations
-      .map(({ reservation, participants }) => { // 🔥 `reservation` 안의 값 추출
+      .map(({ reservation, participants }) => { 
         if (!reservation) {
           console.warn("⚠️ reservation 객체가 없습니다:", reservation);
           return null;
@@ -175,11 +169,12 @@ const StudyRoomManage = () => {
           ...reservation, 
           startTimeObj: startTime, 
           endTimeObj: endTime,
-          participants // 🔥 `participants`도 함께 반환
+          participants,
+          userName: reservation.userName
         };
       })
-      .filter(booking => booking && booking.endTimeObj >= now) // 🔥 유효한 데이터만 필터링
-      .sort((a, b) => a.startTimeObj - b.startTimeObj)[0]; // 🔥 가장 가까운 예약 반환
+      .filter(booking => booking && booking.endTimeObj >= now) 
+      .sort((a, b) => a.startTimeObj - b.startTimeObj)[0]; 
   };
   
 
@@ -202,10 +197,10 @@ const StudyRoomManage = () => {
       console.log("예약 취소 응답:", response);
   
       if (response.data?.code === "S200") {
-        setShowCancelConfirm(false); // 모달 닫기
-        setBooking({}); // 예약 데이터 초기화
+        setShowCancelConfirm(false); 
+        setBooking({}); 
         addNotification('cancellation', 'success');
-        navigate("/"); // 예약 목록으로 이동
+        navigate("/"); 
       } else {
         alert("예약 취소 실패: " + (response.data?.message || "알 수 없는 오류"));
       }
@@ -213,14 +208,11 @@ const StudyRoomManage = () => {
       console.error("예약 취소 오류:", error);
   
       if (error.response) {
-        // 🔥 서버에서 응답을 보내온 경우 (400, 500 등)
         const errorMessage = error.response.data?.message || "예약 취소 중 오류가 발생했습니다.";
         alert(errorMessage);
       } else if (error.request) {
-        // 🔥 요청이 보내졌으나 응답을 받지 못한 경우
         alert("서버 응답이 없습니다. 네트워크 상태를 확인해주세요.");
       } else {
-        // 🔥 기타 에러
         alert("알 수 없는 오류가 발생했습니다. 다시 시도해주세요.");
       }
     }
@@ -239,10 +231,10 @@ const StudyRoomManage = () => {
         }
       );
   
-      if (response.status === 401) { // Unauthorized 발생 시
+      if (response.status === 401) { 
         const newAccessToken = await refreshTokens();
         if (newAccessToken) {
-          return extendReservation(); // 새 토큰으로 다시 실행
+          return extendReservation(); 
         } else {
           console.error('토큰 갱신 실패. 로그아웃 필요.');
           return;
@@ -263,28 +255,28 @@ const StudyRoomManage = () => {
       alert("진행 중인 예약이 없습니다.");
       return;
     }
-    setShowCancelConfirm(true); // 바로 모달을 띄움
+    setShowCancelConfirm(true); 
   };
 
   const isPastReservation = () => {
-    if (!booking.time || !booking.date) return true; // 예약 정보가 없으면 비활성화
+    if (!booking.time || !booking.date) return true; 
   
     const now = new Date();
-    const [startHour, startMinute] = booking.time.split("~")[0].split(":").map(Number); // 예약 시작 시간
+    const [startHour, startMinute] = booking.time.split("~")[0].split(":").map(Number); 
   
     const reservationStartTime = new Date(booking.date);
     reservationStartTime.setHours(startHour, startMinute, 0, 0);
   
-    return now >= reservationStartTime; // 현재 시간이 예약 시작 시간을 넘었으면 true (비활성화)
+    return now >= reservationStartTime; 
   };
 
   const CancelConfirmation = () => {
     const now = new Date();
-  const [startHour, startMinute] = booking.time.split("~")[0].split(":").map(Number); // 예약 시작 시간 가져오기
+  const [startHour, startMinute] = booking.time.split("~")[0].split(":").map(Number);
   const startTime = new Date(booking.date);
   startTime.setHours(startHour, startMinute, 0, 0);
 
-  const timeDifference = (startTime - now) / (1000 * 60); // 분 단위 차이 계산
+  const timeDifference = (startTime - now) / (1000 * 60);
   return (
     <div 
       className="fixed inset-0 bg-black/30 z-40 flex items-center justify-center"
@@ -323,8 +315,7 @@ const StudyRoomManage = () => {
               <div>
                 <div className="text-sm text-gray-600 mb-1">예약자</div>
                 <div className="flex items-center gap-1">
-                  <span className="font-medium text-gray-900">{booking.participants[0].name}</span>
-                  <span className="text-sm text-gray-500">({booking.participants[0].studentNum})</span>
+                  <span className="font-medium text-gray-900">{booking.userName}</span>
                 </div>
               </div>
               
@@ -342,7 +333,6 @@ const StudyRoomManage = () => {
             </div>
           </div>
 
-          {/* 🔥 예약 시작 1시간 미만이면 패널티 경고 메시지 추가 (삽입 위치) */}
           {timeDifference < 60 && (
             <p className="text-sm text-red-500 text-center font-medium">
               현재 예약 시작까지 1시간이 채 남지 않았습니다.<br />
@@ -375,14 +365,12 @@ const StudyRoomManage = () => {
   );
 };
 
-  // 현재 날짜를 가져오는 함수
   const getCurrentDate = () => {
     const today = new Date();
     const year = today.getFullYear();
     const month = String(today.getMonth() + 1).padStart(2, '0');
     const day = String(today.getDate()).padStart(2, '0');
     
-    // 요일 배열
     const days = ['일', '월', '화', '수', '목', '금', '토'];
     const dayName = days[today.getDay()];
     
@@ -446,8 +434,7 @@ const StudyRoomManage = () => {
                   <div>
                     <div className="text-sm text-gray-600 mb-1">예약자</div>
                   <div className="flex items-center gap-1">
-                    <span className="font-medium text-gray-900">{booking.participants[0].name}</span>
-                    <span className="text-sm text-gray-500">({booking.participants[0].studentNum})</span>
+                    <span className="font-medium text-gray-900">{booking.userName}</span>
                   </div>
                   </div>
 
@@ -477,8 +464,6 @@ const StudyRoomManage = () => {
             </div>
             <p className="text-sm text-gray-600">
               연장은 사용 종료 10분 전부터 가능합니다.
-              {/* <br />
-              (현재 예약: {booking.endTime} 종료 → {booking.extendDeadline}부터 연장 가능)  임시로 삭제*/}
             </p>
           </div>
         </div>
@@ -490,7 +475,7 @@ const StudyRoomManage = () => {
             {extensionSlots.map((slot, index) => (
               <button
               key={index}
-              disabled={!slot.available} // 연장 가능 시간이 아닐 경우 클릭 불가능
+              disabled={!slot.available}
               onClick={() => {
                 if (slot.available) {
                   setSelectedExtension(selectedExtension === slot.time ? null : slot.time);
@@ -501,8 +486,8 @@ const StudyRoomManage = () => {
                 ${!slot.available 
                   ? 'bg-gray-50 border-gray-100 cursor-not-allowed text-gray-400' 
                   : selectedExtension === slot.time
-                    ? 'bg-slate-900 border-slate-900 text-white' // ✅ 선택 시 대비 강화
-                    : 'bg-white border-gray-300 hover:border-gray-500 text-gray-900' // ✅ 기본 상태
+                    ? 'bg-slate-900 border-slate-900 text-white'
+                    : 'bg-white border-gray-300 hover:border-gray-500 text-gray-900'
                 }
               `}
             >
@@ -517,7 +502,7 @@ const StudyRoomManage = () => {
                   </span>
                 </div>
                 {selectedExtension === slot.time && slot.available && (
-                  <CheckCircle2 className="w-5 h-5 text-white" /> // ✅ 선택된 상태에서도 잘 보이도록 유지
+                  <CheckCircle2 className="w-5 h-5 text-white" />
                 )}
               </div>
             </button>            
@@ -532,11 +517,11 @@ const StudyRoomManage = () => {
           <div className="grid grid-cols-2 gap-3">
           <button 
             onClick={handleCancelClick}
-            disabled={isPastReservation()} // 🔥 예약 시간이 지났으면 비활성화
+            disabled={isPastReservation()}
             className={`
               w-full py-3 text-sm font-medium rounded-xl transition-colors
               ${isPastReservation() 
-                ? "bg-gray-300 text-gray-500 cursor-not-allowed"  // 🔥 비활성화 스타일
+                ? "bg-gray-300 text-gray-500 cursor-not-allowed" 
                 : "text-red-500 border-2 border-red-500 hover:bg-red-50"}
             `}
           >
