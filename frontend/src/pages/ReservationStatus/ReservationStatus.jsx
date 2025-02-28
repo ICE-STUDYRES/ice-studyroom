@@ -24,7 +24,7 @@ const ReservationStatus = () => {
         },
       });
 
-      if (response.status === 403) {
+      if (response.status === 418) {
         navigate('/');
         addNotification("penalty", "error");
       }
