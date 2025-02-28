@@ -2,6 +2,7 @@ package com.ice.studyroom.domain.identity.infrastructure.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -34,6 +35,8 @@ public class SecurityConfig {
 			.sessionManagement(sessionManagement ->
 				sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorize -> authorize
+				// OPTIONS 요청 허용 (CORS 프리플라이트 요청)
+				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 				// 일반 API - 로그인한 사용자만 접근 가능
 				.requestMatchers(
 					"/api/**",

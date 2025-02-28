@@ -1,11 +1,8 @@
 package com.ice.studyroom.domain.identity.infrastructure.security;
 
-import java.security.spec.KeySpec;
 import java.util.Base64;
 
 import javax.crypto.SecretKey;
-import javax.crypto.SecretKeyFactory;
-import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.springframework.beans.factory.annotation.Value;

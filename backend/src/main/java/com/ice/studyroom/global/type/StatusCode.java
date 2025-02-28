@@ -17,6 +17,7 @@ public enum StatusCode {
 	FORBIDDEN(403, "C403", "Forbidden"),
 	NOT_FOUND(404, "C404", "Not Found"),
 	CONFLICT(409, "B409", "Conflict"),
+	PENALIZED_USER(418, "C418", "제재를 받은 사용자입니다."),
 
 	// Business Errors,
 	INVALID_INPUT(400, "B400", "Invalid Input Data"),
