@@ -1,4 +1,5 @@
 import React from "react";
+import { useEffect } from 'react';
 import logo from "../../../assets/images/hufslogo.png";
 import { useNavigate } from "react-router-dom";
 import { useMemberHandlers } from "../handlers/MemberHandlers";
@@ -13,6 +14,21 @@ const SignInPage = () => {
     } = useMemberHandlers();
     
     const navigate = useNavigate();
+    
+  useEffect (() => {
+    const handleKeyPress = (event) => {
+      if (event.ctrlKey && event.shiftKey && event.key === 'K') {
+        console.log('Ctrl + Shift + K pressed');
+        navigate('/auth/admin-signin');
+        return;
+      }
+  };
+  window.addEventListener('keydown', handleKeyPress);
+  return () => {
+    window.removeEventListener('keydown', handleKeyPress);
+  };
+}
+)
 
     return (
         <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
