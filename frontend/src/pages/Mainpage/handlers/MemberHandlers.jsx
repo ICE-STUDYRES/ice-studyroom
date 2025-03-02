@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../../Notification/Notification';
+import { useTokenHandler } from "./TokenHandler";
 
 export const useMemberHandlers = () => {
     const navigate = useNavigate();
@@ -32,12 +33,12 @@ export const useMemberHandlers = () => {
     const [showPasswordChangePopup, setShowPasswordChangePopup] = useState(false);
     const [verificationTimer, setVerificationTimer] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
+    const { refreshTokens } = useTokenHandler();
 
     const isValidPassword = (password) => {
         const passwordRegex = /^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[a-z\d@$!%*?&]{8,}$/;
         return passwordRegex.test(password);
     };
-    
 
     const isValidStudentNum = (studentNum) => {
         return /^\d{9}$/.test(studentNum);
@@ -88,9 +89,8 @@ export const useMemberHandlers = () => {
                 addNotification('signup', 'error', response.data.message);
             }
         } catch (error) {
-            // 🔹 409 오류 (이미 사용 중인 학번) 처리
             if (error.response?.status === 409) {
-                setSignupError(error.response.data.message); // "이미 사용 중인 학번입니다."
+                setSignupError(error.response.data.message);
             } else {
                 setSignupError('회원가입 실패');
             }
@@ -158,7 +158,7 @@ export const useMemberHandlers = () => {
         setIsTimerRunning(false);
         setVerificationSuccess(false);
         setVerificationError('');
-        setIsSendingEmail(true); // 🔹 버튼 비활성화 & "메일 발송 중..." 표시
+        setIsSendingEmail(true);
     
         try {
             const response = await axios.post('/api/users/email-verification', { email });
@@ -174,7 +174,7 @@ export const useMemberHandlers = () => {
                 setVerificationError(error.response?.data?.message || '인증번호 발송 실패');
             }
         } finally {
-            setIsSendingEmail(false); // 🔹 응답이 도착하면 버튼 다시 활성화
+            setIsSendingEmail(false);
         }
     };    
 
@@ -214,6 +214,7 @@ export const useMemberHandlers = () => {
 
     const handlePasswordChange = async (e) => {
         e.preventDefault();
+        setPasswordChangeError('');
     
         if (passwordChangeForm.updatedPassword !== passwordChangeForm.updatedPasswordForCheck) {
             setPasswordChangeError('새 비밀번호가 일치하지 않습니다.');
@@ -226,24 +227,14 @@ export const useMemberHandlers = () => {
     
         try {
             let accessToken = sessionStorage.getItem('accessToken');
-            if (!accessToken) {
-                console.warn("No access token found. Attempting refresh...");
-                accessToken = await refreshTokens();
-                if (!accessToken) return;
-            }
     
-            const response = await axios.patch('/api/users/password', passwordChangeForm, {
-                headers: { 'Authorization': `Bearer ${accessToken}` }
-            });
-    
-            if (response.status === 401) {
-                const newAccessToken = await refreshTokens();
-                if (newAccessToken) {
-                    return handlePasswordChange(e);
-                } else {
-                    return;
+            const response = await axios.patch(
+                '/api/users/password',
+                passwordChangeForm,
+                {
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
                 }
-            }
+            );
     
             if (response.data.code === 'S200') {
                 alert('비밀번호가 성공적으로 변경되었습니다.');
@@ -255,8 +246,22 @@ export const useMemberHandlers = () => {
                 });
             }
         } catch (error) {
-            console.error("Error changing password:", error);
-            setPasswordChangeError('비밀번호 변경에 실패했습니다.');
+            if (error.response?.status === 401) {
+                console.warn('Access token expired. Refreshing tokens...');
+                const newAccessToken = await refreshTokens();
+    
+                if (newAccessToken) {
+                    console.log("Retrying password change with new token...");
+                    return handlePasswordChange(e);
+                } else {
+                    console.error("Token refresh failed. Redirecting to login.");
+                    sessionStorage.clear();
+                    navigate('/auth/signin');
+                }
+            } else {
+                console.error("Error changing password:", error);
+                setPasswordChangeError(error.response?.data?.message || '비밀번호 변경에 실패했습니다.');
+            }
         }
     };    
 
@@ -264,35 +269,14 @@ export const useMemberHandlers = () => {
         try {
             let accessToken = sessionStorage.getItem('accessToken'); 
     
-            let response = await axios.post(
+            const response = await axios.post(
                 '/api/users/auth/logout',
                 {}, 
                 {
-                    headers: {
-                        'Authorization': `Bearer ${accessToken}`
-                    },
+                    headers: { 'Authorization': `Bearer ${accessToken}` },
                     withCredentials: true
                 }
             );
-    
-            if (response.status === 401) { // 토큰 만료 시 새로고침 후 재요청
-                console.warn("Access token expired. Refreshing tokens...");
-                accessToken = await refreshTokens();
-    
-                if (accessToken) {
-                    console.log("Retrying logout with new token...");
-                    response = await axios.post(
-                        '/api/users/auth/logout',
-                        {}, 
-                        {
-                            headers: {
-                                'Authorization': `Bearer ${accessToken}`
-                            },
-                            withCredentials: true
-                        }
-                    );
-                }
-            }
     
             if (response.status === 200) {
                 console.log("Logout successful");
@@ -303,11 +287,24 @@ export const useMemberHandlers = () => {
             }
     
         } catch (error) {
-            console.error("Logout failed:", error);
+            if (error.response?.status === 401) { 
+                console.warn("Access token expired. Refreshing tokens...");
+                const newAccessToken = await refreshTokens();
+    
+                if (newAccessToken) {
+                    console.log("Retrying logout with new token...");
+                    return handleLogout();
+                } else {
+                    console.error("Token refresh failed. Logging out forcefully.");
+                    sessionStorage.clear();
+                    navigate('/');
+                }
+            } else {
+                console.error("Logout failed:", error);
+            }
         }
     };
     
-
     return {
         //로그인 로그아웃
         loginForm,

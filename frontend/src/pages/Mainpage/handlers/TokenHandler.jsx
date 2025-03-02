@@ -1,12 +1,9 @@
 import axios from 'axios';
-import { useMemberHandlers } from './MemberHandlers.jsx';
 
 let isRefreshing = false;   // 🔹 현재 토큰 갱신 중인지 추적
 let refreshSubscribers = []; // 🔹 토큰이 갱신되면 대기 중인 요청을 실행
 
 export const useTokenHandler = () => {
-    const { handleLogout } = useMemberHandlers();
-
     const refreshTokens = async () => {
         if (isRefreshing) {
             return new Promise((resolve) => {
@@ -44,7 +41,6 @@ export const useTokenHandler = () => {
             return newAccessToken;
         } catch (error) {
             console.error("Error refreshing token:", error.response?.data || error);
-            handleLogout();
             return null;
         } finally {
             isRefreshing = false;
