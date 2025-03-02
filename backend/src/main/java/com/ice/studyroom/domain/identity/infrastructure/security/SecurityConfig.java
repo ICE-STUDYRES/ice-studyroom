@@ -51,10 +51,10 @@ public class SecurityConfig {
 					"/api/reservations/**"
 				).authenticated()
 
-				// 관리자만 접근 가능
+				// ADMIN 역할만 접근 가능
 				.requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-				// 특정 역할만 접근 가능
+				// ATTENDANT 역할만 접근 가능
 				.requestMatchers("/api/qr/recognize").hasRole("ATTENDANT")
 
 				// Swagger 관련 경로 허용
