@@ -9,6 +9,7 @@ import { Notification } from './pages/Notification/Notification';
 import AttendanceSystem from './pages/ReservationStatus/AttendanceSystem';
 import Adminpage from './pages/Mainpage/Adminpage/Adminpage';
 import Signin from './pages/Mainpage/components/Signin';
+import AdminSignin from './pages/Mainpage/components/AdminSignin';
 import Signup from './pages/Mainpage/components/Signup';
 import './main.css';
 
@@ -26,6 +27,7 @@ function App() {
           <Route path="/reservation/my-status" element={<MyReservationStatus/>}/>
           <Route path="/auth/signin" element={<Signin/>}/>
           <Route path="/auth/signup" element={<Signup/>}/>
+          <Route path="/auth/admin-signin" element={<AdminSignin/>}/>
         </Routes>
       </Router> 
     </Notification>

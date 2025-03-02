@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTokenHandler } from '../Mainpage/handlers/TokenHandler';
 
 const AttendanceHandler = () => {
   const [scanState, setScanState] = useState('initial'); 
@@ -7,6 +8,9 @@ const AttendanceHandler = () => {
   const [sentQRCode, setSentQRCode] = useState('');
   const qrBufferRef = useRef("");
   const isFirstKeyRef = useRef(true);
+  const {
+    refreshTokens,
+  } = useTokenHandler();
   
   // QR 스캐너 키보드 이벤트 리스너
   useEffect(() => {
@@ -59,7 +63,26 @@ const AttendanceHandler = () => {
           if (response.status === 400) {
             setStudentData({ name: "출석 오류", message: responseData.message});
             setScanState('complete-error');
-          } else if (response.status === 200) {
+
+          } else if (response.status === 401) { // 토큰 만료 시 새로고침 후 재요청
+            console.warn("Access token expired. Refreshing tokens...");
+            accessToken = await refreshTokens();
+
+            if (accessToken) {
+                console.log("Retrying logout with new token...");
+                response = await axios.post(
+                    '/api/users/auth/logout',
+                    {}, 
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${accessToken}`
+                        },
+                        withCredentials: true
+                    }
+                );
+            }
+        }
+           else if (response.status === 200) {
             if (responseData.data.status === "ENTRANCE") {
               setStudentData({ name: responseData.data.userName || "학생", studentId: responseData.data.userNumber });
               setScanState('complete-present');
@@ -68,7 +91,7 @@ const AttendanceHandler = () => {
               setScanState('complete-late');
             }
           } else {
-            setStudentData({ name: "오류 발생", message: responseData.message || "알 수 없는 오류" });
+            setStudentData({ name: "오류 발생", message: "잠시 후 다시 이용해주세요." });
             setScanState('complete-error');
           }
           

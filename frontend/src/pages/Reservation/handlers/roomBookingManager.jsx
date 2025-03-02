@@ -138,7 +138,7 @@ export const roomBookingManager = () => {
         return fetchSchedules();
       }
 
-      if (response.status === 403) {
+      if (response.status === 418) {
         navigate('/');
         addNotification("penalty", "error");
       }

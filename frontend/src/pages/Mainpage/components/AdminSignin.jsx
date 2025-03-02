@@ -1,11 +1,10 @@
 import React from "react";
-import { useEffect } from 'react';
 import logo from "../../../assets/images/hufslogo.png";
 import { useNavigate } from "react-router-dom";
 import { useMemberHandlers } from "../handlers/MemberHandlers";
 import { Home } from 'lucide-react';
 
-const SignInPage = () => {
+const AdminSignInPage = () => {
     const {
         loginForm,
         handleLogin,
@@ -14,21 +13,6 @@ const SignInPage = () => {
     } = useMemberHandlers();
     
     const navigate = useNavigate();
-    
-  useEffect (() => {
-    const handleKeyPress = (event) => {
-      if (event.ctrlKey && event.shiftKey && event.key === 'K') {
-        console.log('Ctrl + Shift + K pressed');
-        navigate('/auth/admin-signin');
-        return;
-      }
-  };
-  window.addEventListener('keydown', handleKeyPress);
-  return () => {
-    window.removeEventListener('keydown', handleKeyPress);
-  };
-}
-)
 
     return (
         <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
@@ -41,7 +25,7 @@ const SignInPage = () => {
                     >
                         <Home className="w-5 h-5 text-gray-700" />
                     </button>
-                    <h1 className="font-semibold text-gray-900">정보통신공학과</h1>
+                    <h1 className="font-semibold text-gray-900">정보통신공학과 (관리자)</h1>
                 </div>
             </div>
 
@@ -111,4 +95,4 @@ const SignInPage = () => {
     );
 };
 
-export default SignInPage;
+export default AdminSignInPage;
