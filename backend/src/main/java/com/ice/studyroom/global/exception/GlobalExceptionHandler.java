@@ -79,6 +79,6 @@ public class GlobalExceptionHandler {
 		log.error("Unhandled exception occurred", ex);
 		return ResponseEntity
 			.status(StatusCode.INTERNAL_ERROR.getStatus())
-			.body(ResponseDto.error(StatusCode.INTERNAL_ERROR));
+			.body(ResponseDto.error(StatusCode.INTERNAL_ERROR, ex.getMessage()));
 	}
 }

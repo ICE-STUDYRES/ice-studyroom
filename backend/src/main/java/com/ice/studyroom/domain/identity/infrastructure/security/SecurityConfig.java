@@ -35,32 +35,34 @@ public class SecurityConfig {
 			.sessionManagement(sessionManagement ->
 				sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorize -> authorize
-				// OPTIONS 요청 허용 (CORS 프리플라이트 요청)
-				.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-				// 일반 API - 로그인한 사용자만 접근 가능
+				// 인증 없이 접근 가능한 엔드포인트
 				.requestMatchers(
-					"/api/**",
-					"/api/users/**",
-					"/api/qr/**", // API 개발을 위한 임시 사용
-					"/api/schedules/**",
-					"/api/reservations/**"
+					HttpMethod.POST, "/api/users", // 회원가입
+					"/api/users/login", // 로그인
+					"/api/users/email-verification", // 이메일 인증 메일 전송
+					"/api/users/email-verification/confirm" // 이메일 인증 코드 검증
 				).permitAll()
 
-				// TODO: 관리자 기능 완성 이후 주석 처리된 코드 활성화 예정
-				// .requestMatchers("/api/admin/**").hasRole("ADMIN")
+				// 인증이 필요한 일반 API
+				.requestMatchers(
+					"/api/users/**",
+					"/api/qr/**",
+					"/api/schedules/**",
+					"/api/reservations/**"
+				).authenticated()
 
-				// .requestMatchers(
-				// 	"/api/reservations/**"
-				// 	).authenticated()
+				// ADMIN 역할만 접근 가능
+				.requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+				// ATTENDANT 역할만 접근 가능
+				.requestMatchers("/api/qr/recognize").hasRole("ATTENDANT")
 
 				// Swagger 관련 경로 허용
 				.requestMatchers(
 					"/swagger-ui.html",
 					"/swagger-ui/**",
-					"/v3/api-docs/**",
-					"/webjars/**"
+					"/v3/api-docs/**"
 				).permitAll()
-				.anyRequest().authenticated()
 			)
 			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
 				UsernamePasswordAuthenticationFilter.class)
