@@ -73,10 +73,14 @@ const AttendanceHandler = () => {
               setScanState('complete-late');
             }
           } 
-          // else {
-          //   setStudentData({ name: "오류 발생", message: "잠시 후 다시 이용해주세요." });
-          //   setScanState('complete-error');
-          // }
+          else if (response.status === 401) {
+              console.warn("Access token expired. Refreshing tokens...");
+              accessToken = await refreshTokens();
+  
+              if (accessToken) {
+                  return handleScan(event);
+              }
+          }
           
           setSentQRCode(qrData);
           
