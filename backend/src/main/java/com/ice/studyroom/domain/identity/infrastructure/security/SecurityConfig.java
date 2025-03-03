@@ -35,8 +35,10 @@ public class SecurityConfig {
 			.sessionManagement(sessionManagement ->
 				sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(authorize -> authorize
+
 				// ADMIN 역할만 접근 가능
 				.requestMatchers("/api/admin/**").hasRole("ADMIN")
+                             
 				// ATTENDANT 역할만 접근 가능
 				.requestMatchers("/api/qr/recognize").hasRole("ATTENDANT")
 

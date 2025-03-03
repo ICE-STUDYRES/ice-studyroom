@@ -262,14 +262,7 @@ export const useMemberHandlers = () => {
 
     const handleLogout = async () => {
         try {
-            let accessToken = sessionStorage.getItem('accessToken');
-    
-            if (!accessToken) {
-                console.warn("No tokens found, clearing storage and redirecting.");
-                sessionStorage.clear();
-                navigate('/');
-                return;
-            }
+            let accessToken = sessionStorage.getItem('accessToken'); 
     
             let response = await axios.post(
                 '/api/users/auth/logout',
@@ -301,17 +294,19 @@ export const useMemberHandlers = () => {
                 }
             }
     
-            if (response.status !== 200) { 
+            if (response.status === 200) {
+                console.log("Logout successful");
+                sessionStorage.clear();
+                navigate('/');
+            } else {
                 console.warn("Logout request failed. Status:", response.status);
             }
     
         } catch (error) {
             console.error("Logout failed:", error);
-        } finally {
-            sessionStorage.clear();
-            navigate('/');
         }
     };
+    
 
     return {
         //로그인 로그아웃

@@ -60,11 +60,6 @@ const MyReservationStatus = () => {
             }
         }
 
-        if (response.status === 403) {
-          navigate('/');
-          addNotification("penalty", "error");
-        }
-
         if (!response.ok) {
             throw new Error('Failed to fetch my reservations');
         }
