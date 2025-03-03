@@ -20,7 +20,7 @@ export const useMainpageHandlers = () => {
     const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
     const [showQRModal, setShowQRModal] = useState(false);
     const { addNotification } = useNotification();
-    const accessToken = sessionStorage.getItem('accessToken');
+    let accessToken = sessionStorage.getItem('accessToken');
 
     useEffect(() => {
       const fetchUserData = async () => {
@@ -31,22 +31,9 @@ export const useMainpageHandlers = () => {
                   return;
               }
   
-              const response = await axios.get('/api/users', {
+              let response = await axios.get('/api/users', {
                   headers: { Authorization: `Bearer ${accessToken}` }
               });
-  
-              if (response.status === 401) {
-                console.warn('토큰이 만료됨. 새로고침 시도.');
-  
-                  accessToken = await refreshTokens();
-                  if (accessToken) {
-                      return fetchUserData();
-                  } else {
-                    console.error('토큰 갱신 실패. 로그아웃 필요.');
-                      return;
-                  }
-              }
-  
               if (response.data && response.data.data) {
                   const { penaltyEndAt, penaltyReasonType } = response.data.data;
   
@@ -65,7 +52,17 @@ export const useMainpageHandlers = () => {
                   setPenaltyReason(penaltyReasonMap[penaltyReasonType]);
               }
           } catch (error) {
-              console.error("🚨 Error fetching user data:", error);
+            if (error.response && error.response.status === 401) {
+              console.warn('토큰이 만료됨. 새로고침 시도.');
+
+                accessToken = await refreshTokens();
+                if (accessToken) {
+                    return fetchUserData();
+                } else {
+                  console.error('토큰 갱신 실패. 로그아웃 필요.');
+                    return;
+                }
+            }
           }
       };
   
