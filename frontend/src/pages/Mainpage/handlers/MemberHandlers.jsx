@@ -143,7 +143,31 @@ export const useMemberHandlers = () => {
     
                 if (role === 'ROLE_USER') {
                     navigate('/');
-                } else if (role === 'ROLE_ADMIN') {
+                }
+            }
+        } catch (error) {
+            const errorMessage = error.response?.data?.message || '로그인 중 오류가 발생했습니다.';
+            setLoginError(errorMessage);
+        }
+    };
+
+    const handleAdminLogin = async (e) => {
+        e.preventDefault();
+        setLoginError('');
+    
+        try {
+            const response = await axios.post('/api/users/login', {
+                email: loginForm.email,
+                password: loginForm.password,
+            });
+    
+            if (response.data.code === 'S200') {
+                const accessToken = response.data.data.accessToken;
+                const role = response.data.data.role;
+    
+                sessionStorage.setItem('accessToken', accessToken);
+    
+                if (role === 'ROLE_ADMIN') {
                     navigate('/adminpage');
                 } else if (role == 'ROLE_ATTENDANT') {
                     navigate('/attendance')
@@ -311,6 +335,7 @@ export const useMemberHandlers = () => {
         //로그인 로그아웃
         loginForm,
         handleLogin,
+        handleAdminLogin,
         handleLoginInputChange,
         handleLogout,
         loginError,
