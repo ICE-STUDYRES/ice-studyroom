@@ -46,6 +46,9 @@ public class SecurityConfig {
 				.requestMatchers(HttpMethod.POST, "/api/users/email-verification").permitAll() // 이메일 인증 메일 전송
 				.requestMatchers(HttpMethod.POST, "/api/users/email-verification/confirm").permitAll() // 이메일 인증 코드 검증
 
+				//Refresh Token 검증을 위한 별도 처리
+				.requestMatchers(HttpMethod.POST, "/api/users/auth/refresh").permitAll() // Refresh Token 발급
+
 				// 그 외, 인증이 필요한 일반 API
 				.requestMatchers(
 					"/api/users/**",
