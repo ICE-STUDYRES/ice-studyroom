@@ -145,6 +145,8 @@ export const useMemberHandlers = () => {
                     navigate('/');
                 } else if (role === 'ROLE_ADMIN') {
                     navigate('/adminpage');
+                } else if (role == 'ROLE_ATTENDANT') {
+                    navigate('/attendance')
                 }
             }
         } catch (error) {
