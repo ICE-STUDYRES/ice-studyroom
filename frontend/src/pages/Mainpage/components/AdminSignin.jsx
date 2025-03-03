@@ -7,7 +7,7 @@ import { Home } from 'lucide-react';
 const AdminSignInPage = () => {
     const {
         loginForm,
-        handleLogin,
+        handleAdminLogin,
         handleLoginInputChange,
         loginError
     } = useMemberHandlers();
@@ -38,7 +38,7 @@ const AdminSignInPage = () => {
                         className="h-12 mx-auto mb-6" 
                     />
                     
-                    <form onSubmit={handleLogin} className="space-y-4">
+                    <form onSubmit={handleAdminLogin} className="space-y-4">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
                             <input
