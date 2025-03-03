@@ -9,9 +9,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import com.ice.studyroom.domain.identity.domain.JwtToken;
-import com.ice.studyroom.domain.identity.exception.InvalidRefreshTokenException;
 import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvider;
+import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.CacheService;
+import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
 
@@ -50,7 +51,7 @@ public class TokenService {
 
 	public JwtToken rotateToken(String email, String refreshToken) {
 		if (!validateRefreshToken(email, refreshToken)) {
-			throw new InvalidRefreshTokenException("유효하지 않은 Refresh Token 입니다.");
+			throw new BusinessException(StatusCode.UNAUTHORIZED, "유효하지 않은 Refresh Token 입니다.");
 		}
 
 		// 2. 새로운 토큰 쌍 생성
