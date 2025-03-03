@@ -27,15 +27,9 @@ export const usePenaltyHandlers = () => {
                     return;
                 }
     
-                const response = await axios.get("/api/users", {
+                let response = await axios.get("/api/users", {
                     headers: { Authorization: `Bearer ${accessToken}` },
                 });
-    
-                if (response.status === 401) {
-                    const newAccessToken = await refreshTokens();
-                    if (!newAccessToken) return;
-                    return fetchPenaltyData();
-                }
     
                 if (response.data && response.data.data) {
                     const { penaltyEndAt, penaltyReasonType } = response.data.data;
@@ -51,11 +45,14 @@ export const usePenaltyHandlers = () => {
                     } else {
                         setPenaltyEndAt("");
                     }
-    
                     setPenaltyReason(penaltyReasonMap[penaltyReasonType]);
                 }
             } catch (error) {
-                console.error("🚨 Error fetching penalty data:", error);
+                if (error.response && error.response.status === 401) {
+                    const newAccessToken = await refreshTokens();
+                    if (!newAccessToken) return;
+                    return fetchPenaltyData();
+                }
             }
         };
     
