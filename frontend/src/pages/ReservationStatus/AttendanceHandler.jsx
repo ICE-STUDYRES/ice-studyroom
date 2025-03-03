@@ -72,31 +72,24 @@ const AttendanceHandler = () => {
               setStudentData({ name: responseData.data.userName || "학생", studentId: responseData.data.userNumber });
               setScanState('complete-late');
             }
-          } 
-          else if (response.status === 401) {
+          } else if (response.status === 401) {
               console.warn("Access token expired. Refreshing tokens...");
               accessToken = await refreshTokens();
   
               if (accessToken) {
                   return handleScan(event);
               }
+          } else {
+            setStudentData({ name: "오류 발생", message: "잠시 후 다시 이용해주세요." });
+            setScanState('complete-error');
           }
-          
+
           setSentQRCode(qrData);
           
         } catch (error) {
-          if (error.response && error.response.status === 401) { // 토큰 만료 시 새로고침 후 재요청
-            console.warn("Access token expired. Refreshing tokens...");
-            accessToken = await refreshTokens();
-
-            if (accessToken) {
-                return handleScan(event);
-            }
-        }
-
-          // setStudentData({ name: "오류 발생", message: "네트워크 오류" });
-          // setScanState('complete-error');
-          // updateCurrentTime();
+          setStudentData({ name: "오류 발생", message: "네트워크 오류" });
+          setScanState('complete-error');
+          updateCurrentTime();
         }
         
         // 버퍼와 첫 키 입력 플래그 초기화
