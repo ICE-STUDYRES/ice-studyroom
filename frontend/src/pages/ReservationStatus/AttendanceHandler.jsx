@@ -72,10 +72,11 @@ const AttendanceHandler = () => {
               setStudentData({ name: responseData.data.userName || "학생", studentId: responseData.data.userNumber });
               setScanState('complete-late');
             }
-          } else {
-            setStudentData({ name: "오류 발생", message: "잠시 후 다시 이용해주세요." });
-            setScanState('complete-error');
-          }
+          } 
+          // else {
+          //   setStudentData({ name: "오류 발생", message: "잠시 후 다시 이용해주세요." });
+          //   setScanState('complete-error');
+          // }
           
           setSentQRCode(qrData);
           
