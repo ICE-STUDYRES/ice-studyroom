@@ -122,6 +122,10 @@ public class JwtTokenProvider {
 		return parseClaims(token).getSubject();
 	}
 
+	public String getRoleFromToken(String token) {
+		return parseClaims(token).get("auth", String.class);
+	}
+
 	// accessToken
 	private Claims parseClaims(String accessToken) {
 		try {
