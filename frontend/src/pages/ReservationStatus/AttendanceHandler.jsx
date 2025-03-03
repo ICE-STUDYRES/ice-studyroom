@@ -15,16 +15,14 @@ const AttendanceHandler = () => {
   // QR 스캐너 키보드 이벤트 리스너
   useEffect(() => {
     const handleScan = async (event) => {
-      // Enter는 QR 데이터의 끝을 의미
       if (event.key === "Enter") {
         if (!qrBufferRef.current.trim()) {
-          // 버퍼가 비어있으면 초기화
           isFirstKeyRef.current = true;
           return;
         }
-  
+    
         let qrData = qrBufferRef.current;
-  
+    
         try {
           const parsedData = JSON.parse(qrBufferRef.current);
           if (parsedData?.data) {
@@ -33,10 +31,10 @@ const AttendanceHandler = () => {
         } catch (err) {
           console.warn("⚠️ QR 코드 데이터가 JSON 형식이 아님. 그대로 사용함.");
         }
-  
+    
         try {
-          const accessToken = sessionStorage.getItem("accessToken");
-          const response = await fetch(`/api/qr/recognize`, {
+          let accessToken = sessionStorage.getItem("accessToken");
+          let response = await fetch(`/api/qr/recognize`, {
             method: "POST",
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -44,67 +42,67 @@ const AttendanceHandler = () => {
             },
             body: JSON.stringify({ qrCode: qrData }),
           });
-          
-
+    
+          // 401 에러 처리: refreshTokens 실행 후 다시 요청
+          if (!response.ok && response.status === 401) {
+            console.warn("Access token expired. Refreshing tokens...");
+            accessToken = await refreshTokens();
+    
+            // 새 토큰으로 재요청
+            response = await fetch(`/api/qr/recognize`, {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ qrCode: qrData }),
+            });
+          }
+    
           let responseData;
           const contentType = response.headers.get("content-type");
-      
+    
           if (contentType && contentType.includes("application/json")) {
-              responseData = await response.json();
+            responseData = await response.json();
           } else {
-              responseData = await response.text(); // JSON이 아닐 경우 텍스트로 처리
-              console.warn("⚠️ 서버가 JSON이 아닌 응답을 반환함:", responseData);
+            responseData = await response.text();
+            console.warn("⚠️ 서버가 JSON이 아닌 응답을 반환함:", responseData);
           }
-      
-          // 현재 시간 설정
+    
           updateCurrentTime();
-          
-          // API 응답을 받은 후에 상태 변경
+    
           if (response.status === 400) {
-            setStudentData({ name: "출석 오류", message: responseData.message});
-            setScanState('complete-error');
-
+            setStudentData({ name: "출석 오류", message: responseData.message });
+            setScanState("complete-error");
           } else if (response.status === 200) {
             if (responseData.data.status === "ENTRANCE") {
               setStudentData({ name: responseData.data.userName || "학생", studentId: responseData.data.userNumber });
-              setScanState('complete-present');
+              setScanState("complete-present");
             } else if (responseData.data.status === "LATE") {
               setStudentData({ name: responseData.data.userName || "학생", studentId: responseData.data.userNumber });
-              setScanState('complete-late');
+              setScanState("complete-late");
             }
-          } 
-          else {
+          } else {
             setStudentData({ name: "오류 발생", message: "잠시 후 다시 이용해주세요." });
-            setScanState('complete-error');
+            setScanState("complete-error");
           }
-
+    
           setSentQRCode(qrData);
-          
         } catch (error) {
-          if (error.response && error.response.status === 401) { // 토큰 만료 시 새로고침 후 재요청
-            console.warn("Access token expired. Refreshing tokens...");
-            accessToken = await refreshTokens();
-            return handleScan(event);
-          }
-
-          updateCurrentTime();
+          console.error("⚠️ 네트워크 오류 발생:", error);
         }
-        
-        // 버퍼와 첫 키 입력 플래그 초기화
+    
         qrBufferRef.current = "";
         isFirstKeyRef.current = true;
-        
       } else if (event.key !== "Shift") {
-        // 첫 키 입력 시 scanning 상태로 전환 (Shift 키 제외)
-        if (isFirstKeyRef.current && scanState === 'initial') {
-          setScanState('scanning');
+        if (isFirstKeyRef.current && scanState === "initial") {
+          setScanState("scanning");
           isFirstKeyRef.current = false;
         }
-        
-        // 버퍼에 키 추가
         qrBufferRef.current += event.key;
       }
     };
+    
   
     window.addEventListener("keydown", handleScan);
     return () => window.removeEventListener("keydown", handleScan);
