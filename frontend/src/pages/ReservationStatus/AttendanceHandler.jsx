@@ -85,17 +85,7 @@ const AttendanceHandler = () => {
             accessToken = await refreshTokens();
 
             if (accessToken) {
-                console.log("Retrying logout with new token...");
-                response = await axios.post(
-                    '/api/users/auth/logout',
-                    {}, 
-                    {
-                        headers: {
-                            'Authorization': `Bearer ${accessToken}`
-                        },
-                        withCredentials: true
-                    }
-                );
+                return handleScan(event);
             }
         }
 
