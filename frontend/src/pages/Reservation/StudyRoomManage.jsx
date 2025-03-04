@@ -480,15 +480,15 @@ const StudyRoomManage = () => {
             {extensionSlots.map((slot, index) => (
               <button
               key={index}
-              disabled={!slot.available}
+              disabled={!slot.available || booking.status !== "ENTRANCE"}
               onClick={() => {
-                if (slot.available) {
+                if (slot.available && booking.status === "ENTRANCE") {
                   setSelectedExtension(selectedExtension === slot.time ? null : slot.time);
                 }
               }}
               className={`
                 w-full p-4 rounded-xl border-2 font-medium transition-all
-                ${!slot.available 
+                ${!slot.available || booking.status !== "ENTRANCE"
                   ? 'bg-gray-50 border-gray-100 cursor-not-allowed text-gray-400' 
                   : selectedExtension === slot.time
                     ? 'bg-slate-900 border-slate-900 text-white'
@@ -506,7 +506,7 @@ const StudyRoomManage = () => {
                     {slot.time}
                   </span>
                 </div>
-                {selectedExtension === slot.time && slot.available && (
+                {selectedExtension === slot.time && slot.available && booking.status === "ENTRANCE" && (
                   <CheckCircle2 className="w-5 h-5 text-white" />
                 )}
               </div>
@@ -544,10 +544,10 @@ const StudyRoomManage = () => {
                   }
                 }
               }}
-              disabled={!selectedExtension}
+              disabled={!selectedExtension || isPastReservation() || booking.status !== "ENTRANCE"}
               className={`
                 w-full py-3 text-sm font-medium rounded-xl transition-colors
-                ${!selectedExtension || isPastReservation()  
+                ${!selectedExtension || isPastReservation() || booking.status !== "ENTRANCE"
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                   : "bg-slate-900 hover:bg-slate-800 text-white"}
               `}
