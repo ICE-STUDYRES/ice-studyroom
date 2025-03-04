@@ -42,8 +42,8 @@ const StudyRoomManage = () => {
     
           if (response.status === 401) {
             console.warn('토큰이 만료됨. 새로고침 시도.');
-            const newAccessToken = await refreshTokens();
-            if (newAccessToken) {
+            accessToken = await refreshTokens();
+            if (accessToken) {
               return fetchBookingData();
             } else {
               console.error('토큰 갱신 실패. 로그아웃 필요.');
@@ -180,7 +180,7 @@ const StudyRoomManage = () => {
 
   const handleCancelReservation = async () => {
     try {
-      const accessToken = sessionStorage.getItem("accessToken");
+      let accessToken = sessionStorage.getItem("accessToken");
   
       if (!booking.id) {
         alert("취소할 예약이 없습니다.");
@@ -205,13 +205,18 @@ const StudyRoomManage = () => {
         alert("예약 취소 실패: " + (response.data?.message || "알 수 없는 오류"));
       }
     } catch (error) {
-      console.error("예약 취소 오류:", error);
-  
-      if (error.response) {
-        const errorMessage = error.response.data?.message || "예약 취소 중 오류가 발생했습니다.";
-        alert(errorMessage);
-      } else if (error.request) {
-        alert("서버 응답이 없습니다. 네트워크 상태를 확인해주세요.");
+      if (error.response?.status === 401) { 
+        console.warn("Access token expired. Refreshing tokens...");
+        const newAccessToken = await refreshTokens();
+
+        if (newAccessToken) {
+            console.log("Retrying logout with new token...");
+            return handleCancelReservation();
+        } else {
+            console.error("Token refresh failed. Logging out forcefully.");
+            sessionStorage.clear();
+            navigate('/');
+        }
       } else {
         alert("알 수 없는 오류가 발생했습니다. 다시 시도해주세요.");
       }
@@ -232,8 +237,8 @@ const StudyRoomManage = () => {
       );
   
       if (response.status === 401) { 
-        const newAccessToken = await refreshTokens();
-        if (newAccessToken) {
+        accessToken = await refreshTokens();
+        if (accessToken) {
           return extendReservation(); 
         } else {
           console.error('토큰 갱신 실패. 로그아웃 필요.');
