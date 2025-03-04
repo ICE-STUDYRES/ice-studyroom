@@ -49,17 +49,20 @@ public class TokenService {
 		return savedRefreshToken.equals(refreshToken);
 	}
 
-	public JwtToken rotateToken(String email, String refreshToken) {
+	public JwtToken rotateToken(String email, String accessToken, String refreshToken) {
 		if (!validateRefreshToken(email, refreshToken)) {
 			throw new BusinessException(StatusCode.UNAUTHORIZED, "유효하지 않은 Refresh Token 입니다.");
 		}
+
+		//1. AccessToken에서 Role 추출
+		String role = jwtTokenProvider.getRoleFromToken(accessToken).replace("ROLE_", "");
 
 		// 2. 새로운 토큰 쌍 생성
 		// Authentication 객체 생성을 위한 UserDetails 로드
 		UserDetails userDetails = User.builder()
 			.username(email)
 			.password("") // 불필요하지만 필수 필드
-			.roles("USER")
+			.roles(role)
 			.build();
 
 		Authentication authentication = new UsernamePasswordAuthenticationToken(

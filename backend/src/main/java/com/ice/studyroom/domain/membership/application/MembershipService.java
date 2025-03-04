@@ -62,8 +62,8 @@ public class MembershipService {
 
 	public JwtToken refresh(String authorizationHeader, String refreshToken) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
-
-		return tokenService.rotateToken(email, refreshToken);
+		String accessToken = authorizationHeader.replace("Bearer ", "");
+		return tokenService.rotateToken(email, accessToken, refreshToken);
 	}
 
 	public MemberResponse logout(String authorizationHeader, String refreshToken) {
