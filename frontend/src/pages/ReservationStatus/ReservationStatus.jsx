@@ -3,6 +3,7 @@ import { ChevronLeft, LogOut, Clock, Users, ChevronDown, ChevronUp } from "lucid
 import { useNavigate } from "react-router-dom";
 import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
 import { useNotification } from '../Notification/Notification';
+import { useTokenHandler } from "../Mainpage/handlers/TokenHandler";
 
 const ReservationStatus = () => {
   const { addNotification } = useNotification();
@@ -10,6 +11,7 @@ const ReservationStatus = () => {
   const [expandedRooms, setExpandedRooms] = useState({});
   const [schedules, setSchedules] = useState([]);
   const {handleLogout} = useMemberHandlers();
+  const { refreshTokens } = useTokenHandler();
 
   useEffect(() => {
     fetchSchedules();
@@ -17,12 +19,24 @@ const ReservationStatus = () => {
 
   const fetchSchedules = async () => {
     try {
-      const accessToken = sessionStorage.getItem('accessToken')
+      let accessToken = sessionStorage.getItem('accessToken')
       const response = await fetch('/api/schedules', {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       });
+
+      if (response.status === 401) {
+        console.warn('토큰이 만료됨. 새로고침 시도.');
+
+          accessToken = await refreshTokens();
+          if (accessToken) {
+              return fetchSchedules();
+          } else {
+            console.error('토큰 갱신 실패. 로그아웃 필요.');
+              return;
+          }
+      }
 
       if (response.status === 418) {
         navigate('/');
