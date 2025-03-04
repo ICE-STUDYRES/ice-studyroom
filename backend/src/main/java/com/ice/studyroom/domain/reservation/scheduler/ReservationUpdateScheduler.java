@@ -34,7 +34,7 @@ public class ReservationUpdateScheduler {
 		log.info("Processing update reservation status to complete for date: {} and time: {}", todayDate, todayTime);
 
 		reservationRepository.findByScheduleDateAndEndTime(todayDate, todayTime.minusMinutes(1)).forEach(reservation -> {
-			if(reservation.getStatus() == ReservationStatus.ENTRANCE){
+			if(reservation.getStatus() == ReservationStatus.ENTRANCE || reservation.getEndTime().isBefore(todayTime)){
 				reservation.markStatus(ReservationStatus.COMPLETED);
 			}
 			log.info("예약이 종료되었습니다.: {} (ID: {}) at {}", reservation.getUserEmail(), reservation.getId(), LocalDateTime.now());
