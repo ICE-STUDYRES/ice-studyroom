@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useMainpageHandlers } from "../handlers/MainpageHandlers";
+import { useTokenHandler } from "../handlers/TokenHandler";
 
 const useQRCodeFetcher = (resId) => {
   const [qrCode, setQrCode] = useState(null);
-  const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const { refreshTokens } = useMainpageHandlers();
+  const [error, setError] = useState(null);
+  const { refreshTokens } = useTokenHandler();
 
   /** ✅ 1️⃣ GET 요청: QR 코드 가져오기 */
   const fetchQRCode = useCallback(async (retry = true) => {
@@ -15,7 +15,7 @@ const useQRCodeFetcher = (resId) => {
     try {
       let accessToken = sessionStorage.getItem("accessToken");
       if (!accessToken) {
-        setError("로그인이 필요합니다."); //수정 예정
+        console.warn("로그인이 필요합니다."); // 로그만 출력
         setLoading(false);
         return;
       }
@@ -26,7 +26,7 @@ const useQRCodeFetcher = (resId) => {
           "Content-Type": "application/json",
         },
       });
-      
+
       if (response.status === 401 && retry) {
         console.warn("Access token expired. Refreshing tokens...");
         accessToken = await refreshTokens();
@@ -34,7 +34,6 @@ const useQRCodeFetcher = (resId) => {
         if (accessToken) {
           return fetchQRCode(false); // 한 번만 재시도
         } else {
-          setError("세션이 만료되었습니다. 다시 로그인하세요.");
           setLoading(false);
           return;
         }
@@ -51,12 +50,12 @@ const useQRCodeFetcher = (resId) => {
     } finally {
       setLoading(false);
     }
-  }, [resId, qrCode, refreshTokens]); // ✅ `qrCode` 상태도 의존성에 포함하여 중복 호출 방지
+  }, [resId, qrCode]);
 
   /** ✅ 2️⃣ POST 요청: QR 코드 서버로 전송 */
   const sendQRCodeToServer = useCallback(async () => {
     if (!qrCode) {
-      setError("QR 코드가 없습니다.");
+      console.warn("QR 코드가 없습니다.");
       return;
     }
 
@@ -64,9 +63,7 @@ const useQRCodeFetcher = (resId) => {
     try {
       let accessToken = sessionStorage.getItem("accessToken");
       if (!accessToken) {
-
-
-        setError("로그인이 필요합니다.");
+        console.warn("로그인이 필요합니다.");
         setLoading(false);
         return;
       }
@@ -79,7 +76,6 @@ const useQRCodeFetcher = (resId) => {
         },
         body: JSON.stringify({ qrCode: qrBase64 }), // ✅ `qrCode` 필드 포함하여 JSON 변환 후 전송
       });
-      
 
       if (response.status === 401) {
         console.warn("Access token expired. Refreshing tokens...");
@@ -88,18 +84,23 @@ const useQRCodeFetcher = (resId) => {
         if (accessToken) {
           return sendQRCodeToServer(); // 한 번만 재시도
         } else {
-          console.error("Token refresh failed. Logging out.");
-          setError("세션이 만료되었습니다. 다시 로그인하세요.");
+          console.warn("세션이 만료되었습니다. 다시 로그인하세요.");
           setLoading(false);
           return;
         }
+      }
+
+      if (response.status === 418) {  // ✅ 418 응답 처리
+        setError("QR 코드 사용이 제한되었습니다."); 
+        setLoading(false);
+        return;
       }
 
       if (!response.ok) {
         throw new Error(`서버 오류: ${response.status}`);
       }
 
-      const result = await response.json();
+      await response.json();
     } catch (err) {
       setError(err.message);
     } finally {
@@ -117,4 +118,3 @@ const useQRCodeFetcher = (resId) => {
 };
 
 export default useQRCodeFetcher;
-
