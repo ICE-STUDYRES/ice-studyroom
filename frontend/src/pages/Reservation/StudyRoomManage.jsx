@@ -8,9 +8,7 @@ import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
 
 const StudyRoomManage = () => {
   const { addNotification } = useNotification();
-  const {
-    handleLogout
-  } = useMemberHandlers();
+  const { handleLogout } = useMemberHandlers();
   const navigate = useNavigate();
   const [selectedExtension, setSelectedExtension] = useState(null);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -23,70 +21,69 @@ const StudyRoomManage = () => {
     participants: [{ studentNum: '', name: '' }],
     endTime: '',
     extendDeadline: '',
+    status: '',
   }); 
+  const { refreshTokens } = useTokenHandler();
 
-    const {
-      refreshTokens
-    } = useTokenHandler();
-
-    useEffect(() => {
-      const fetchBookingData = async () => {
-        try {
-          let accessToken = sessionStorage.getItem('accessToken');
-          const response = await fetch('/api/reservations/my', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${accessToken}`
-            }
-          });
-    
-          if (response.status === 401) {
-            console.warn('토큰이 만료됨. 새로고침 시도.');
-            accessToken = await refreshTokens();
-            if (accessToken) {
-              return fetchBookingData();
-            } else {
-              console.error('토큰 갱신 실패. 로그아웃 필요.');
-              return;
-            }
+  useEffect(() => {
+    const fetchBookingData = async () => {
+      try {
+        let accessToken = sessionStorage.getItem('accessToken');
+        const response = await fetch('/api/reservations/my', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`
           }
-    
-          const result = await response.json();
-    
-          if (result.code === 'S200' && result.data.length > 0) {
-            const reservedBookings = result.data.filter(
-              booking => 
-                booking.reservation?.status === "RESERVED" || 
-                booking.reservation?.status === "ENTRANCE" || 
-                booking.reservation?.reserved === true
-            );            
-    
-            if (reservedBookings.length > 0) {
-              const bookingData = getNearestBooking(reservedBookings);
-              if (bookingData) {
-                setBooking({
-                  id: bookingData.id || '',
-                  room: bookingData.roomNumber || '',
-                  date: bookingData.scheduleDate || '',
-                  time: `${getFormattedTime(bookingData.startTime)}~${getFormattedTime(bookingData.endTime)}`,
-                  userName: bookingData.userName || '',
-                  userId: bookingData.studentId || '',
-                  participants: Array.isArray(bookingData.participants) ? bookingData.participants : [],
-                  endTime: getFormattedTime(bookingData.endTime),
-                  extendDeadline: getExtendDeadline(bookingData.endTime),
-                });
-              }
-            } else {
-              setBooking({});
-            }
+        });
+  
+        if (response.status === 401) {
+          console.warn('토큰이 만료됨. 새로고침 시도.');
+          accessToken = await refreshTokens();
+          if (accessToken) {
+            return fetchBookingData();
+          } else {
+            console.error('토큰 갱신 실패. 로그아웃 필요.');
+            return;
           }
-        } catch (error) {
-          console.error('Error fetching booking data:', error);
         }
-      };
-    
-      fetchBookingData();
-    }, []);
+  
+        const result = await response.json();
+  
+        if (result.code === 'S200' && result.data.length > 0) {
+          const reservedBookings = result.data.filter(
+            booking => 
+              booking.reservation?.status === "RESERVED" || 
+              booking.reservation?.status === "ENTRANCE" || 
+              booking.reservation?.reserved === true
+          );            
+  
+          if (reservedBookings.length > 0) {
+            const bookingData = getNearestBooking(reservedBookings);
+            if (bookingData) {
+              setBooking({
+                id: bookingData.id || '',
+                room: bookingData.roomNumber || '',
+                date: bookingData.scheduleDate || '',
+                time: `${getFormattedTime(bookingData.startTime)}~${getFormattedTime(bookingData.endTime)}`,
+                userName: bookingData.userName || '',
+                userId: bookingData.studentId || '',
+                participants: Array.isArray(bookingData.participants) ? bookingData.participants : [],
+                endTime: getFormattedTime(bookingData.endTime),
+                extendDeadline: getExtendDeadline(bookingData.endTime),
+                status: bookingData.status || '', // 🔹 추가됨
+              });
+            }
+          } else {
+            setBooking({});
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching booking data:', error);
+      }
+    };
+  
+    fetchBookingData();
+  }, []);
     
 
   const isWithinExtensionTime = () => {
@@ -194,8 +191,6 @@ const StudyRoomManage = () => {
         },
       });
   
-      console.log("예약 취소 응답:", response);
-  
       if (response.data?.code === "S200") {
         setShowCancelConfirm(false); 
         setBooking({}); 
@@ -206,14 +201,11 @@ const StudyRoomManage = () => {
       }
     } catch (error) {
       if (error.response?.status === 401) { 
-        console.warn("Access token expired. Refreshing tokens...");
         const newAccessToken = await refreshTokens();
 
         if (newAccessToken) {
-            console.log("Retrying logout with new token...");
             return handleCancelReservation();
         } else {
-            console.error("Token refresh failed. Logging out forcefully.");
             sessionStorage.clear();
             navigate('/');
         }
@@ -236,22 +228,24 @@ const StudyRoomManage = () => {
         }
       );
   
-      if (response.status === 401) { 
-        accessToken = await refreshTokens();
-        if (accessToken) {
-          return extendReservation(); 
-        } else {
-          console.error('토큰 갱신 실패. 로그아웃 필요.');
-          return;
-        }
-      }
-  
-      addNotification('extension', 'success');
-
-      if (response.code !== "S200") {
-        addNotification('extension', 'error', response.data.message);
+      if (response.status === 200 && response.data?.code === "S200") {
+        addNotification("extension", "success");
+        navigate('/');
+      } else {
+        const errorMessage = response.data?.message || "알 수 없는 오류가 발생했습니다.";
+        addNotification("extension", "error", errorMessage);
       }
     } catch (error) {
+
+      if (error.response?.status === 401) {
+        console.warn("토큰이 만료됨. 새로고침 시도.");
+        const newAccessToken = await refreshTokens();
+        if (newAccessToken) {
+          return extendReservation(); // 토큰 갱신 후 다시 요청
+        }
+      }
+      const errorMessage = error.response?.data?.message || "서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.";
+      addNotification("extension", "error", errorMessage);
     }
   };
 
@@ -277,98 +271,98 @@ const StudyRoomManage = () => {
 
   const CancelConfirmation = () => {
     const now = new Date();
-  const [startHour, startMinute] = booking.time.split("~")[0].split(":").map(Number);
-  const startTime = new Date(booking.date);
-  startTime.setHours(startHour, startMinute, 0, 0);
+    const [startHour, startMinute] = booking.time.split("~")[0].split(":").map(Number);
+    const startTime = new Date(booking.date);
+    startTime.setHours(startHour, startMinute, 0, 0);
 
-  const timeDifference = (startTime - now) / (1000 * 60);
-  return (
-    <div 
-      className="fixed inset-0 bg-black/30 z-40 flex items-center justify-center"
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          setShowCancelConfirm(false);
-        }
-      }}
-    >
-      <div className="max-w-[480px] w-full mx-4">
-        <div className="bg-white rounded-2xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900">예약 취소</h3>
-            <button 
-              onClick={() => setShowCancelConfirm(false)}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5 text-gray-500" />
-            </button>
-          </div>
-          
-          {/* 취소할 예약 정보 표시 */}
-          <div className="p-4 bg-gray-50 rounded-xl space-y-3">
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-bold text-slate-900">{booking.room}</span>
-                <span className="text-gray-600">| {booking.date}</span>
-              </div>
-              <div className="flex items-center gap-2 mt-1">
-                <Clock className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-900">{booking.time}</span>
-              </div>
+    const timeDifference = (startTime - now) / (1000 * 60);
+    return (
+      <div 
+        className="fixed inset-0 bg-black/30 z-40 flex items-center justify-center"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowCancelConfirm(false);
+          }
+        }}
+      >
+        <div className="max-w-[480px] w-full mx-4">
+          <div className="bg-white rounded-2xl p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900">예약 취소</h3>
+              <button 
+                onClick={() => setShowCancelConfirm(false)}
+                className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
             </div>
-
-            <div className="space-y-2">
+            
+            {/* 취소할 예약 정보 표시 */}
+            <div className="p-4 bg-gray-50 rounded-xl space-y-3">
               <div>
-                <div className="text-sm text-gray-600 mb-1">예약자</div>
-                <div className="flex items-center gap-1">
-                  <span className="font-medium text-gray-900">{booking.userName}</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-slate-900">{booking.room}</span>
+                  <span className="text-gray-600">| {booking.date}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <Clock className="w-4 h-4 text-gray-600" />
+                  <span className="text-gray-900">{booking.time}</span>
                 </div>
               </div>
-              
-              {booking.participants.length > 1 && (
+
+              <div className="space-y-2">
                 <div>
-                  <div className="text-sm text-gray-600 mb-1">참여자</div>
-                  {booking.participants.slice(1).map((participant, index) => (
-                    <div key={index} className="flex items-center gap-1">
-                      <span className="font-medium text-gray-900">{participant.name}</span>
-                      <span className="text-sm text-gray-500">({participant.studentNum})</span>
-                    </div>
-                  ))}
+                  <div className="text-sm text-gray-600 mb-1">예약자</div>
+                  <div className="flex items-center gap-1">
+                    <span className="font-medium text-gray-900">{booking.userName}</span>
+                  </div>
                 </div>
-              )}
+                
+                {booking.participants.length > 1 && (
+                  <div>
+                    <div className="text-sm text-gray-600 mb-1">참여자</div>
+                    {booking.participants.slice(1).map((participant, index) => (
+                      <div key={index} className="flex items-center gap-1">
+                        <span className="font-medium text-gray-900">{participant.name}</span>
+                        <span className="text-sm text-gray-500">({participant.studentNum})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {timeDifference < 60 && (
-            <p className="text-sm text-red-500 text-center font-medium">
-              현재 예약 시작까지 1시간이 채 남지 않았습니다.<br />
-              취소하면 패널티를 받을 수 있습니다.
+            {timeDifference < 60 && (
+              <p className="text-sm text-red-500 text-center font-medium">
+                현재 예약 시작까지 1시간이 채 남지 않았습니다.<br />
+                취소하면 패널티를 받을 수 있습니다.
+              </p>
+            )}
+
+            {/* 기존 메시지 */}
+            <p className="text-sm text-gray-600 text-center">
+              예약을 취소하시겠습니까?
             </p>
-          )}
 
-          {/* 기존 메시지 */}
-          <p className="text-sm text-gray-600 text-center">
-            예약을 취소하시겠습니까?
-          </p>
-
-          <div className="grid grid-cols-2 gap-3">
-            <button 
-              onClick={() => setShowCancelConfirm(false)}
-              className="w-full py-3 text-sm font-medium text-gray-500 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              돌아가기
-            </button>
-            <button 
-              onClick={handleCancelReservation}
-              className="w-full py-3 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors"
-            >
-              취소하기
-            </button>
+            <div className="grid grid-cols-2 gap-3">
+              <button 
+                onClick={() => setShowCancelConfirm(false)}
+                className="w-full py-3 text-sm font-medium text-gray-500 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                돌아가기
+              </button>
+              <button 
+                onClick={handleCancelReservation}
+                className="w-full py-3 text-sm font-medium text-white bg-red-500 rounded-xl hover:bg-red-600 transition-colors"
+              >
+                취소하기
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const getCurrentDate = () => {
     const today = new Date();
@@ -532,28 +526,23 @@ const StudyRoomManage = () => {
           >
             예약 취소
           </button>
-            <button 
-              onClick={() => {
-                if (selectedExtension) {
-                  try {
-                    extendReservation();
-                    alert('예약이 연장되었습니다.');
-                    navigate('/');
-                  } catch (error) {
-                    console.error("예약 연장 중 오류 발생", error);
-                  }
+          <button 
+            onClick={() => {
+              if (selectedExtension) {
+                try {
+                  extendReservation();
+                } catch (error) {
+                  console.error("예약 연장 중 오류 발생", error);
                 }
-              }}
-              disabled={!selectedExtension || isPastReservation() || booking.status !== "ENTRANCE"}
-              className={`
-                w-full py-3 text-sm font-medium rounded-xl transition-colors
-                ${!selectedExtension || isPastReservation() || booking.status !== "ENTRANCE"
-                  ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                  : "bg-slate-900 hover:bg-slate-800 text-white"}
-              `}
-            >
-              연장하기
-            </button>
+              }
+            }}
+            className="
+              w-full py-3 text-sm font-medium rounded-xl transition-colors
+              bg-slate-900 hover:bg-slate-800 text-white
+            "
+          >
+            연장하기
+          </button>
           </div>
         </div>
       </div>
