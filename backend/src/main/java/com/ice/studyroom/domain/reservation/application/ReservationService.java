@@ -344,38 +344,26 @@ public class ReservationService {
 		return new CancelReservationResponse(id);
 	}
 
+	@Transactional
 	public String extendReservation(Long reservationId, String authorizationHeader) {
 		Reservation reservation = this.findReservationById(reservationId);
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		if (!reservation.matchEmail(email)) {
-			throw new BusinessException(StatusCode.NOT_FOUND, "이전에 예약이 되지 않았습니다.");
+			throw new BusinessException(StatusCode.NOT_FOUND, "해당 예약 정보가 존재하지 않습니다.");
 		}
 
+		//연장 가능 시간 검증
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime endTime = LocalDateTime.of(reservation.getScheduleDate(), reservation.getEndTime());
-
 		if (now.isAfter(endTime)) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "연장 가능한 시간이 지났습니다.");
 		} else if (now.isBefore(endTime.minusMinutes(10))) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "연장은 퇴실 시간 10분 전부터 가능합니다.");
 		}
 
-		//방 번호, 오늘 날짜, 시작하는 시간으로 다음 스케줄을 찾는다.
-		Schedule nextSchedule = scheduleRepository.findByRoomNumberAndScheduleDateAndStartTime(
-			reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getEndTime());
-
-		if (nextSchedule == null) {
-			throw new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요.");
-		}
-
-		if (!nextSchedule.isCurrentResLessThanCapacity() || !nextSchedule.isAvailable()) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 예약이 완료된 스터디룸입니다.");
-		}
-
 		//요청한 예약과 동일한 예약을 모두 가져온다.
-		List<Reservation> reservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
-			reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
+		List<Reservation> reservations = reservationRepository.findByFirstScheduleId(reservation.getFirstScheduleId());
 
 		//동일한 예약에 대해 모든 이메일을 가져온다.
 		List<String> reservationEmails = reservations.stream().map(Reservation::getUserEmail).toList();
@@ -386,33 +374,46 @@ public class ReservationService {
 				throw new BusinessException(StatusCode.FORBIDDEN, "패널티가 있는 멤버로 인해 연장이 불가능합니다.");
 			}
 		}
+
+		Long lastScheduleId = reservation.getSecondScheduleId() != null ?
+			reservation.getSecondScheduleId() : reservation.getFirstScheduleId();
+
+		//예약의 마지막 스케줄 ID를 통해 다음 스케줄을 찾는다.
+		Schedule nextSchedule = scheduleRepository.findById(lastScheduleId + 1)
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요."));
+
+		if(nextSchedule.getRoomNumber() != reservation.getRoomNumber()){
+			throw new BusinessException(StatusCode.BAD_REQUEST, "스터디룸 이용 가능 시간을 확인해주세요.");
+		}
+
+		if (!nextSchedule.isCurrentResLessThanCapacity() || !nextSchedule.isAvailable()) {
+			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 예약이 완료된 스터디룸입니다.");
+		}
+
 		if (nextSchedule.getRoomType() == RoomType.GROUP) {
 			for (Reservation res : reservations) {
 				//1명이라도 입실하지 않은 경우
-				if(res.getStatus() == ReservationStatus.RESERVED){
+				if(res.getStatus() != ReservationStatus.ENTRANCE){
+					//지각 입실은 앞서 패널티 체킹으로 연장 불가 처리
 					throw new BusinessException(StatusCode.BAD_REQUEST, "입실 처리 되어있지 않은 유저가 있어 연장이 불가능합니다.");
 				}
 			}
 
 			for (Reservation res : reservations) {
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
-				reservationRepository.save(res);
 			}
 
 			nextSchedule.reserve();
-			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + reservationEmails.size());
-			scheduleRepository.save(nextSchedule);
+			nextSchedule.setCurrentRes(reservationEmails.size());
 		}else{
-			if(reservation.getStatus() == ReservationStatus.RESERVED){
+			if(reservation.getStatus() != ReservationStatus.ENTRANCE){
 				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 연장은 입실 후 가능합니다.");
 			}
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
-			reservationRepository.save(reservation);
 			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + 1);
-			if (nextSchedule.getCurrentRes() == nextSchedule.getCapacity()) {
+			if(!nextSchedule.isCurrentResLessThanCapacity()){
 				nextSchedule.reserve();
 			}
-			scheduleRepository.save(nextSchedule);
 		}
 
 		return "Success";
