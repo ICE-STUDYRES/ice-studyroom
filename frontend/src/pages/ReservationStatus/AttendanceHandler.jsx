@@ -29,7 +29,6 @@ const AttendanceHandler = () => {
             qrData = parsedData.data;
           }
         } catch (err) {
-          console.warn("⚠️ QR 코드 데이터가 JSON 형식이 아님. 그대로 사용함.");
         }
     
         try {
@@ -45,7 +44,6 @@ const AttendanceHandler = () => {
     
           // 401 에러 처리: refreshTokens 실행 후 다시 요청
           if (!response.ok && response.status === 401) {
-            console.warn("Access token expired. Refreshing tokens...");
             accessToken = await refreshTokens();
     
             // 새 토큰으로 재요청
@@ -66,7 +64,6 @@ const AttendanceHandler = () => {
             responseData = await response.json();
           } else {
             responseData = await response.text();
-            console.warn("⚠️ 서버가 JSON이 아닌 응답을 반환함:", responseData);
           }
     
           updateCurrentTime();
@@ -89,7 +86,6 @@ const AttendanceHandler = () => {
     
           setSentQRCode(qrData);
         } catch (error) {
-          console.error("⚠️ 네트워크 오류 발생:", error);
         }
     
         qrBufferRef.current = "";

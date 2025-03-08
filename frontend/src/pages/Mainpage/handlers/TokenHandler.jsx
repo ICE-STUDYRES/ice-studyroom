@@ -10,7 +10,6 @@ export const useTokenHandler = () => {
                 refreshSubscribers.push(resolve);
             });
         }
-
         isRefreshing = true;
 
         try {
@@ -25,7 +24,6 @@ export const useTokenHandler = () => {
             );
 
             if (response.data.code !== "S200" || !response.data.data) {
-                console.warn("Failed to refresh token. Logging out.");
                 handleLogout();
                 return null;
             }
@@ -37,10 +35,8 @@ export const useTokenHandler = () => {
             refreshSubscribers.forEach((callback) => callback(newAccessToken));
             refreshSubscribers = [];
 
-            console.log("Tokens refreshed successfully.");
             return newAccessToken;
         } catch (error) {
-            console.error("Error refreshing token:", error.response?.data || error);
             return null;
         } finally {
             isRefreshing = false;

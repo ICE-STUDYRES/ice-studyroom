@@ -18,7 +18,6 @@ const SignInPage = () => {
   useEffect (() => {
     const handleKeyPress = (event) => {
       if (event.ctrlKey && event.shiftKey && event.key === 'K') {
-        console.log('Ctrl + Shift + K pressed');
         navigate('/auth/admin-signin');
         return;
       }

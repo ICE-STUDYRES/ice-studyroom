@@ -26,11 +26,6 @@ export const useMainpageHandlers = () => {
       const fetchUserData = async () => {
           try {
               let accessToken = sessionStorage.getItem('accessToken');
-              if (!accessToken) {
-                  console.warn("❌ No access token. User needs to log in.");
-                  return;
-              }
-  
               let response = await axios.get('/api/users', {
                   headers: { Authorization: `Bearer ${accessToken}` }
               });
@@ -48,19 +43,14 @@ export const useMainpageHandlers = () => {
                   } else {
                       setPenaltyEndAt("");
                   }
-  
                   setPenaltyReason(penaltyReasonMap[penaltyReasonType]);
               }
           } catch (error) {
             if (error.response && error.response.status === 401) {
-              console.warn('토큰이 만료됨. 새로고침 시도.');
 
                 accessToken = await refreshTokens();
                 if (accessToken) {
                     return fetchUserData();
-                } else {
-                  console.error('토큰 갱신 실패. 로그아웃 필요.');
-                    return;
                 }
             }
           }
