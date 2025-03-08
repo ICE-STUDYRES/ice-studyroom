@@ -20,6 +20,9 @@ const ReservationStatus = () => {
   const fetchSchedules = async () => {
     try {
       let accessToken = sessionStorage.getItem('accessToken')
+      if (!accessToken) {
+        return;
+      }
       const response = await fetch('/api/schedules', {
         headers: {
           Authorization: `Bearer ${accessToken}`,

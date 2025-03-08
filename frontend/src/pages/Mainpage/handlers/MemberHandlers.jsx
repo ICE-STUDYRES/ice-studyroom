@@ -289,7 +289,11 @@ export const useMemberHandlers = () => {
 
     const handleLogout = async () => {
         try {
-            let accessToken = sessionStorage.getItem('accessToken'); 
+            let accessToken = sessionStorage.getItem('accessToken');
+            if (!accessToken) {
+                navigate('/')
+                return;
+            }
     
             const response = await axios.post(
                 '/api/users/auth/logout',

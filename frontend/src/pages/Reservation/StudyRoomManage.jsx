@@ -29,6 +29,9 @@ const StudyRoomManage = () => {
     const fetchBookingData = async () => {
       try {
         let accessToken = sessionStorage.getItem('accessToken');
+        if (!accessToken) {
+          return;
+        }
         const response = await fetch('/api/reservations/my', {
           method: 'GET',
           headers: {

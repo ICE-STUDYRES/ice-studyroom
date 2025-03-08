@@ -125,6 +125,9 @@ export const roomBookingManager = () => {
     setLoading(true);
     try {
       let accessToken = sessionStorage.getItem("accessToken");
+      if (!accessToken) {
+        return;
+      }
 
       const response = await fetch("/api/schedules", {
         headers: {
@@ -193,6 +196,9 @@ export const roomBookingManager = () => {
   const fetchUserInfo = async () => {
     try {
         let accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken) {
+          return;
+        }
         const response = await fetch("/api/users", {
             method: "GET",
             headers: {
