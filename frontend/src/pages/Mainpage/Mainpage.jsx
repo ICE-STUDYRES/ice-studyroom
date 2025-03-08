@@ -52,10 +52,6 @@ const MainPage = () => {
         const getRecentReservation = async () => {
             try {
                 let accessToken = sessionStorage.getItem('accessToken');
-                if (!accessToken) {
-                    console.warn("❌ No access token. User needs to log in.");
-                    return;
-                }
     
                 let response = await fetch('/api/reservations/my/latest', {
                     method: 'GET',
@@ -65,16 +61,11 @@ const MainPage = () => {
                     }
                 });
     
-                if (response.status === 401) {
-                  console.warn('토큰이 만료됨. 새로고침 시도.');
-                    
+                if (response.status === 401) {                    
                     accessToken = await refreshTokens();
     
                     if (accessToken) {
                         return getRecentReservation();
-                    } else {
-                      console.error('토큰 갱신 실패. 로그아웃 필요.');
-                      return;
                     }
                 }
     
@@ -88,7 +79,6 @@ const MainPage = () => {
                     setRecentReservation({ date: null, roomNumber: null });
                 }
             } catch (err) {
-                console.error("🚨 Failed to fetch recent reservation:", err);
             }
         };
     
