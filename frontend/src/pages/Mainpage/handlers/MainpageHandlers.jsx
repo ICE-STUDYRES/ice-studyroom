@@ -26,6 +26,10 @@ export const useMainpageHandlers = () => {
       const fetchUserData = async () => {
           try {
               let accessToken = sessionStorage.getItem('accessToken');
+              if (!accessToken) {
+                return;
+              }
+              
               let response = await axios.get('/api/users', {
                   headers: { Authorization: `Bearer ${accessToken}` }
               });

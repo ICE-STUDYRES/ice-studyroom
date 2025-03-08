@@ -14,6 +14,9 @@ export const useTokenHandler = () => {
 
         try {
             const accessToken = sessionStorage.getItem('accessToken');
+            if (!accessToken) {
+                return;
+            }
             const response = await axios.post(
                 '/api/users/auth/refresh',
                 {},

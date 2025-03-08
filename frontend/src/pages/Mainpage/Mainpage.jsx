@@ -52,6 +52,9 @@ const MainPage = () => {
         const getRecentReservation = async () => {
             try {
                 let accessToken = sessionStorage.getItem('accessToken');
+                if (!accessToken) {
+                  return;
+                }
     
                 let response = await fetch('/api/reservations/my/latest', {
                     method: 'GET',
@@ -81,9 +84,7 @@ const MainPage = () => {
             } catch (err) {
             }
         };
-    
         getRecentReservation();
-    
     }, []);
 
   return (
