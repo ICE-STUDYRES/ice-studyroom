@@ -273,19 +273,15 @@ export const useMemberHandlers = () => {
             }
         } catch (error) {
             if (error.response?.status === 401) {
-                console.warn('Access token expired. Refreshing tokens...');
                 const newAccessToken = await refreshTokens();
     
                 if (newAccessToken) {
-                    console.log("Retrying password change with new token...");
                     return handlePasswordChange(e);
                 } else {
-                    console.error("Token refresh failed. Redirecting to login.");
                     sessionStorage.clear();
                     navigate('/auth/signin');
                 }
             } else {
-                console.error("Error changing password:", error);
                 setPasswordChangeError(error.response?.data?.message || '비밀번호 변경에 실패했습니다.');
             }
         }
@@ -305,28 +301,18 @@ export const useMemberHandlers = () => {
             );
     
             if (response.status === 200) {
-                console.log("Logout successful");
                 sessionStorage.clear();
                 navigate('/');
-            } else {
-                console.warn("Logout request failed. Status:", response.status);
             }
-    
         } catch (error) {
             if (error.response?.status === 401) { 
-                console.warn("Access token expired. Refreshing tokens...");
                 const newAccessToken = await refreshTokens();
-    
                 if (newAccessToken) {
-                    console.log("Retrying logout with new token...");
                     return handleLogout();
                 } else {
-                    console.error("Token refresh failed. Logging out forcefully.");
                     sessionStorage.clear();
                     navigate('/');
                 }
-            } else {
-                console.error("Logout failed:", error);
             }
         }
     };

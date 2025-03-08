@@ -50,13 +50,10 @@ const MyReservationStatus = () => {
         });
 
         if (response.status === 401 && retry) {
-            console.warn("🔄 Access token expired. Refreshing tokens...");
             accessToken = await refreshTokens();
 
             if (accessToken) {
                 return fetchMyReservations(false);
-            } else {
-                console.error("❌ Token refresh failed. Logging out.");
             }
         }
 

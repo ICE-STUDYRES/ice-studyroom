@@ -27,14 +27,10 @@ const ReservationStatus = () => {
       });
 
       if (response.status === 401) {
-        console.warn('토큰이 만료됨. 새로고침 시도.');
 
           accessToken = await refreshTokens();
           if (accessToken) {
               return fetchSchedules();
-          } else {
-            console.error('토큰 갱신 실패. 로그아웃 필요.');
-              return;
           }
       }
 

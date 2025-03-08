@@ -28,7 +28,6 @@ const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
   useEffect(() => {
     const fetchUserInfo = async () => {
         let accessToken = sessionStorage.getItem('accessToken');
-        if (!accessToken) return;
 
         try {
             let response = await fetch('/api/users', {
@@ -40,25 +39,19 @@ const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
             });
 
             if (response.status === 401) {
-                console.warn('토큰이 만료됨. 새로고침 시도.');
-
                 accessToken = await refreshTokens();
-
                 if (accessToken) {
                     return fetchUserInfo();
                 } else {
-                    console.error('토큰 갱신 실패. 로그아웃 필요.');
                     return;
                 }
             }
-
             const result = await response.json();
             if (result.code === 'S200' && result.data) {
                 setUserName(result.data.name);
                 setUserEmail(result.data.email);
             }
         } catch (error) {
-            console.error('🚨 사용자 정보 가져오기 실패:', error);
         }
     };
 

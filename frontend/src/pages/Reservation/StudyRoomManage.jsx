@@ -37,13 +37,9 @@ const StudyRoomManage = () => {
         });
   
         if (response.status === 401) {
-          console.warn('토큰이 만료됨. 새로고침 시도.');
           accessToken = await refreshTokens();
           if (accessToken) {
             return fetchBookingData();
-          } else {
-            console.error('토큰 갱신 실패. 로그아웃 필요.');
-            return;
           }
         }
   
@@ -78,7 +74,6 @@ const StudyRoomManage = () => {
           }
         }
       } catch (error) {
-        console.error('Error fetching booking data:', error);
       }
     };
   
@@ -146,7 +141,6 @@ const StudyRoomManage = () => {
     return reservations
       .map(({ reservation, participants }) => { 
         if (!reservation) {
-          console.warn("⚠️ reservation 객체가 없습니다:", reservation);
           return null;
         }
   
@@ -238,7 +232,6 @@ const StudyRoomManage = () => {
     } catch (error) {
 
       if (error.response?.status === 401) {
-        console.warn("토큰이 만료됨. 새로고침 시도.");
         const newAccessToken = await refreshTokens();
         if (newAccessToken) {
           return extendReservation(); // 토큰 갱신 후 다시 요청
@@ -532,7 +525,6 @@ const StudyRoomManage = () => {
                 try {
                   extendReservation();
                 } catch (error) {
-                  console.error("예약 연장 중 오류 발생", error);
                 }
               }
             }}
