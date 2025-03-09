@@ -1,5 +1,5 @@
 # 1. 사용할 기본 이미지 (OpenJDK 17 JRE)
-FROM openjdk:17-jre-slim
+FROM openjdk:17-slim
 
 # 2. 타임존 설정 추가
 ENV TZ=Asia/Seoul
