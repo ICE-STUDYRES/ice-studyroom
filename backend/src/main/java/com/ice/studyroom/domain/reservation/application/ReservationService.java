@@ -43,8 +43,10 @@ import com.ice.studyroom.domain.reservation.presentation.dto.response.GetReserva
 import com.ice.studyroom.domain.reservation.presentation.dto.response.ParticipantResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
+import com.ice.studyroom.global.dto.request.EmailRequest;
 import com.ice.studyroom.global.exception.AttendanceException;
 import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.service.EmailService;
 import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
@@ -62,6 +64,7 @@ public class ReservationService {
 	private final QRCodeService qrCodeService;
 	private final PenaltyService penaltyService;
 	private final MemberDomainService memberDomainService;
+	private final EmailService emailService;
 
 	//todo : N+1 문제 해결
 	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
@@ -200,6 +203,7 @@ public class ReservationService {
 		}
 
 		scheduleRepository.saveAll(schedules);
+		sendReservationSuccessEmail(roomType, reserverEmail, new HashSet<>(), schedules.get(0));
 
 		return "Success";
 	}
@@ -301,6 +305,7 @@ public class ReservationService {
 		}
 
 		scheduleRepository.saveAll(schedules);
+		sendReservationSuccessEmail(roomType, reserverEmail, uniqueEmails, schedules.get(0));
 
 		return "Success";
 	}
@@ -471,5 +476,61 @@ public class ReservationService {
 				throw new BusinessException(StatusCode.CONFLICT, "현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다.");
 			}
 		}
+	}
+
+	private void sendReservationSuccessEmail(RoomType type, String reserverEmail, Set<String> uniqueEmails,
+		Schedule schedule) {
+
+		String subject = "[ICE-STUDYRES] 스터디룸 예약이 완료되었습니다.";
+		String body = buildReservationSuccessEmailBody(type, schedule, reserverEmail, uniqueEmails);
+
+		emailService.sendEmail(new EmailRequest(reserverEmail, subject, body));
+		if(type == RoomType.GROUP){
+			for (String uniqueEmail : uniqueEmails) {
+				if(!uniqueEmail.equals(reserverEmail)){
+					emailService.sendEmail(new EmailRequest(uniqueEmail, subject, body));
+				}
+			}
+		}
+	}
+
+	private String buildReservationSuccessEmailBody(RoomType type, Schedule schedule, String reserverEmail, Set<String> uniqueEmails) {
+		String participantsSection = "";
+		if (type == RoomType.GROUP) {
+			participantsSection = "<h3>참여자 명단</h3><ul>";
+			for (String email : uniqueEmails) {
+				participantsSection += "<li>" + email + "</li>";
+			}
+			participantsSection += "</ul>";
+		}
+
+		return String.format(
+			"<html><body>" +
+				"<h2>스터디룸 예약이 완료되었습니다!</h2>" +
+				"<p>아래 예약 정보를 확인해주세요.</p>" +
+				"<hr>" +
+				"<h3>예약 정보</h3>" +
+				"<p><strong>예약자:</strong> %s</p>" +
+				"<p><strong>스터디룸:</strong> %s</p>" +
+				"<p><strong>예약 날짜:</strong> %s</p>" +
+				"<p><strong>이용 시간:</strong> %s ~ %s</p>" +
+				"%s" +  // 그룹 예약 시 참여자 목록 포함
+				"<hr>" +
+				"<h3>⚠ 예약 패널티 안내 ⚠</h3>" +
+				"<p>예약 시간 미준수 시 패널티가 부여되며, 해당 기간 동안 예약 기능이 제한됩니다.</p>" +
+				"<ul>" +
+				"<li><strong>No Show</strong> 시 <strong>7일간 패널티 부여</strong></li>" +
+				"<li><strong>예약 시간 30분 초과 입장</strong> 시 <strong>지각 처리</strong> 및 <strong>3일간 패널티 부여</strong></li>" +
+				"<li><strong>입장 시간 1시간 전 취소</strong> 시 <strong>2일간 패널티 부여</strong></li>" +
+				"</ul>" +
+				"<p>감사합니다.</p>" +
+				"</body></html>",
+			reserverEmail,
+			schedule.getRoomNumber(),
+			LocalDate.now(),
+			schedule.getStartTime(),
+			schedule.getEndTime(),
+			participantsSection
+		);
 	}
 }
