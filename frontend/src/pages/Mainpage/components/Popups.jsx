@@ -40,12 +40,12 @@ export const NoticePopup = ({ showNotice, handleCloseNotice, showPenaltyPopup, s
             {/* Penalty Content */}
             {showPenaltyPopup && (
               <div className="space-y-3 text-sm">
-                <p>1. 예약 시간 미준수로 인한 패널티 부여.</p>
-                <p>2. No Show 시 7일간 패널티 부여.</p>
-                <p>3. 10분 이상 지각시 3일간 페널티 부여.</p>
-                <p>4. 시작시간 1시간 이전에 취소시 2일간 패널티 부여.</p>
-                <p>5. 패널티는 관리자 승인 후 조정 가능합니다.</p>
-                <p>6. 패널티가 부여되면 예약 기능이 제한됩니다.</p>
+                <p style={{ fontWeight: "bold"}}>예약 시간 미준수 시 패널티가 부여되며, 해당 기간 동안 예약 기능이 제한됩니다.</p>
+                <p>1. No Show 시 7일간 패널티 부여</p>
+                <p>2. 예약 입장 시간 30분 초과 입장 시 지각 처리 및 3일간 패널티 부여</p>
+                <p>3. 예약 입장 시간 1시간 전 예약 취소 시 2일간 패널티 부여</p>
+                <p>4. 패널티는 관리자 승인 후 조정 가능합니다.</p>
+                <p>5. 패널티가 부여되면 예약 기능이 제한됩니다.</p>
               </div>
             )}
           </div>
