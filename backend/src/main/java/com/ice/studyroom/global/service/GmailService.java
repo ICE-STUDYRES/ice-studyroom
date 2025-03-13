@@ -28,9 +28,9 @@ public class GmailService implements EmailService {
 			helper.setText(emailRequest.getBody(), true); // HTML 본문
 
 			mailSender.send(mimeMessage);
-			log.info("알림 이메일 전송 성공: {}", emailRequest.getTo());
+			log.info("이메일 전송 성공: {}", emailRequest.getTo());
 		} catch (MessagingException e) {
-			log.error("알림 이메일 전송 실패: {}", emailRequest.getTo(), e);
+			log.error("이메일 전송 실패: {}", emailRequest.getTo(), e);
 			throw new RuntimeException("메일 전송에 실패했습니다.", e);
 		}
 	}
