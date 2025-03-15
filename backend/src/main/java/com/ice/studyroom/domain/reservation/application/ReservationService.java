@@ -44,7 +44,6 @@ import com.ice.studyroom.domain.reservation.presentation.dto.response.Participan
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
 import com.ice.studyroom.global.dto.request.EmailRequest;
-import com.ice.studyroom.global.exception.AttendanceException;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.EmailService;
 import com.ice.studyroom.global.type.StatusCode;
