@@ -19,7 +19,6 @@ public class GmailService implements EmailService {
 
 	private final JavaMailSender mailSender;
 
-	@Async("emailTaskExecutor")
 	public void sendEmail(EmailRequest emailRequest) {
 		try {
 			MimeMessage mimeMessage = mailSender.createMimeMessage();
