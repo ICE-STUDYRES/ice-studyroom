@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.membership.domain.service;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -55,6 +56,10 @@ public class MemberDomainService {
 	public Member getMemberByEmail(String email) {
 		return Optional.ofNullable(memberRepository.getMemberByEmail(Email.of(email)))
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 이메일을 가진 유저는 존재하지 않습니다."));
+	}
+
+	public List<Member> getMembersByEmail(List<Email> emails){
+		return memberRepository.findByEmailIn(emails);
 	}
 
 	public Member getMemberByEmailForLogin(String email) {

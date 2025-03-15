@@ -44,7 +44,6 @@ import com.ice.studyroom.domain.reservation.presentation.dto.response.Participan
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QRDataResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
 import com.ice.studyroom.global.dto.request.EmailRequest;
-import com.ice.studyroom.global.exception.AttendanceException;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.EmailService;
 import com.ice.studyroom.global.type.StatusCode;
@@ -478,15 +477,17 @@ public class ReservationService {
 		}
 	}
 
-	private void sendReservationSuccessEmail(RoomType type, String reserverEmail, Set<String> uniqueEmails,
+	private void sendReservationSuccessEmail(RoomType type, String reserverEmail, Set<String> participantsEmail,
 		Schedule schedule) {
 
 		String subject = "[ICE-STUDYRES] 스터디룸 예약이 완료되었습니다.";
-		String body = buildReservationSuccessEmailBody(type, schedule, reserverEmail, uniqueEmails);
+		List<Email> participantsEmailList = participantsEmail.stream().map(Email::new).toList();
+		String body = buildReservationSuccessEmailBody(type, schedule, reserverEmail, participantsEmailList);
 
 		emailService.sendEmail(new EmailRequest(reserverEmail, subject, body));
+
 		if(type == RoomType.GROUP){
-			for (String uniqueEmail : uniqueEmails) {
+			for (String uniqueEmail : participantsEmail) {
 				if(!uniqueEmail.equals(reserverEmail)){
 					emailService.sendEmail(new EmailRequest(uniqueEmail, subject, body));
 				}
@@ -494,12 +495,17 @@ public class ReservationService {
 		}
 	}
 
-	private String buildReservationSuccessEmailBody(RoomType type, Schedule schedule, String reserverEmail, Set<String> uniqueEmails) {
+	private String buildReservationSuccessEmailBody(RoomType type, Schedule schedule, String reserverEmail, List<Email> participantsEmail) {
 		String participantsSection = "";
+		Member reserver = memberDomainService.getMemberByEmail(reserverEmail);
+		List<Member> participantsMember = memberDomainService.getMembersByEmail(participantsEmail);
 		if (type == RoomType.GROUP) {
 			participantsSection = "<h3>참여자 명단</h3><ul>";
-			for (String email : uniqueEmails) {
-				participantsSection += "<li>" + email + "</li>";
+
+			for (Member member : participantsMember) {
+				if(!member.getEmail().getValue().equals(reserverEmail)){
+					participantsSection += "<li>" + member.getName() + "(" + member.getStudentNum() + ")" + "</li>";
+				}
 			}
 			participantsSection += "</ul>";
 		}
@@ -510,7 +516,7 @@ public class ReservationService {
 				"<p>아래 예약 정보를 확인해주세요.</p>" +
 				"<hr>" +
 				"<h3>예약 정보</h3>" +
-				"<p><strong>예약자:</strong> %s</p>" +
+				"<p><strong>예약자:</strong> %s(%s)</p>" +
 				"<p><strong>스터디룸:</strong> %s</p>" +
 				"<p><strong>예약 날짜:</strong> %s</p>" +
 				"<p><strong>이용 시간:</strong> %s ~ %s</p>" +
@@ -525,7 +531,8 @@ public class ReservationService {
 				"</ul>" +
 				"<p>감사합니다.</p>" +
 				"</body></html>",
-			reserverEmail,
+			reserver.getName(),
+			reserver.getStudentNum(),
 			schedule.getRoomNumber(),
 			LocalDate.now(),
 			schedule.getStartTime(),

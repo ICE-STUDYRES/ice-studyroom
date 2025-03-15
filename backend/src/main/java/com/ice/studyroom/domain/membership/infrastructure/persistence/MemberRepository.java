@@ -1,5 +1,7 @@
 package com.ice.studyroom.domain.membership.infrastructure.persistence;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -17,4 +19,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 	boolean existsByStudentNum(String studentNum);
 
 	boolean existsByEmailAndIsPenalty(Email email, boolean isPenalty);
+
+	List<Member> findByEmailIn(Collection<Email> email);
 }
