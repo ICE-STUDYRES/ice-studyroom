@@ -41,9 +41,11 @@ export const NoticePopup = ({ showNotice, handleCloseNotice, showPenaltyPopup, s
             {showPenaltyPopup && (
               <div className="space-y-3 text-sm">
                 <p style={{ fontWeight: "bold"}}>예약 시간 미준수 시 패널티가 부여되며, 해당 기간 동안 예약 기능이 제한됩니다.</p>
-                <p>1. No Show 시 7일간 패널티 부여</p>
-                <p>2. 예약 입장 시간 30분 초과 입장 시 지각 처리 및 3일간 패널티 부여</p>
-                <p>3. 예약 입장 시간 1시간 전 예약 취소 시 2일간 패널티 부여</p>
+                <p style={{ fontWeight: "bold"}}>패널티 기간은 패널티를 받은 다음 날부터 시작되며, 주말(토, 일)을 제외한 영업일 기준으로 계산됩니다.</p>
+                  <hr/>
+                <p>1. No Show 시 5일간 패널티 부여 (주말 제외, 영업일 기준)</p>
+                <p>2. 예약 입장 시간 30분 초과 입장 시 지각 처리 및 3일간 패널티 부여 (주말 제외, 영업일 기준)</p>
+                <p>3. 예약 입장 시간 1시간 전 예약 취소 시 2일간 패널티 부여 (주말 제외, 영업일 기준)</p>
                 <p>4. 패널티는 관리자 승인 후 조정 가능합니다.</p>
                 <p>5. 패널티가 부여되면 예약 기능이 제한됩니다.</p>
               </div>

@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.penalty.application;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -64,7 +65,16 @@ public class PenaltyService {
 	}
 
 	private LocalDateTime calculatePenaltyEnd(int durationDays) {
-		LocalDate penaltyEndDate = LocalDate.now().plusDays(durationDays);
+		LocalDate penaltyEndDate = LocalDate.now();
+
+		int addedDays = 0;
+		while (addedDays < durationDays) {
+			penaltyEndDate = penaltyEndDate.plusDays(1);
+			if (!(penaltyEndDate.getDayOfWeek() == DayOfWeek.SATURDAY || penaltyEndDate.getDayOfWeek() == DayOfWeek.SUNDAY)) {
+				addedDays++;
+			}
+		}
+
 		return LocalDateTime.of(penaltyEndDate, LocalTime.of(23, 59, 59)); // 23:59:59
 	}
 }
