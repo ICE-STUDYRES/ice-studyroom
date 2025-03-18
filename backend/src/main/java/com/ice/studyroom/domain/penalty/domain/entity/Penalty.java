@@ -45,7 +45,7 @@ public class Penalty extends BaseTimeEntity {
 	private Long id;
 
 	@OneToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "reservation_id", nullable = false, unique = true)
+	@JoinColumn(name = "reservation_id", unique = true)
 	private Reservation reservation;
 
 	@ManyToOne(fetch = FetchType.LAZY)
