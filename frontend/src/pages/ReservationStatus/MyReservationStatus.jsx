@@ -6,16 +6,8 @@ import { QRCodeCanvas } from 'qrcode.react';
 import useQRCodeFetcher from '../Mainpage/components/QRCodeFetcher';
 import { useTokenHandler } from "../Mainpage/handlers/TokenHandler";
 import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
-import { useNotification } from '../Notification/Notification';
 
 const MyReservationStatus = () => {
-  const { addNotification } = useNotification();
-  const {
-    showQRModal,
-    handleQRClick,
-    handleCloseQRModal,
-  } = useMainpageHandlers();
-
   const {
     refreshTokens,
   } = useTokenHandler();
@@ -30,6 +22,13 @@ const MyReservationStatus = () => {
   const [error, setError] = useState(null);
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
   const { qrCode, error: qrError, loading: qrLoading} = useQRCodeFetcher(resId);
+
+  const {
+    showQRModal,
+    handleQRClick,
+    handleCloseQRModal,
+  } = useMainpageHandlers(resId);
+  
 
   useEffect(() => {
     fetchMyReservations();
