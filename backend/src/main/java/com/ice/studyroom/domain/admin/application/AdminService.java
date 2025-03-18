@@ -8,6 +8,7 @@ import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 import com.ice.studyroom.domain.admin.domain.entity.RoomTimeSlot;
 import com.ice.studyroom.domain.admin.domain.type.RoomTimeSlotStatus;
@@ -79,22 +80,14 @@ public class AdminService {
 		return reservedRooms.stream().map(AdminGetReservedResponse::from).toList();
 	}
 
-	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords(AdminPenaltyRequest request) {
-		Member member = memberRepository.findByEmail(Email.of(request.email()))
-			.orElseThrow(() -> new BusinessException(StatusCode.BAD_REQUEST, "해당 이메일로 회원을 찾을 수 없습니다."));
+	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords() {
+		List<Penalty> penaltyList = penaltyRepository.findByStatus(PenaltyStatus.VALID);
 
-		// 조건에 맞는 패널티 리스트 조회
-		List<Penalty> penaltyList = penaltyRepository.findByMemberIdAndPenaltyEndAfter(
-			member.getId(), LocalDateTime.now()
-		);
-
-		if (penaltyList.isEmpty()) {
-			throw new BusinessException(StatusCode.NOT_FOUND, "해당 회원의 사용 정지 이력이 존재하지 않습니다.");
-		}
-
-		// 패널티 리스트를 AdminPenaltyRecordResponse로 변환하여 반환
 		return penaltyList.stream()
-			.map(penalty -> AdminPenaltyRecordResponse.of(penalty.getReason(), penalty.getPenaltyEnd()))
+			.map(penalty -> AdminPenaltyRecordResponse.of(penalty.getMember().getName(),
+				penalty.getMember().getEmail().getValue(),
+				penalty.getMember().getStudentNum(), penalty.getReason(),
+				penalty.getPenaltyEnd()))
 			.toList();
 	}
 
@@ -107,5 +100,9 @@ public class AdminService {
 
 		String message = request.setPenalty() ? "해당 유저에게 패널티가 부여되었습니다." : "해당 유저의 패널티가 해제되었습니다.";
 		return AdminPenaltyControlResponse.of(message);
+	}
+
+	public Object getAllPenaltyRecords() {
+		return null;
 	}
 }

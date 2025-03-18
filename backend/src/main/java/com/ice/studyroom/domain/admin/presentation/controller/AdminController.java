@@ -68,13 +68,17 @@ public class AdminController {
 			.body(ResponseDto.of(reservedRooms, "예약된 방들의 id가 성공적으로 반환되었습니다."));
 	}
 
-	@GetMapping("/penalty/reasons")
-	public ResponseEntity<ResponseDto<List<AdminPenaltyRecordResponse>>> adminGetPenaltyRecords(
-		@Valid @RequestBody AdminPenaltyRequest request
-	) {
+	@Operation(
+		summary = "패널티 유저 목록 반환",
+		description = "현재 패널티가 적용 중인 유저 목록을 반환합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "예약된 방 ID 조회 성공")
+	@ApiResponse(responseCode = "500", description = "예약된 방 ID 조회 실패")
+	@GetMapping("/penalty")
+	public ResponseEntity<ResponseDto<List<AdminPenaltyRecordResponse>>> adminGetPenaltyRecords() {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(adminService.adminGetPenaltyRecords(request), "성공적으로 패널티 이유 목록을 반환했습니다."));
+			.body(ResponseDto.of(adminService.adminGetPenaltyRecords()));
 	}
 
 	@PostMapping("/penalty")
