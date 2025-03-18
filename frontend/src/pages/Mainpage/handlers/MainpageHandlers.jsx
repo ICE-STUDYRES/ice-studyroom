@@ -4,8 +4,9 @@ import axios from 'axios';
 import { useNotification } from '../../Notification/Notification';
 import { usePenaltyHandlers } from './PenaltyHandlers.jsx';
 import { useTokenHandler } from "./TokenHandler";
+import useQRCodeFetcher from '../components/QRCodeFetcher';
 
-export const useMainpageHandlers = () => {
+export const useMainpageHandlers = (resId) => {
   const {
     setPenaltyEndAt,
     setPenaltyReason,
@@ -21,6 +22,7 @@ export const useMainpageHandlers = () => {
     const [showQRModal, setShowQRModal] = useState(false);
     const { addNotification } = useNotification();
     let accessToken = sessionStorage.getItem('accessToken');
+    const { qrStatus } = useQRCodeFetcher(resId);  
 
     useEffect(() => {
       const fetchUserData = async () => {
@@ -97,7 +99,13 @@ export const useMainpageHandlers = () => {
       }
     };
     const handleClosePenaltyPopup = () => setShowPenaltyPopup(false);
-    const handleQRClick = () => setShowQRModal(true);
+    const handleQRClick = () => {
+      if (qrStatus === 418) {
+        addNotification("penalty", "error");
+        return;
+      }
+      setShowQRModal(true);
+    };
     const handleCloseQRModal = () => setShowQRModal(false);
 
     return {
