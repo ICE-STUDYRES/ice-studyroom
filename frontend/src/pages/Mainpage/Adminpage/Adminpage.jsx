@@ -1,4 +1,4 @@
-import React from 'react';
+import { React, useState, useEffect } from 'react';
 import { Home, LogOut, Monitor } from 'lucide-react';
 import useAdminPageHandler from './useAdminPageHandler';
 import PenaltyManagement from './PenaltyManagement';
@@ -18,6 +18,42 @@ const AdminPage = () => {
     handleRoomSelect,
     handleTimeSelect
   } = useAdminPageHandler();
+
+  const days = ['월', '화', '수', '목', '금'];
+  const todayIndex = new Date().getDay() -1;
+  const [selectedDay, setSelectedDay] = useState(days[todayIndex]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      setLoading(true);
+      try {
+        let accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken) {
+          return;
+        }
+
+        const response = await fetch("/api/schedules", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!response.ok) throw new Error("스케줄 정보를 가져오는 데 실패했습니다.");
+
+        const responseData = await response.json();
+        if (responseData.code !== "S200") {
+          throw new Error(responseData.message || "알 수 없는 오류");
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (selectedDay === days[todayIndex]) {
+      fetchSchedules();
+    }
+  }, [selectedDay]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -69,6 +105,25 @@ const AdminPage = () => {
                     <span className="mx-2 text-gray-300">|</span>
                     <span className="text-gray-900">예약가능 {availableRoomsCount.available}개</span>
                   </div>
+                </div>
+
+                <div className="flex gap-4 mt-6 mb-4">
+                  {days.map((day, index) => (
+                    <button
+                      key={day}
+                      onClick={() => setSelectedDay(day)}
+                      disabled={index < todayIndex} // 오늘 이전 요일 선택 불가
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        selectedDay === day
+                          ? 'bg-gray-900 text-white'
+                          : index < todayIndex
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed' // 비활성화 스타일
+                          : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
+                      }`}
+                    >
+                      {day}요일
+                    </button>
+                  ))}
                 </div>
 
                 <div className="h-[calc(100vh-280px)] overflow-y-auto pr-4 -mr-4">
@@ -135,8 +190,8 @@ const AdminPage = () => {
                         key={time}
                         onClick={() => handleTimeSelect(time)}
                         className={`w-full p-3.5 rounded-lg text-sm font-medium transition-colors ${
-                          selectedTimes.includes(time)
-                            ? 'bg-gray-900 text-white' 
+                          selectedTimes.some(selected => selected.includes(time)) 
+                            ? 'bg-gray-900 text-white'  // 선택된 상태 유지
                             : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
                         }`}
                       >
