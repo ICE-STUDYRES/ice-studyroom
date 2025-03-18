@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum PenaltyReasonType {
 	CANCEL(2),
 	LATE(3),
-	NO_SHOW(7);
+	NO_SHOW(5);
 
 	private final int durationDays;
 }
