@@ -3,8 +3,9 @@ package com.ice.studyroom.domain.admin.presentation.controller;
 
 import com.ice.studyroom.domain.admin.application.AdminService;
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
+import com.ice.studyroom.domain.admin.presentation.dto.request.AdminDelPenaltyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminOccupyRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminPenaltyRequest;
+import com.ice.studyroom.domain.admin.presentation.dto.request.AdminSetPenaltyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.response.*;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 
@@ -65,15 +66,15 @@ public class AdminController {
 		List<AdminGetReservedResponse> reservedRooms = adminService.getReservedRoomIds();
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(reservedRooms, "예약된 방들의 id가 성공적으로 반환되었습니다."));
+			.body(ResponseDto.of(reservedRooms));
 	}
 
 	@Operation(
 		summary = "패널티 유저 목록 반환",
 		description = "현재 패널티가 적용 중인 유저 목록을 반환합니다."
 	)
-	@ApiResponse(responseCode = "200", description = "예약된 방 ID 조회 성공")
-	@ApiResponse(responseCode = "500", description = "예약된 방 ID 조회 실패")
+	@ApiResponse(responseCode = "200", description = "패널티 유저 목록 반환 성공")
+	@ApiResponse(responseCode = "500", description = "패널티 유저 목록 반환 실패")
 	@GetMapping("/penalty")
 	public ResponseEntity<ResponseDto<List<AdminPenaltyRecordResponse>>> adminGetPenaltyRecords() {
 		return ResponseEntity
@@ -81,12 +82,33 @@ public class AdminController {
 			.body(ResponseDto.of(adminService.adminGetPenaltyRecords()));
 	}
 
+	@Operation(
+		summary = "패널티 부여",
+		description = "지정한 유저에게 패널티를 부여합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "패널티 부여 성공")
+	@ApiResponse(responseCode = "500", description = "패널티 부여 실패")
 	@PostMapping("/penalty")
-	public ResponseEntity<ResponseDto<AdminPenaltyControlResponse>> adminAddPenalties(
-		@Valid @RequestBody AdminPenaltyRequest request
+	public ResponseEntity<ResponseDto<String>> adminAddPenalty(
+		@Valid @RequestBody AdminSetPenaltyRequest request
 	) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(adminService.adminSetPenalty(request)));
+	}
+
+	@Operation(
+		summary = "패널티 해제",
+		description = "지정한 유저의 패널티를 해제합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "패널티 해제 성공")
+	@ApiResponse(responseCode = "500", description = "패널티 해제 실패")
+	@DeleteMapping("/penalty")
+	public ResponseEntity<ResponseDto<String>> addminDeletePenalty(
+		@Valid @RequestBody AdminDelPenaltyRequest request
+	) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(adminService.adminDelPenalty(request)));
 	}
 }

@@ -19,4 +19,6 @@ public interface PenaltyRepository extends JpaRepository<Penalty, Long> {
 	List<Penalty> findByMemberIdAndPenaltyEndAfter(Long memberId, LocalDateTime currentTime);
 
 	List<Penalty> findByStatus(PenaltyStatus status);
+
+	Optional<Penalty> findByMemberIdAndStatus(Long memberId, PenaltyStatus status);
 }

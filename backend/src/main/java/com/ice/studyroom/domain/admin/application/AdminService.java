@@ -1,10 +1,12 @@
 package com.ice.studyroom.domain.admin.application;
 
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
+import com.ice.studyroom.domain.admin.presentation.dto.request.AdminDelPenaltyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminOccupyRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminPenaltyRequest;
+import com.ice.studyroom.domain.admin.presentation.dto.request.AdminSetPenaltyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.response.*;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.domain.penalty.application.PenaltyService;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
@@ -16,11 +18,11 @@ import com.ice.studyroom.domain.admin.infrastructure.persistence.RoomTimeSlotRep
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -31,6 +33,7 @@ public class AdminService {
 	private final RoomTimeSlotRepository roomTimeSlotRepository;
 	private final PenaltyRepository penaltyRepository;
 	private final MemberRepository memberRepository;
+	private final PenaltyService penaltyService;
 
 	public AdminOccupyResponse adminOccupyRooms(AdminOccupyRequest request) {
 		// 요청된 roomTimeSlotId들을 기반으로 RoomTimeSlot을 조회
@@ -91,18 +94,27 @@ public class AdminService {
 			.toList();
 	}
 
-	public AdminPenaltyControlResponse adminSetPenalty(AdminPenaltyRequest request) {
+	public String adminSetPenalty(AdminSetPenaltyRequest request) {
 		Member member = memberRepository.findByEmail(Email.of(request.email()))
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 이메일로 회원을 찾을 수 없습니다."));
 
-		member.updatePenalty(request.setPenalty());
-		memberRepository.save(member);
+		if (member.isPenalty()) {
+			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 패널티가 부여된 회원입니다. 패널티 해제 후 다시 시도해주세요.");
+		}
 
-		String message = request.setPenalty() ? "해당 유저에게 패널티가 부여되었습니다." : "해당 유저의 패널티가 해제되었습니다.";
-		return AdminPenaltyControlResponse.of(message);
+		penaltyService.adminAssignPenalty(member, request.penaltyEndAt());
+		return "패널티 부여가 완료되었습니다.";
 	}
 
-	public Object getAllPenaltyRecords() {
-		return null;
+	public String adminDelPenalty(AdminDelPenaltyRequest request) {
+		Member member = memberRepository.findByEmail(Email.of(request.email()))
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 이메일로 회원을 찾을 수 없습니다."));
+
+		if (!member.isPenalty()) {
+			throw new BusinessException(StatusCode.BAD_REQUEST, "패널티가 부여되지 않은 회원입니다.");
+		}
+
+		penaltyService.adminDeletePenalty(member);
+		return "패널티 해제가 완료되었습니다.";
 	}
 }

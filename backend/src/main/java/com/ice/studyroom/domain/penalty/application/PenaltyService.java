@@ -10,6 +10,7 @@ import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
@@ -39,6 +40,27 @@ public class PenaltyService {
 
 		member.updatePenalty(true);
 		penaltyRepository.save(penalty);
+	}
+
+	@Transactional
+	public void adminAssignPenalty(Member member, LocalDateTime penaltyEndAt) {
+
+		Penalty penalty = Penalty.builder()
+			.member(member)
+			.reservation(null)
+			.reason(PenaltyReasonType.ADMIN)
+			.penaltyEnd(penaltyEndAt)
+			.build();
+
+		member.updatePenalty(true);
+		penaltyRepository.save(penalty);
+	}
+
+	@Transactional
+	public void adminDeletePenalty(Member member) {
+		Penalty penalty = penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID).get();
+		penaltyRepository.delete(penalty);
+		member.updatePenalty(false);
 	}
 
 	private LocalDateTime calculatePenaltyEnd(int durationDays) {
