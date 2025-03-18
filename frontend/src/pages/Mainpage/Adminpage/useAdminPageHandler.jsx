@@ -1,26 +1,90 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 
 const useAdminPageHandler = () => {
   // State
   const [activeTab, setActiveTab] = useState('booking');
   const [selectedRoom, setSelectedRoom] = useState('');
   const [selectedTimes, setSelectedTimes] = useState([]);
-  const [roomsState, setRoomsState] = useState([
-    { id: '305-1', capacity: 4, features: ['PC', '모니터'], status: 'available' },
-    { id: '305-2', capacity: 4, features: ['PC', '모니터'], status: 'available' },
-    { id: '305-3', capacity: 4, features: ['PC', '모니터'], status: 'available' },
-    { id: '305-4', capacity: 4, features: ['PC', '모니터'], status: 'available' },
-    { id: '305-5', capacity: 4, features: ['PC', '모니터'], status: 'available' },
-    { id: '305-6', capacity: 4, features: ['PC', '모니터'], status: 'available' },
-    { id: '409-1', capacity: 8, features: ['화이트보드', 'PC', '대형 모니터'], status: 'available' },
-    { id: '409-2', capacity: 8, features: ['화이트보드', 'PC', '대형 모니터'], status: 'available' }
-  ]);
+  const [roomsState, setRoomsState] = useState([]);
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  const timeSlots = useMemo(() => [
-    '09:00-10:00', '10:00-11:00', '11:00-12:00', '12:00-13:00',
-    '13:00-14:00', '14:00-15:00', '15:00-16:00', '16:00-17:00',
-    '17:00-18:00', '18:00-19:00', '19:00-20:00', '20:00-21:00','21:00-22:00'
-  ], []);
+  useEffect(() => {
+    const fetchSchedules = async () => {
+      setLoading(true);
+      try {
+        let accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken) {
+          return;
+        }
+
+        const response = await fetch("/api/schedules", {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (!response.ok) throw new Error("스케줄 정보를 가져오는 데 실패했습니다.");
+
+        const responseData = await response.json();
+        if (responseData.code !== "S200") {
+          throw new Error(responseData.message || "알 수 없는 오류");
+        }
+
+        const uniqueRooms = [];
+        const roomMap = new Map();
+        const uniqueTimeSlots = new Set();
+
+        responseData.data.forEach(item => {
+          if (!roomMap.has(item.roomNumber)) {
+            roomMap.set(item.roomNumber, {
+              id: item.roomNumber,
+              capacity: item.capacity,
+              features: item.facilities || [],
+              status: 'available'
+            });
+          }
+
+          const timeRange = `${item.startTime.substring(0, 5)}~${item.endTime.substring(0, 5)}`;
+          uniqueTimeSlots.add(timeRange);
+        });
+
+        uniqueRooms.push(...roomMap.values());
+        setRoomsState(uniqueRooms);
+        setTimeSlots([...uniqueTimeSlots].sort());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSchedules();
+  }, []);
+  
+  const mergeTimeSlots = (times) => {
+    if (times.length === 0) return [];
+
+    const sortedTimes = times
+      .map(time => time.split("~").map(t => t.trim()))
+      .sort((a, b) => a[0].localeCompare(b[0]));
+
+    const merged = [];
+    let start = sortedTimes[0][0];
+    let end = sortedTimes[0][1];
+
+    for (let i = 1; i < sortedTimes.length; i++) {
+      const [currentStart, currentEnd] = sortedTimes[i];
+      
+      if (currentStart === end) {
+        end = currentEnd;
+      } else {
+        merged.push(`${start}~${end}`);
+        start = currentStart;
+        end = currentEnd;
+      }
+    }
+    merged.push(`${start}~${end}`);
+    return merged;
+  };
 
   const penaltyData = useMemo(() => [
     {
@@ -63,32 +127,28 @@ const useAdminPageHandler = () => {
   }, []);
 
   const handleRoomSelect = useCallback((roomId) => {
-    // 같은 방을 다시 클릭하면 선택 해제
-    if (selectedRoom === roomId) {
-      setSelectedRoom('');
-      setSelectedTimes([]);
-      setRoomsState(prev => prev.map(room => ({
-        ...room,
-        status: 'available'
-      })));
-      return;
-    }
-
-    // 다른 방을 선택하면 기존 선택 초기화 후 새로운 방 선택
-    setSelectedRoom(roomId);
-    setSelectedTimes([]);
     setRoomsState(prev => prev.map(room => ({
       ...room,
       status: room.id === roomId ? 'selected' : 'available'
     })));
+  
+    if (selectedRoom === roomId) {
+      // 방 선택 해제 시, 선택된 시간도 초기화
+      setSelectedRoom('');
+      setSelectedTimes([]);
+    } else {
+      setSelectedRoom(roomId);
+      // 🔥 기존 선택된 시간을 유지! (여기서 초기화 안 함)
+    }
   }, [selectedRoom]);
-
+  
   const handleTimeSelect = useCallback((time) => {
     setSelectedTimes(prev => {
-      const newTimes = prev.includes(time)
-        ? prev.filter(t => t !== time)
-        : [...prev, time].sort();
-      return newTimes;
+      if (prev.includes(time)) {
+        return prev.filter(t => t !== time);  // 선택 해제
+      } else {
+        return [...prev, time];  // 선택 추가
+      }
     });
   }, []);
 
@@ -101,35 +161,8 @@ const useAdminPageHandler = () => {
 
   // Format selected times to merge consecutive slots
   const formattedSelectedTimes = useMemo(() => {
-    if (selectedTimes.length === 0) return [];
-    
-    const sortedTimes = [...selectedTimes].sort((a, b) => {
-      const timeA = parseInt(a.split(':')[0]);
-      const timeB = parseInt(b.split(':')[0]);
-      return timeA - timeB;
-    });
-    
-    const result = [];
-    let start = sortedTimes[0];
-    let prev = start;
-
-    for (let i = 1; i <= sortedTimes.length; i++) {
-      const current = sortedTimes[i];
-      const prevEnd = prev?.split('-')[1];
-      const currentStart = current?.split('-')[0];
-      
-      if (current && prevEnd === currentStart) {
-        prev = current;
-      } else {
-        const timeRange = start === prev ? start : `${start.split('-')[0]}-${prev.split('-')[1]}`;
-        result.push(timeRange);
-        start = current;
-        prev = current;
-      }
-    }
-
-    return result;
-  }, [selectedTimes]);
+    return mergeTimeSlots(selectedTimes);  // 예약 정보에는 병합된 시간만 표시
+  }, [selectedTimes]);  
 
   return {
     // State
