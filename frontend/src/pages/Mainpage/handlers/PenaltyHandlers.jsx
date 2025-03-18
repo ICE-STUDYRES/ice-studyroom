@@ -38,7 +38,7 @@ export const usePenaltyHandlers = () => {
                         const endDate = new Date(penaltyEndAt + "Z");
                         const today = new Date();
     
-                        const formattedEndAt = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`;
+                        const formattedEndAt = `${endDate.getUTCFullYear()}-${String(endDate.getUTCMonth() + 1).padStart(2, "0")}-${String(endDate.getUTCDate()).padStart(2, "0")}`;
                         const remainingDays = Math.floor((endDate - today) / (1000 * 60 * 60 * 24));
     
                         setPenaltyEndAt(`${formattedEndAt} (${remainingDays}일 남음)`);
