@@ -89,7 +89,7 @@ public class AdminService {
 		return penaltyList.stream()
 			.map(penalty -> AdminPenaltyRecordResponse.of(penalty.getMember().getName(),
 				penalty.getMember().getEmail().getValue(),
-				penalty.getMember().getStudentNum(), penalty.getReason(),
+				penalty.getMember().getStudentNum(), penalty.getReason(), penalty.getCreatedAt(),
 				penalty.getPenaltyEnd()))
 			.toList();
 	}

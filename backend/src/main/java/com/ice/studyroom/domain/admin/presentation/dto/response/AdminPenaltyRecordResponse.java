@@ -9,10 +9,11 @@ public record AdminPenaltyRecordResponse(
 	String email,
 	String studentNum,
 	PenaltyReasonType reason,
+	LocalDateTime penaltyStart,
 	LocalDateTime penaltyEnd
 ) {
 	public static AdminPenaltyRecordResponse of(String userName, String email, String studentNum,
-		PenaltyReasonType reason, LocalDateTime penaltyEnd) {
-		return new AdminPenaltyRecordResponse(userName, email, studentNum, reason, penaltyEnd);
+		PenaltyReasonType reason, LocalDateTime penaltyStart, LocalDateTime penaltyEnd) {
+		return new AdminPenaltyRecordResponse(userName, email, studentNum, reason, penaltyStart, penaltyEnd);
 	}
 }
