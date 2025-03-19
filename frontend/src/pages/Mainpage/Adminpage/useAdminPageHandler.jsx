@@ -1,64 +1,92 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 
+const getTodayDayOfWeek = () => {
+  const today = new Date();
+  return new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(today);
+};
+
 const useAdminPageHandler = () => {
-  // State
   const [activeTab, setActiveTab] = useState('booking');
   const [selectedRoom, setSelectedRoom] = useState('');
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [roomsState, setRoomsState] = useState([]);
   const [timeSlots, setTimeSlots] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [roomTimeSlots, setRoomTimeSlots] = useState([]);
+  const [dayOfWeek, setDayOfWeek] = useState(getTodayDayOfWeek());
+
+  const dayMapping = {
+    '월': 'Monday',
+    '화': 'Tuesday',
+    '수': 'Wednesday',
+    '목': 'Thursday',
+    '금': 'Friday'
+  };
+
+  useEffect(() => {
+    setDayOfWeek(getTodayDayOfWeek());
+  }, []); 
+
+  useEffect(() => {
+    setSelectedRoom('');
+    setSelectedTimes([]);
+  }, [dayOfWeek]);
 
   useEffect(() => {
     const fetchSchedules = async () => {
-      setLoading(true);
       try {
         let accessToken = sessionStorage.getItem("accessToken");
         if (!accessToken) {
           return;
         }
-
-        const response = await fetch("/api/schedules", {
+  
+        const englishDay = dayMapping[dayOfWeek] || "Monday";
+        const response = await fetch(`/api/admin/room-time-slots?dayOfWeek=${englishDay}`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },
         });
-
+  
         if (!response.ok) throw new Error("스케줄 정보를 가져오는 데 실패했습니다.");
-
+  
         const responseData = await response.json();
         if (responseData.code !== "S200") {
           throw new Error(responseData.message || "알 수 없는 오류");
         }
-
-        const uniqueRooms = [];
+  
         const roomMap = new Map();
         const uniqueTimeSlots = new Set();
-
+  
+        const roomTimeSlotIds = responseData.data
+          .filter(item => 
+            item.roomNumber === selectedRoom &&
+            item.dayOfWeekStatus === englishDay &&
+            selectedTimes.includes(`${item.startTime.substring(0, 5)}~${item.endTime.substring(0, 5)}`)
+          )
+          .map(item => item.roomTimeSlotId);
+  
         responseData.data.forEach(item => {
           if (!roomMap.has(item.roomNumber)) {
             roomMap.set(item.roomNumber, {
               id: item.roomNumber,
-              capacity: item.capacity,
+              capacity: item.capacity || 0,
               features: item.facilities || [],
               status: 'available'
             });
           }
-
+  
           const timeRange = `${item.startTime.substring(0, 5)}~${item.endTime.substring(0, 5)}`;
           uniqueTimeSlots.add(timeRange);
         });
-
-        uniqueRooms.push(...roomMap.values());
-        setRoomsState(uniqueRooms);
+  
+        setRoomsState([...roomMap.values()]);
         setTimeSlots([...uniqueTimeSlots].sort());
+        setRoomTimeSlots(roomTimeSlotIds);
       } finally {
-        setLoading(false);
       }
     };
-
+  
     fetchSchedules();
-  }, []);
+  }, [dayOfWeek, selectedTimes]);
   
   const mergeTimeSlots = (times) => {
     if (times.length === 0) return [];
@@ -121,7 +149,6 @@ const useAdminPageHandler = () => {
     }
   ], []);
 
-  // Handlers
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
   }, []);
@@ -132,46 +159,93 @@ const useAdminPageHandler = () => {
       status: room.id === roomId ? 'selected' : 'available'
     })));
   
-    if (selectedRoom === roomId) {
-      // 방 선택 해제 시, 선택된 시간도 초기화
-      setSelectedRoom('');
-      setSelectedTimes([]);
-    } else {
+    if (selectedRoom !== roomId) {
       setSelectedRoom(roomId);
-      // 🔥 기존 선택된 시간을 유지! (여기서 초기화 안 함)
+      setSelectedTimes([]); 
+    } else {
+      setSelectedRoom('');
+      setSelectedTimes([]); 
     }
   }, [selectedRoom]);
+  
   
   const handleTimeSelect = useCallback((time) => {
     setSelectedTimes(prev => {
       if (prev.includes(time)) {
-        return prev.filter(t => t !== time);  // 선택 해제
+        return prev.filter(t => t !== time);
       } else {
-        return [...prev, time];  // 선택 추가
+        return [...prev, time];
       }
     });
   }, []);
 
-  // Computed Values
   const availableRoomsCount = useMemo(() => {
     const total = roomsState.length;
     const available = roomsState.filter(room => room.status === 'available').length;
     return { total, available };
   }, [roomsState]);
 
-  // Format selected times to merge consecutive slots
   const formattedSelectedTimes = useMemo(() => {
-    return mergeTimeSlots(selectedTimes);  // 예약 정보에는 병합된 시간만 표시
+    return mergeTimeSlots(selectedTimes);
   }, [selectedTimes]);  
+
+  const getSelectedRoomTimeSlotIds = () => {
+    return roomTimeSlots.filter(slot => slot !== undefined && slot !== null);
+};
+
+const handleReserve = async () => {
+  try {
+    let accessToken = sessionStorage.getItem("accessToken");
+    if (!accessToken) {
+      console.error("⚠️ 인증 토큰이 없습니다.");
+      return;
+    }
+
+    const selectedIds = getSelectedRoomTimeSlotIds();
+    if (selectedIds.length === 0) {
+      console.warn("⚠️ 선택된 시간대가 없습니다.");
+      return;
+    }
+
+    const requestBody = {
+      roomTimeSlotId: selectedIds,
+      setOccupy: true
+    };
+
+    const response = await fetch("/api/admin/room-time-slots/occupy", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    const responseData = await response.json();
+    if (!response.ok) {
+      throw new Error(responseData.message || "예약 처리 중 오류 발생");
+    }
+
+    console.log("✅ 예약 성공:", responseData.data.message);
+    alert("예약이 완료되었습니다!");
+  } catch (error) {
+    console.error("❌ 예약 실패:", error.message);
+    alert("예약에 실패했습니다. 다시 시도해주세요.");
+  }
+};
 
   return {
     // State
     activeTab,
     selectedRoom,
     selectedTimes,
+    setSelectedTimes,
+    getSelectedRoomTimeSlotIds,
     formattedSelectedTimes,
     
     // Data
+    dayOfWeek,
+    setDayOfWeek,
     rooms: roomsState,
     timeSlots,
     penaltyData,
@@ -180,7 +254,8 @@ const useAdminPageHandler = () => {
     // Handlers
     handleTabChange,
     handleRoomSelect,
-    handleTimeSelect
+    handleTimeSelect,
+    handleReserve,
   };
 };
 

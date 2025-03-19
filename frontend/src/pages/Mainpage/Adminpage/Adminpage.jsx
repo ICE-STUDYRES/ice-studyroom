@@ -10,50 +10,25 @@ const AdminPage = () => {
     selectedRoom,
     selectedTimes,
     formattedSelectedTimes,
+    getSelectedRoomTimeSlotIds,
+    setDayOfWeek,
     rooms,
     timeSlots,
     penaltyData,
     availableRoomsCount,
     handleTabChange,
     handleRoomSelect,
-    handleTimeSelect
+    handleTimeSelect,
+    handleReserve
   } = useAdminPageHandler();
 
   const days = ['월', '화', '수', '목', '금'];
   const todayIndex = new Date().getDay() -1;
   const [selectedDay, setSelectedDay] = useState(days[todayIndex]);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchSchedules = async () => {
-      setLoading(true);
-      try {
-        let accessToken = sessionStorage.getItem("accessToken");
-        if (!accessToken) {
-          return;
-        }
-
-        const response = await fetch("/api/schedules", {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
-
-        if (!response.ok) throw new Error("스케줄 정보를 가져오는 데 실패했습니다.");
-
-        const responseData = await response.json();
-        if (responseData.code !== "S200") {
-          throw new Error(responseData.message || "알 수 없는 오류");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (selectedDay === days[todayIndex]) {
-      fetchSchedules();
-    }
-  }, [selectedDay]);
+    setDayOfWeek(selectedDay); // 🔥 요일이 변경될 때마다 API 요청 업데이트
+  }, [selectedDay, setDayOfWeek]);
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -162,17 +137,13 @@ const AdminPage = () => {
                         </div>
 
                         <button 
-                          onClick={() => handleRoomSelect(room.id)}
+                          onClick={() => handleRoomSelect(room.id)} 
                           className={`w-full mt-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                            room.status === 'selected' 
-                              ? 'bg-gray-900 text-white hover:bg-gray-800' 
-                              : room.status === 'unavailable' 
-                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                            selectedRoom === room.id ? 'bg-gray-900 text-white hover:bg-gray-800' 
+                            : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
                           }`}
-                          disabled={room.status === 'unavailable'}>
-                          {room.status === 'selected' ? '선택됨' :
-                           room.status === 'unavailable' ? '예약불가' : '선택하기'}
+                        >
+                          {selectedRoom === room.id ? '선택됨' : '선택하기'}
                         </button>
                       </div>
                     ))}
@@ -185,19 +156,24 @@ const AdminPage = () => {
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">시간 선택</h2>
                   <div className="h-[calc(100vh-520px)] overflow-y-auto pr-4 -mr-4">
                     <div className="space-y-2">
-                    {timeSlots.map(time => (
-                      <button
-                        key={time}
-                        onClick={() => handleTimeSelect(time)}
-                        className={`w-full p-3.5 rounded-lg text-sm font-medium transition-colors ${
-                          selectedTimes.some(selected => selected.includes(time)) 
-                            ? 'bg-gray-900 text-white'  // 선택된 상태 유지
-                            : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                        }`}
-                      >
-                        {time}
-                      </button>
-                    ))}
+                    {timeSlots && timeSlots.length > 0 ? (
+                      timeSlots.map(time => (
+                          <button
+                              key={time}
+                              onClick={() => handleTimeSelect(time)}
+                              className={`w-full p-3.5 rounded-lg text-sm font-medium transition-colors ${
+                                  selectedTimes.includes(time) 
+                                      ? 'bg-gray-900 text-white'
+                                      : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                              }`}
+                          >
+                              {time}
+                          </button>
+                      ))
+                  ) : (
+                      <p className="text-gray-500 text-center">시간 슬롯이 없습니다.</p>
+                  )}
+
                     </div>
                   </div>
                 </div>
@@ -220,6 +196,7 @@ const AdminPage = () => {
                       </div>
                     </div>
                     <button 
+                      onClick={handleReserve}
                       className={`w-full py-3 text-sm font-medium rounded-lg transition-colors ${
                         selectedTimes.length > 0
                           ? 'bg-gray-900 text-white hover:bg-gray-800'
