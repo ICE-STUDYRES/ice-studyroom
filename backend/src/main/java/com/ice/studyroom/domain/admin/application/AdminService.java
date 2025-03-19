@@ -95,8 +95,8 @@ public class AdminService {
 	}
 
 	public String adminSetPenalty(AdminSetPenaltyRequest request) {
-		Member member = memberRepository.findByEmail(Email.of(request.email()))
-			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 이메일로 회원을 찾을 수 없습니다."));
+		Member member = memberRepository.findByStudentNum(request.studentNumber())
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 학번을 가진 회원은 존재하지 않습니다."));
 
 		if (member.isPenalty()) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 패널티가 부여된 회원입니다. 패널티 해제 후 다시 시도해주세요.");
