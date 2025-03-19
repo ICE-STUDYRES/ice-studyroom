@@ -1,43 +1,94 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import axios from 'axios';
 
-const DAYS = ['월', '화', '수', '목', '금'];
+const DAYS = { "Monday": "월", "Tuesday": "화", "Wednesday": "수", "Thursday": "목", "Friday": "금" };
 
 const BookingManagement = ({ rooms }) => {
   const [selectedDay, setSelectedDay] = useState('월');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [selectedTimes, setSelectedTimes] = useState([]);
+  const [bookings, setBookings] = useState({});
+  const [mergedBookings, setMergedBookings] = useState({});
 
-  // 임시 데이터 - 실제로는 props나 API로 받아올 예정
-  const [bookings, setBookings] = useState({
-    '월': {
-      '305-1': ['09:00-10:00', '10:00-11:00', '15:00-16:00'],
-      '305-2': ['13:00-14:00', '14:00-15:00'],
-      '305-3': ['16:00-17:00'],
-      '305-4': [],
-      '305-5': [],
-      '305-6': [],
-      '409-1': [],
-      '409-2': []
-    },
-    '화': {
-      '305-1': [], '305-2': [], '305-3': [], '305-4': [],
-      '305-5': [], '305-6': [], '409-1': [], '409-2': []
-    },
-    '수': {
-      '305-1': [], '305-2': [], '305-3': [], '305-4': [],
-      '305-5': [], '305-6': [], '409-1': [], '409-2': []
-    },
-    '목': {
-      '305-1': [], '305-2': [], '305-3': [], '305-4': [],
-      '305-5': [], '305-6': [], '409-1': [], '409-2': []
-    },
-    '금': {
-      '305-1': [], '305-2': [], '305-3': [], '305-4': [],
-      '305-5': [], '305-6': [], '409-1': [], '409-2': []
-    }
-  });
+  useEffect(() => {
+    const fetchBookings = async () => {
+      try {
+        let accessToken = sessionStorage.getItem("accessToken");
+        if (!accessToken) {
+          return;
+        }
+        const response = await axios.get('api/admin/room-time-slots/occupy', {
+          headers: {
+            Authorization: `Bearer ${accessToken}`
+          }
+        });
+
+        const apiData = response.data.data;
+
+        const formatTimeRange = (startTime) => {
+          const [hour, minute] = startTime.split(':').map(Number);
+          const endHour = hour + 1; // 한 시간 뒤 정각 설정
+          return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}-${endHour.toString().padStart(2, '0')}:00`;
+        };
+
+        // 원본 예약 데이터 구성 (시간 변환 후 저장)
+        const rawBookings = apiData.reduce((acc, { roomNumber, startTime, dayOfWeek }) => {
+          const day = DAYS[dayOfWeek] || dayOfWeek; // 영어 요일을 한글로 변환
+          if (!acc[day]) acc[day] = {};
+          if (!acc[day][roomNumber]) acc[day][roomNumber] = [];
+
+          acc[day][roomNumber].push(formatTimeRange(startTime));
+          return acc;
+        }, { "월": {}, "화": {}, "수": {}, "목": {}, "금": {} });
+
+        setBookings(rawBookings); // 원본 데이터 저장
+
+        // UI에 병합된 데이터를 만들기
+        const mergeTimes = (times) => {
+          if (!times || times.length === 0) return [];
+          const sortedTimes = [...times].sort();
+          const merged = [];
+          let start = sortedTimes[0].split('-')[0]; // 시작 시간
+          let end = sortedTimes[0].split('-')[1]; // 종료 시간
+
+          for (let i = 1; i < sortedTimes.length; i++) {
+            const [currentStart, currentEnd] = sortedTimes[i].split('-');
+
+            if (currentStart === end) {
+              // 시간이 연결되면 범위를 확장
+              end = currentEnd;
+            } else {
+              // 연결되지 않으면 새로운 범위를 저장
+              merged.push(`${start}-${end}`);
+              start = currentStart;
+              end = currentEnd;
+            }
+          }
+
+          // 마지막 범위 추가
+          merged.push(`${start}-${end}`);
+          return merged;
+        };
+
+        // 병합된 데이터를 저장
+        const formattedMergedBookings = Object.keys(rawBookings).reduce((acc, day) => {
+          acc[day] = {};
+          Object.keys(rawBookings[day]).forEach(room => {
+            acc[day][room] = mergeTimes(rawBookings[day][room]);
+          });
+          return acc;
+        }, {});
+
+        setMergedBookings(formattedMergedBookings);
+      } catch (error) {
+        console.error('예약 정보를 불러오는 중 오류 발생:', error);
+      }
+    };
+
+    fetchBookings();
+  }, []);
 
   const handleRoomClick = (roomId) => {
     setSelectedRoom(roomId);
@@ -83,14 +134,12 @@ const BookingManagement = ({ rooms }) => {
 
       {/* 요일 탭 */}
       <div className="flex gap-2 mb-6">
-        {DAYS.map(day => (
+        {Object.values(DAYS).map(day => (
           <button
             key={day}
             onClick={() => setSelectedDay(day)}
             className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              selectedDay === day
-                ? 'bg-gray-900 text-white'
-                : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
+              selectedDay === day ? 'bg-gray-900 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
             }`}
           >
             {day}요일
@@ -101,36 +150,19 @@ const BookingManagement = ({ rooms }) => {
       {/* 스터디룸 카드 목록 */}
       <div className="grid grid-cols-2 gap-4">
         {rooms.map(room => (
-          <div 
-            key={room.id}
-            className="bg-white rounded-xl shadow-sm border border-gray-200 p-6"
-          >
+          <div key={room.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div className="flex justify-between items-center mb-4">
-              <div className="flex items-center gap-3">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {room.id}
-                </h3>
-                {room.starred && <span className="text-yellow-400 text-lg">★</span>}
-              </div>
-              <button
-                onClick={() => handleRoomClick(room.id)}
-                className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900"
-              >
+              <h3 className="text-lg font-semibold text-gray-900">{room.id}</h3>
+              <button onClick={() => handleRoomClick(room.id)} className="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900">
                 시간별 해제
               </button>
             </div>
-
             <div className="space-y-2">
               <div className="text-sm text-gray-500 mb-2">선점된 시간:</div>
-              {bookings[selectedDay][room.id]?.length > 0 ? (
+              {mergedBookings[selectedDay]?.[room.id]?.length > 0 ? (
                 <div className="grid grid-cols-2 gap-2">
-                  {bookings[selectedDay][room.id].map(time => (
-                    <div 
-                      key={time}
-                      className="px-3 py-1.5 bg-gray-50 rounded-lg text-sm text-gray-600"
-                    >
-                      {time}
-                    </div>
+                  {mergedBookings[selectedDay][room.id].map(time => (
+                    <div key={time} className="px-3 py-1.5 bg-gray-50 rounded-lg text-sm text-gray-600">{time}</div>
                   ))}
                 </div>
               ) : (
