@@ -6,22 +6,21 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
-	List<Reservation> findByScheduleDate(LocalDate date);
 
 	List<Reservation> findByUserEmail(String email);
-
-	Optional<Reservation> findFirstByUserEmailOrderByCreatedAtDesc(String email);
-
-	//todo: 테스트 코드에 사용되는 거 수정
-	List<Reservation> findByEndTimeBetween(LocalTime time1, LocalTime time2);
 
 	List<Reservation> findByScheduleDateAndEndTime(LocalDate scheduleDate, LocalTime time);
 
 	List<Reservation> findByRoomNumberAndScheduleDateAndStartTime(String roomNumber, LocalDate scheduleDate, LocalTime startTime);
 
 	List<Reservation> findByFirstScheduleId(Long firstScheduleId);
+
+	@Query("SELECT r FROM Reservation r WHERE r.userEmail = :email ORDER BY r.createdAt DESC LIMIT 1")
+	Optional<Reservation> findLatestReservationByUserEmail(@Param("email") String email);
 }

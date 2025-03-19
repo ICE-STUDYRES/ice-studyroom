@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface RoomTimeSlotRepository extends JpaRepository<RoomTimeSlot, Long> {
+
 	List<RoomTimeSlot> findByStatus(RoomTimeSlotStatus status);
+
 	List<RoomTimeSlot> findByDayOfWeek(DayOfWeekStatus dayOfWeekStatus);
 }
