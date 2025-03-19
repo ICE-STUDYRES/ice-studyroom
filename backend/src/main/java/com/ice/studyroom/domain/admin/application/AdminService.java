@@ -84,12 +84,12 @@ public class AdminService {
 	}
 
 	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords() {
-		List<Penalty> penaltyList = penaltyRepository.findByStatus(PenaltyStatus.VALID);
+		List<Penalty> penaltyList = penaltyRepository.findAll();
 
 		return penaltyList.stream()
 			.map(penalty -> AdminPenaltyRecordResponse.of(penalty.getMember().getName(),
 				penalty.getMember().getEmail().getValue(),
-				penalty.getMember().getStudentNum(), penalty.getReason(), penalty.getCreatedAt(),
+				penalty.getMember().getStudentNum(), penalty.getReason(), penalty.getStatus(), penalty.getCreatedAt(),
 				penalty.getPenaltyEnd()))
 			.toList();
 	}
