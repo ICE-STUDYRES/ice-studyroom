@@ -71,7 +71,7 @@ public class AdminController {
 
 	@Operation(
 		summary = "패널티 유저 목록 반환",
-		description = "현재 패널티가 적용 중인 유저 목록을 반환합니다."
+		description = "전체 패널티 기록을 반환합니다."
 	)
 	@ApiResponse(responseCode = "200", description = "패널티 유저 목록 반환 성공")
 	@ApiResponse(responseCode = "500", description = "패널티 유저 목록 반환 실패")
