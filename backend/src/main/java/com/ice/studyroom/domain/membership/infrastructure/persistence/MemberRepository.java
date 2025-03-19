@@ -10,15 +10,14 @@ import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 
 public interface MemberRepository extends JpaRepository<Member, Long> {
-	boolean existsByEmail(Email email);
-
-	Optional<Member> findByEmail(Email email);
 
 	Member getMemberByEmail(Email email);
 
-	boolean existsByStudentNum(String studentNum);
-
-	boolean existsByEmailAndIsPenalty(Email email, boolean isPenalty);
+	Optional<Member> findByEmail(Email email);
 
 	List<Member> findByEmailIn(Collection<Email> email);
+
+	boolean existsByEmail(Email email);
+
+	boolean existsByStudentNum(String studentNum);
 }
