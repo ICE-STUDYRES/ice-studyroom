@@ -33,10 +33,10 @@ public class AdminController {
 	@ApiResponse(responseCode = "200", description = "방 상태 반환 성공")
 	@ApiResponse(responseCode = "500", description = "방 상태 반환 실패")
 	@GetMapping("/room-time-slots")
-	public ResponseEntity<ResponseDto<List<AdminRoomResponse>>> adminGetRooms(
+	public ResponseEntity<ResponseDto<List<RoomScheduleInfoDto>>> adminGetRooms(
 		@RequestParam DayOfWeekStatus dayOfWeek
 	) {
-		List<AdminRoomResponse> rooms = adminService.getRoomByDayOfWeek(dayOfWeek);
+		List<RoomScheduleInfoDto> rooms = adminService.getRoomByDayOfWeek(dayOfWeek);
 		return ResponseEntity.status(HttpStatus.OK).body(ResponseDto.of(rooms, "요청한 요일의 방 정보가 성공적으로 반환되었습니다."));
 	}
 
@@ -104,7 +104,7 @@ public class AdminController {
 	@ApiResponse(responseCode = "200", description = "패널티 해제 성공")
 	@ApiResponse(responseCode = "500", description = "패널티 해제 실패")
 	@DeleteMapping("/penalty")
-	public ResponseEntity<ResponseDto<String>> addminDeletePenalty(
+	public ResponseEntity<ResponseDto<String>> adminDeletePenalty(
 		@Valid @RequestBody AdminDelPenaltyRequest request
 	) {
 		return ResponseEntity

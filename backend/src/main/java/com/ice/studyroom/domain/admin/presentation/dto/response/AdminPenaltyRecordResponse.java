@@ -7,15 +7,14 @@ import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
 
 public record AdminPenaltyRecordResponse(
 	String userName,
-	String email,
 	String studentNum,
 	PenaltyReasonType reason,
 	PenaltyStatus status,
 	LocalDateTime penaltyStart,
 	LocalDateTime penaltyEnd
 ) {
-	public static AdminPenaltyRecordResponse of(String userName, String email, String studentNum,
+	public static AdminPenaltyRecordResponse of(String userName, String studentNum,
 		PenaltyReasonType reason, PenaltyStatus status, LocalDateTime penaltyStart, LocalDateTime penaltyEnd) {
-		return new AdminPenaltyRecordResponse(userName, email, studentNum, reason, status, penaltyStart, penaltyEnd);
+		return new AdminPenaltyRecordResponse(userName, studentNum, reason, status, penaltyStart, penaltyEnd);
 	}
 }
