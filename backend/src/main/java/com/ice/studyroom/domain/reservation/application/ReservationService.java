@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -105,7 +106,7 @@ public class ReservationService {
 
 	public Optional<GetMostRecentReservationResponse> getMyMostRecentReservation(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		return reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(email)
+		return reservationRepository.findLatestReservationByUserEmail(email)
 			.map(GetMostRecentReservationResponse::from);
 	}
 
@@ -254,7 +255,7 @@ public class ReservationService {
 				}
 
 				//참여자 최근 예약 상태 확인
-				Optional<Reservation> recentReservationOpt = reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(email);
+				Optional<Reservation> recentReservationOpt = reservationRepository.findLatestReservationByUserEmail(email);
 				if(recentReservationOpt.isPresent()) {
 					ReservationStatus recentStatus = recentReservationOpt.get().getStatus();
 					if(recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
@@ -468,7 +469,7 @@ public class ReservationService {
 	}
 
 	private void checkDuplicateReservation(String reserverEmail){
-		Optional<Reservation> recentReservation = reservationRepository.findFirstByUserEmailOrderByCreatedAtDesc(reserverEmail);
+		Optional<Reservation> recentReservation = reservationRepository.findLatestReservationByUserEmail(reserverEmail);
 		if (recentReservation.isPresent()) {
 			ReservationStatus recentStatus = recentReservation.get().getStatus();
 			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {

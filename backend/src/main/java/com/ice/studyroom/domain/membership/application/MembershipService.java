@@ -25,6 +25,7 @@ import com.ice.studyroom.domain.membership.presentation.dto.response.MemberEmail
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLookupResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberResponse;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -88,15 +89,10 @@ public class MembershipService {
 		String userName = memberDomainService.getUserNameByEmail(Email.of(email));
 		Member member = memberDomainService.getMemberByEmail(email);
 
-		// Member의 가장 최근 패널티 조회
-		Optional<Penalty> penalty = penaltyRepository.findTopByMemberIdAndPenaltyEndAfterOrderByPenaltyEndDesc(
-			member.getId(), LocalDateTime.now());
+		Optional<Penalty> penalty = penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID);
 
-		if(penalty.isEmpty() || penalty.get().isExpired()) {
-			return MemberLookupResponse.of(email, userName);
-		}
-
-		return MemberLookupResponse.of(email, userName, penalty.get().getReason(), penalty.get().getPenaltyEnd());
+		return penalty.map(p -> MemberLookupResponse.of(email, userName, p.getReason(), p.getPenaltyEnd()))
+			.orElseGet(() -> MemberLookupResponse.of(email, userName));
 	}
 
 	public MemberEmailResponse sendMail(EmailVerificationRequest request) {
