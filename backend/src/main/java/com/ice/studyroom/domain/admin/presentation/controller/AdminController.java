@@ -5,6 +5,7 @@ import com.ice.studyroom.domain.admin.application.AdminService;
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminDelPenaltyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminOccupyRequest;
+import com.ice.studyroom.domain.admin.presentation.dto.request.AdminReleaseRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.request.AdminSetPenaltyRequest;
 import com.ice.studyroom.domain.admin.presentation.dto.response.*;
 import com.ice.studyroom.global.dto.response.ResponseDto;
@@ -41,6 +42,20 @@ public class AdminController {
 	}
 
 	@Operation(
+		summary = "선점 및 예약된 방 정보 조회",
+		description = "관리자에 의해 선점된 방 정보 및 유저에 의해 예약된 방 정보를 조회합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "선점 및 예약된 방 조회 성공")
+	@ApiResponse(responseCode = "500", description = "선점 및 예약된 방 조회 실패")
+	@GetMapping("/room-time-slots/occupy-reserved")
+	public ResponseEntity<ResponseDto<List<AdminGetReservedResponse>>> getReservedRooms() {
+		List<AdminGetReservedResponse> reservedRooms = adminService.getOccupyAndReservedRooms();
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(reservedRooms));
+	}
+
+	@Operation(
 		summary = "방 시간대를 점유 상태로 설정",
 		description = "관리자가 특정 스터디룸의 특정 시간대를 점유 상태(예약 불가)로 설정합니다."
 	)
@@ -63,25 +78,11 @@ public class AdminController {
 	@ApiResponse(responseCode = "500", description = "방 선점 상태 변경 실패")
 	@PutMapping("/room-time-slots/release")
 	public ResponseEntity<ResponseDto<String>> adminReleaseSchedule(
-		@Valid @RequestBody AdminOccupyRequest request
+		@Valid @RequestBody AdminReleaseRequest request
 	) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(adminService.adminOccupyRooms(request)));
-	}
-
-	@Operation(
-		summary = "예약된 방 ID 조회",
-		description = "현재 예약된 스터디룸의 ID 목록을 반환합니다."
-	)
-	@ApiResponse(responseCode = "200", description = "예약된 방 ID 조회 성공")
-	@ApiResponse(responseCode = "500", description = "예약된 방 ID 조회 실패")
-	@GetMapping("/room-time-slots/occupy")
-	public ResponseEntity<ResponseDto<List<AdminGetReservedResponse>>> getReservedRooms() {
-		List<AdminGetReservedResponse> reservedRooms = adminService.getReservedRoomIds();
-		return ResponseEntity
-			.status(HttpStatus.OK)
-			.body(ResponseDto.of(reservedRooms));
+			.body(ResponseDto.of(adminService.adminReleaseRooms(request)));
 	}
 
 	@Operation(
