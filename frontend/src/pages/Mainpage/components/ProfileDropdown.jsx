@@ -1,16 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { User, LogOut, Key } from 'lucide-react';
-import { useTokenHandler } from "../handlers/TokenHandler";
+import { useUser } from "../handlers/UserContext";
 
 const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
+  const userData = useUser();
   const [isOpen, setIsOpen] = useState(false);
-  const [userName, setUserName] = useState('');
-  const [userEmail, setUserEmail] = useState('');
   const dropdownRef = useRef(null);
-
-  const {
-    refreshTokens,
-  } = useTokenHandler();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -25,40 +20,6 @@ const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
     };
   }, []);
 
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-        let accessToken = sessionStorage.getItem('accessToken');
-
-        try {
-            let response = await fetch('/api/users', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${accessToken}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (response.status === 401) {
-                accessToken = await refreshTokens();
-                if (accessToken) {
-                    return fetchUserInfo();
-                } else {
-                    return;
-                }
-            }
-            const result = await response.json();
-            if (result.code === 'S200' && result.data) {
-                setUserName(result.data.name);
-                setUserEmail(result.data.email);
-            }
-        } catch (error) {
-        }
-    };
-
-    fetchUserInfo();
-
-}, []);
-
   return (
     <div className="relative" ref={dropdownRef}>
       <button
@@ -71,8 +32,8 @@ const ProfileDropdown = ({ onLogout, onPasswordChange }) => {
       {isOpen && (
         <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-100 z-50">
           <div className="p-4 border-b border-gray-100">
-            <p className="font-medium text-gray-900">{userName}</p>
-            <p className="text-sm text-gray-500">{userEmail}</p>
+            <p className="font-medium text-gray-900">{userData?.name || "사용자"}</p>
+            <p className="text-sm text-gray-500">{userData?.email || "이메일 없음"}</p>
           </div>
 
           <div className="p-2">

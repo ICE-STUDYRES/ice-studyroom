@@ -1,21 +1,18 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import { useNotification } from '../../Notification/Notification';
 import { usePenaltyHandlers } from './PenaltyHandlers.jsx';
-import { useTokenHandler } from "./TokenHandler";
 import useQRCodeFetcher from '../components/QRCodeFetcher';
+import { useUser } from "../handlers/UserContext";
 
 export const useMainpageHandlers = (resId) => {
-  const {
-    setPenaltyEndAt,
-    setPenaltyReason,
-    penaltyReasonMap,
-  } = usePenaltyHandlers();
-
     const {
-      refreshTokens,
-    } = useTokenHandler();
+      setPenaltyEndAt,
+      setPenaltyReason,
+      penaltyReasonMap,
+    } = usePenaltyHandlers();
+
+    const userData = useUser();
 
     const [showNotice, setShowNotice] = useState(false);
     const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
@@ -25,46 +22,23 @@ export const useMainpageHandlers = (resId) => {
     const { qrStatus } = useQRCodeFetcher(resId);  
 
     useEffect(() => {
-      const fetchUserData = async () => {
-          try {
-              let accessToken = sessionStorage.getItem('accessToken');
-              if (!accessToken) {
-                return;
-              }
-              
-              let response = await axios.get('/api/users', {
-                  headers: { Authorization: `Bearer ${accessToken}` }
-              });
-              if (response.data && response.data.data) {
-                  const { penaltyEndAt, penaltyReasonType } = response.data.data;
-  
-                  if (penaltyEndAt) {
-                      const endDate = new Date(penaltyEndAt);
-                      const today = new Date();
-  
-                      const formattedEndAt = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
-                      const remainingDays = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
-  
-                      setPenaltyEndAt(`${formattedEndAt} (${remainingDays}일 남음)`);
-                  } else {
-                      setPenaltyEndAt("");
-                  }
-                  setPenaltyReason(penaltyReasonMap[penaltyReasonType]);
-              }
-          } catch (error) {
-            if (error.response && error.response.status === 401) {
+      if (userData) {
+          const { penaltyEndAt, penaltyReasonType } = userData;
 
-                accessToken = await refreshTokens();
-                if (accessToken) {
-                    return fetchUserData();
-                }
-            }
+          if (penaltyEndAt) {
+              const endDate = new Date(penaltyEndAt);
+              const today = new Date();
+
+              const formattedEndAt = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
+              const remainingDays = Math.max(0, Math.ceil((endDate - today) / (1000 * 60 * 60 * 24)));
+
+              setPenaltyEndAt(`${formattedEndAt} (${remainingDays}일 남음)`);
+          } else {
+              setPenaltyEndAt("");
           }
-      };
-  
-      fetchUserData();
-  
-  }, []);
+          setPenaltyReason(penaltyReasonMap[penaltyReasonType]);
+      }
+  }, [userData]);
 
     const navigate = useNavigate();  
     const handleReservationClick = () => {
