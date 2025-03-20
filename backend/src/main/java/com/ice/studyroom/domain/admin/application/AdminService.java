@@ -10,7 +10,6 @@ import com.ice.studyroom.domain.penalty.application.PenaltyService;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
-import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 import com.ice.studyroom.domain.admin.domain.entity.RoomTimeSlot;
 import com.ice.studyroom.domain.admin.domain.type.RoomTimeSlotStatus;
@@ -18,7 +17,6 @@ import com.ice.studyroom.domain.admin.infrastructure.persistence.RoomTimeSlotRep
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,10 +66,10 @@ public class AdminService {
 		return AdminOccupyResponse.of(message);
 	}
 
-	public List<AdminRoomResponse> getRoomByDayOfWeek(DayOfWeekStatus dayOfWeekStatus) {
+	public List<RoomScheduleInfoDto> getRoomByDayOfWeek(DayOfWeekStatus dayOfWeekStatus) {
 		List<RoomTimeSlot> roomTimeSlots = roomTimeSlotRepository.findByDayOfWeek(dayOfWeekStatus);
 
-		return roomTimeSlots.stream().map(AdminRoomResponse::from).toList();
+		return roomTimeSlots.stream().map(RoomScheduleInfoDto::from).toList();
 	}
 
 	public List<AdminGetReservedResponse> getReservedRoomIds() {
@@ -88,7 +86,6 @@ public class AdminService {
 
 		return penaltyList.stream()
 			.map(penalty -> AdminPenaltyRecordResponse.of(penalty.getMember().getName(),
-				penalty.getMember().getEmail().getValue(),
 				penalty.getMember().getStudentNum(), penalty.getReason(), penalty.getStatus(), penalty.getCreatedAt(),
 				penalty.getPenaltyEnd()))
 			.toList();
