@@ -46,8 +46,23 @@ public class AdminController {
 	)
 	@ApiResponse(responseCode = "200", description = "방 선점 상태 변경 성공")
 	@ApiResponse(responseCode = "500", description = "방 선점 상태 변경 실패")
-	@PostMapping("/room-time-slots/occupy")
-	public ResponseEntity<ResponseDto<AdminOccupyResponse>> adminOccupySchedule(
+	@PutMapping("/room-time-slots/occupy")
+	public ResponseEntity<ResponseDto<String>> adminOccupySchedule(
+		@Valid @RequestBody AdminOccupyRequest request
+	) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(adminService.adminOccupyRooms(request)));
+	}
+
+	@Operation(
+		summary = "방 시간대를 점유 상태를 해제",
+		description = "관리자가 특정 스터디룸의 특정 시간대를 점유 상태를 예약 가능 상태로 해제합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "방 선점 상태 변경 성공")
+	@ApiResponse(responseCode = "500", description = "방 선점 상태 변경 실패")
+	@PutMapping("/room-time-slots/release")
+	public ResponseEntity<ResponseDto<String>> adminReleaseSchedule(
 		@Valid @RequestBody AdminOccupyRequest request
 	) {
 		return ResponseEntity

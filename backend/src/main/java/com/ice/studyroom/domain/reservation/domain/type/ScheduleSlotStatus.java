@@ -1,6 +1,6 @@
 package com.ice.studyroom.domain.reservation.domain.type;
 
-public enum ScheduleStatus {
+public enum ScheduleSlotStatus {
 	AVAILABLE,
 	UNAVAILABLE,
 	RESERVED

@@ -15,7 +15,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -33,7 +32,7 @@ import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
-import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
+import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
@@ -433,7 +432,7 @@ public class ReservationService {
 	private List<Schedule> findSchedules(Long[] scheduleIds) {
 		return Arrays.stream(scheduleIds)
 			.map(id -> scheduleRepository.findById(id)
-				.filter(schedule -> schedule.getStatus() == ScheduleStatus.AVAILABLE) // AVAILABLE 상태 체크
+				.filter(schedule -> schedule.getStatus() == ScheduleSlotStatus.AVAILABLE) // AVAILABLE 상태 체크
 				.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않거나 사용 불가능한 스케줄입니다.")))
 			.collect(Collectors.toList());
 	}

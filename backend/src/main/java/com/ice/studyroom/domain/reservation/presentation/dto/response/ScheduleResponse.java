@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
-import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
+import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -24,7 +24,7 @@ public class ScheduleResponse {
 	private LocalTime startTime;
 	private LocalTime endTime;
 	private Integer capacity;
-	private ScheduleStatus status;
+	private ScheduleSlotStatus status;
 	private Long reservedById;
 	private String reservedByName;
 	private LocalDateTime createdAt;
