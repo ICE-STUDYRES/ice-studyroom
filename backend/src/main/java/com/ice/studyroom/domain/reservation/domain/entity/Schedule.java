@@ -6,7 +6,7 @@ import java.time.LocalTime;
 
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
-import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
+import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateScheduleRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.ScheduleResponse;
 
@@ -69,7 +69,7 @@ public class Schedule {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	@Builder.Default
-	private ScheduleStatus status = ScheduleStatus.AVAILABLE;
+	private ScheduleSlotStatus status = ScheduleSlotStatus.AVAILABLE;
 
 	@Column(nullable = false, updatable = false)
 	@Builder.Default
@@ -84,7 +84,7 @@ public class Schedule {
 	private DayOfWeekStatus dayOfWeek;
 
 	public boolean isAvailable() {
-		return status == ScheduleStatus.AVAILABLE;
+		return status == ScheduleSlotStatus.AVAILABLE;
 	}
 
 	public boolean isCurrentResLessThanCapacity() {
@@ -92,7 +92,7 @@ public class Schedule {
 	}
 
 	public void reserve() {
-		this.status = ScheduleStatus.RESERVED;
+		this.status = ScheduleSlotStatus.RESERVED;
 	}
 
 	public void cancel() {
@@ -107,7 +107,7 @@ public class Schedule {
 	}
 
 	public void available() {
-		this.status = ScheduleStatus.AVAILABLE;
+		this.status = ScheduleSlotStatus.AVAILABLE;
 	}
 
 	public ScheduleResponse toResponse() {

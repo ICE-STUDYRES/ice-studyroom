@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotNull;
 
 public record AdminSetPenaltyRequest(
 	@NotBlank(message = "학번은 필수로 입력해주세요.")
-	String studentNumber,
+	String studentNum,
 
 	@NotNull(message = "페널티 종료일자는 필수로 입력해주세요.")
 	@FutureOrPresent(message = "페널티 종료일자는 현재 또는 미래 시점이어야 합니다.")

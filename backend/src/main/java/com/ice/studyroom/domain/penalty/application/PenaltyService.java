@@ -60,7 +60,7 @@ public class PenaltyService {
 	@Transactional
 	public void adminDeletePenalty(Member member) {
 		Penalty penalty = penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID).get();
-		penaltyRepository.delete(penalty);
+		penalty.expirePenalty();
 		member.updatePenalty(false);
 	}
 

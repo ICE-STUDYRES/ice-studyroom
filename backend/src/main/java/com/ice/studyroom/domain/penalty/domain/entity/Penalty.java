@@ -72,7 +72,7 @@ public class Penalty extends BaseTimeEntity {
 		return false;
 	}
 
-	private void expirePenalty() {
+	public void expirePenalty() {
 		this.status = PenaltyStatus.EXPIRED;
 	}
 }

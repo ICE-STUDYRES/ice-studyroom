@@ -4,8 +4,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
-import com.ice.studyroom.domain.admin.domain.type.RoomTimeSlotStatus;
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
+import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
@@ -58,7 +58,7 @@ public class RoomTimeSlot extends BaseTimeEntity {
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	@Builder.Default
-	private RoomTimeSlotStatus status = RoomTimeSlotStatus.AVAILABLE;
+	private ScheduleSlotStatus status = ScheduleSlotStatus.AVAILABLE;
 
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
@@ -85,15 +85,7 @@ public class RoomTimeSlot extends BaseTimeEntity {
 		validateTimeSlot();
 	}
 
-	/**
-	 * 상태를 업데이트하는 메서드
-	 *
-	 * @param newStatus 업데이트할 상태
-	 */
-	public void updateStatus(RoomTimeSlotStatus newStatus) {
-		if (this.status == RoomTimeSlotStatus.RESERVED && newStatus == RoomTimeSlotStatus.RESERVED) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 선점된 상태입니다.");
-		}
+	public void updateStatus(ScheduleSlotStatus newStatus) {
 		this.status = newStatus;
 	}
 
