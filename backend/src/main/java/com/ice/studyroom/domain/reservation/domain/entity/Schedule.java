@@ -95,6 +95,10 @@ public class Schedule {
 		this.status = ScheduleSlotStatus.RESERVED;
 	}
 
+	public void unAvailable() {
+		this.status = ScheduleSlotStatus.UNAVAILABLE;
+	}
+
 	public void cancel() {
 		this.currentRes--;
 		ifCurrentResZeroThanMakeAvailable();

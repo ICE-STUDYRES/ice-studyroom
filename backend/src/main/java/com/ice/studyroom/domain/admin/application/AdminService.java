@@ -38,8 +38,24 @@ public class AdminService {
 	private final MemberRepository memberRepository;
 	private final PenaltyService penaltyService;
 
-	//todo: 당일 선점 로직 추가
 	public String adminOccupyRooms(AdminOccupyRequest request) {
+		//당일 선점일 경우, 스케줄에도 반영
+		if(request.dayOfWeek() == DayOfWeekStatus.valueOf(LocalDate.now().getDayOfWeek().name())){
+			List<Schedule> todaySchedules = scheduleRepository.findByScheduleDateAndRoomTimeSlotIdIn(LocalDate.now(),
+				request.roomTimeSlotId());
+
+			if(todaySchedules.isEmpty()){
+				throw new BusinessException(StatusCode.NOT_FOUND, "해당 RoomTimeSlot ID에 일치하는 Schedule이 존재하지 않습니다.");
+			}
+
+			for (Schedule schedule : todaySchedules) {
+				if(schedule.getStatus() == ScheduleSlotStatus.RESERVED){
+					throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 이루어진 시간대가 포함되어있습니다.");
+				}
+				schedule.unAvailable();
+			}
+		}
+
 		// 요청된 roomTimeSlotId들을 기반으로 RoomTimeSlot을 조회
 		List<RoomTimeSlot> roomTimeSlots = roomTimeSlotRepository.findAllById(request.roomTimeSlotId());
 
@@ -48,9 +64,6 @@ public class AdminService {
 		}
 
 		for (RoomTimeSlot roomTimeSlot : roomTimeSlots) {
-			if (roomTimeSlot.getStatus() == ScheduleSlotStatus.UNAVAILABLE) {
-				throw new BusinessException(StatusCode.BAD_REQUEST, "일부 시간대가 이미 선점되어 있습니다.");
-			}
 			roomTimeSlot.updateStatus(ScheduleSlotStatus.UNAVAILABLE);
 		}
 
