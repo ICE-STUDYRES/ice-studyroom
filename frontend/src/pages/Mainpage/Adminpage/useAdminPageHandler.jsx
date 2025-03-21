@@ -15,11 +15,11 @@ const useAdminPageHandler = () => {
   const [dayOfWeek, setDayOfWeek] = useState(getTodayDayOfWeek());
 
   const dayMapping = {
-    '월': 'Monday',
-    '화': 'Tuesday',
-    '수': 'Wednesday',
-    '목': 'Thursday',
-    '금': 'Friday'
+    '월': 'MONDAY',
+    '화': 'TUESDAY',
+    '수': 'WEDNESDAY',
+    '목': 'THURSDAY',
+    '금': 'FRIDAY'
   };
 
   useEffect(() => {
