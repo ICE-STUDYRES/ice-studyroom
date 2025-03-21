@@ -197,7 +197,7 @@ public class ReservationService {
 
 			schedule.setCurrentRes(schedule.getCurrentRes() + 1); // 개인예약은 현재사용인원에서 +1 진행
 			if (schedule.getCurrentRes() == schedule.getCapacity()) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
-				schedule.reserve();
+				schedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			}
 		}
 
@@ -300,7 +300,7 @@ public class ReservationService {
 
 		for (Schedule schedule : schedules) {
 			schedule.setCurrentRes(totalParticipants); // 현재 사용 인원을 예약자 + 참여자 숫자로 지정
-			schedule.reserve();
+			schedule.updateStatus(ScheduleSlotStatus.RESERVED);
 		}
 
 		scheduleRepository.saveAll(schedules);
@@ -407,7 +407,7 @@ public class ReservationService {
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 			}
 
-			nextSchedule.reserve();
+			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			nextSchedule.setCurrentRes(reservationEmails.size());
 		}else{
 			if(reservation.getStatus() != ReservationStatus.ENTRANCE){
@@ -416,7 +416,7 @@ public class ReservationService {
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + 1);
 			if(!nextSchedule.isCurrentResLessThanCapacity()){
-				nextSchedule.reserve();
+				nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			}
 		}
 

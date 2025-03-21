@@ -38,38 +38,62 @@ public class AdminService {
 	private final MemberRepository memberRepository;
 	private final PenaltyService penaltyService;
 
-	//todo: 당일 선점 로직 추가
 	public String adminOccupyRooms(AdminOccupyRequest request) {
-		// 요청된 roomTimeSlotId들을 기반으로 RoomTimeSlot을 조회
+		//당일 선점일 경우, 스케줄에도 반영
+		if(request.dayOfWeek() == DayOfWeekStatus.valueOf(LocalDate.now().getDayOfWeek().name())){
+			List<Schedule> todaySchedules = scheduleRepository.findByScheduleDateAndRoomTimeSlotIdIn(LocalDate.now(),
+				request.roomTimeSlotId());
+
+			if(todaySchedules.isEmpty()){
+				throw new BusinessException(StatusCode.NOT_FOUND, "해당 RoomTimeSlot ID에 일치하는 Schedule이 존재하지 않습니다.");
+			}
+
+			for (Schedule schedule : todaySchedules) {
+				if(schedule.getStatus() == ScheduleSlotStatus.RESERVED){
+					throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 이루어진 스케줄에 대해서는 선점이 불가능합니다.");
+				}
+				schedule.updateStatus(ScheduleSlotStatus.UNAVAILABLE);
+			}
+		}
+
 		List<RoomTimeSlot> roomTimeSlots = roomTimeSlotRepository.findAllById(request.roomTimeSlotId());
 
 		if (roomTimeSlots.isEmpty()) {
-			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 없습니다.");
+			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 존재하지 않습니다.");
 		}
 
 		for (RoomTimeSlot roomTimeSlot : roomTimeSlots) {
-			if (roomTimeSlot.getStatus() == ScheduleSlotStatus.UNAVAILABLE) {
-				throw new BusinessException(StatusCode.BAD_REQUEST, "일부 시간대가 이미 선점되어 있습니다.");
-			}
 			roomTimeSlot.updateStatus(ScheduleSlotStatus.UNAVAILABLE);
 		}
 
 		return "관리자가 선택한 시간대를 선점했습니다.";
 	}
 
-	//todo: 당일 선점 해제 로직 추가
 	public String adminReleaseRooms(AdminReleaseRequest request) {
-		// 요청된 roomTimeSlotId들을 기반으로 RoomTimeSlot을 조회
+		//당일 선점 해지일 경우, 스케줄에도 반영
+		if(request.dayOfWeek() == DayOfWeekStatus.valueOf(LocalDate.now().getDayOfWeek().name())){
+			List<Schedule> todaySchedules = scheduleRepository.findByScheduleDateAndRoomTimeSlotIdIn(LocalDate.now(),
+				request.roomTimeSlotId());
+
+			if(todaySchedules.isEmpty()){
+				throw new BusinessException(StatusCode.NOT_FOUND, "해당 RoomTimeSlot ID에 일치하는 Schedule이 존재하지 않습니다.");
+			}
+
+			for (Schedule schedule : todaySchedules) {
+				if(schedule.getStatus() == ScheduleSlotStatus.RESERVED){
+					throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 이루어진 스케줄에 대해서는 선점 해지가 불가능합니다.");
+				}
+				schedule.updateStatus(ScheduleSlotStatus.AVAILABLE);
+			}
+		}
+
 		List<RoomTimeSlot> roomTimeSlots = roomTimeSlotRepository.findAllById(request.roomTimeSlotId());
 
 		if (roomTimeSlots.isEmpty()) {
-			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 없습니다.");
+			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 존재하지 않습니다.");
 		}
 
 		for (RoomTimeSlot roomTimeSlot : roomTimeSlots) {
-			if (roomTimeSlot.getStatus() == ScheduleSlotStatus.AVAILABLE) {
-				throw new BusinessException(StatusCode.BAD_REQUEST, "일부 시간대가 이미 선점 해제되어 있습니다.");
-			}
 			roomTimeSlot.updateStatus(ScheduleSlotStatus.AVAILABLE);
 		}
 
@@ -87,21 +111,10 @@ public class AdminService {
 		return roomTimeSlots.stream().map(RoomScheduleInfoDto::from).toList();
 	}
 
-	//todo: RoomTimeSlot과 Schedule 사이에서 데이터 정합성 보장시키기
 	public List<AdminGetReservedResponse> getOccupyAndReservedRooms() {
 		// 선점된 방 엔티티만 가져오기
 		List<RoomTimeSlot> occupyRoomTimeSlots = roomTimeSlotRepository.findByStatus(ScheduleSlotStatus.UNAVAILABLE);
-
-		// 오늘 예약된 스케줄 엔티티만 가져오기
-		List<Schedule> reservationSchedules = scheduleRepository.findByScheduleDateAndStatus(LocalDate.now(), ScheduleSlotStatus.RESERVED);
-
-		// 오늘 스케줄 중 선점된 스케줄 엔티티만 가져오기
-		List<Schedule> occupySchedules = scheduleRepository.findByScheduleDateAndStatus(LocalDate.now(), ScheduleSlotStatus.RESERVED);
-
-		return Stream.concat(
-			occupyRoomTimeSlots.stream().map(AdminGetReservedResponse::from),
-			reservationSchedules.stream().map(AdminGetReservedResponse::from)
-		).toList();
+		return occupyRoomTimeSlots.stream().map(AdminGetReservedResponse::from).toList();
 	}
 
 	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords() {

@@ -91,8 +91,8 @@ public class Schedule {
 		return currentRes < capacity;
 	}
 
-	public void reserve() {
-		this.status = ScheduleSlotStatus.RESERVED;
+	public void updateStatus(ScheduleSlotStatus newStatus) {
+		this.status = newStatus;
 	}
 
 	public void cancel() {

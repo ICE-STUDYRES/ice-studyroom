@@ -13,4 +13,7 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 	List<Schedule> findByScheduleDate(LocalDate date);
 
 	List<Schedule> findByScheduleDateAndStatus(LocalDate date, ScheduleSlotStatus status);
+
+	List<Schedule> findByScheduleDateAndRoomTimeSlotIdIn(LocalDate date, List<Long> roomTimeSlotId);
+
 }
