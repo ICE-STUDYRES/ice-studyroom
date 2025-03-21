@@ -17,7 +17,8 @@ public class ScheduleTask {
 	}
 
 	@Transactional
-	@Scheduled(cron = "${schedule.insert.cron}")
+	//@Scheduled(cron = "${schedule.insert.cron}")
+	@Scheduled(cron = "0 10 10 * * *")
 	public void insertScheduleData() {
 		String sql = """
 				INSERT INTO schedule (
