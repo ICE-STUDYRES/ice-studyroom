@@ -50,17 +50,16 @@ public class AdminService {
 
 			for (Schedule schedule : todaySchedules) {
 				if(schedule.getStatus() == ScheduleSlotStatus.RESERVED){
-					throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 이루어진 시간대가 포함되어있습니다.");
+					throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 이루어진 스케줄에 대해서는 선점이 불가능합니다.");
 				}
-				schedule.unAvailable();
+				schedule.updateStatus(ScheduleSlotStatus.UNAVAILABLE);
 			}
 		}
 
-		// 요청된 roomTimeSlotId들을 기반으로 RoomTimeSlot을 조회
 		List<RoomTimeSlot> roomTimeSlots = roomTimeSlotRepository.findAllById(request.roomTimeSlotId());
 
 		if (roomTimeSlots.isEmpty()) {
-			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 없습니다.");
+			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 존재하지 않습니다.");
 		}
 
 		for (RoomTimeSlot roomTimeSlot : roomTimeSlots) {
@@ -70,19 +69,31 @@ public class AdminService {
 		return "관리자가 선택한 시간대를 선점했습니다.";
 	}
 
-	//todo: 당일 선점 해제 로직 추가
 	public String adminReleaseRooms(AdminReleaseRequest request) {
-		// 요청된 roomTimeSlotId들을 기반으로 RoomTimeSlot을 조회
+		//당일 선점 해지일 경우, 스케줄에도 반영
+		if(request.dayOfWeek() == DayOfWeekStatus.valueOf(LocalDate.now().getDayOfWeek().name())){
+			List<Schedule> todaySchedules = scheduleRepository.findByScheduleDateAndRoomTimeSlotIdIn(LocalDate.now(),
+				request.roomTimeSlotId());
+
+			if(todaySchedules.isEmpty()){
+				throw new BusinessException(StatusCode.NOT_FOUND, "해당 RoomTimeSlot ID에 일치하는 Schedule이 존재하지 않습니다.");
+			}
+
+			for (Schedule schedule : todaySchedules) {
+				if(schedule.getStatus() == ScheduleSlotStatus.RESERVED){
+					throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 이루어진 스케줄에 대해서는 선점 해지가 불가능합니다.");
+				}
+				schedule.updateStatus(ScheduleSlotStatus.AVAILABLE);
+			}
+		}
+
 		List<RoomTimeSlot> roomTimeSlots = roomTimeSlotRepository.findAllById(request.roomTimeSlotId());
 
 		if (roomTimeSlots.isEmpty()) {
-			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 없습니다.");
+			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 존재하지 않습니다.");
 		}
 
 		for (RoomTimeSlot roomTimeSlot : roomTimeSlots) {
-			if (roomTimeSlot.getStatus() == ScheduleSlotStatus.AVAILABLE) {
-				throw new BusinessException(StatusCode.BAD_REQUEST, "일부 시간대가 이미 선점 해제되어 있습니다.");
-			}
 			roomTimeSlot.updateStatus(ScheduleSlotStatus.AVAILABLE);
 		}
 
