@@ -111,21 +111,10 @@ public class AdminService {
 		return roomTimeSlots.stream().map(RoomScheduleInfoDto::from).toList();
 	}
 
-	//todo: RoomTimeSlot과 Schedule 사이에서 데이터 정합성 보장시키기
 	public List<AdminGetReservedResponse> getOccupyAndReservedRooms() {
 		// 선점된 방 엔티티만 가져오기
 		List<RoomTimeSlot> occupyRoomTimeSlots = roomTimeSlotRepository.findByStatus(ScheduleSlotStatus.UNAVAILABLE);
-
-		// 오늘 예약된 스케줄 엔티티만 가져오기
-		List<Schedule> reservationSchedules = scheduleRepository.findByScheduleDateAndStatus(LocalDate.now(), ScheduleSlotStatus.RESERVED);
-
-		// 오늘 스케줄 중 선점된 스케줄 엔티티만 가져오기
-		List<Schedule> occupySchedules = scheduleRepository.findByScheduleDateAndStatus(LocalDate.now(), ScheduleSlotStatus.RESERVED);
-
-		return Stream.concat(
-			occupyRoomTimeSlots.stream().map(AdminGetReservedResponse::from),
-			reservationSchedules.stream().map(AdminGetReservedResponse::from)
-		).toList();
+		return occupyRoomTimeSlots.stream().map(AdminGetReservedResponse::from).toList();
 	}
 
 	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords() {
