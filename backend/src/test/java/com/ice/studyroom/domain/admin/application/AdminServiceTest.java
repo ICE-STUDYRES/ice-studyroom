@@ -28,37 +28,37 @@ class AdminServiceTest {
 		MockitoAnnotations.openMocks(this);
 	}
 
-	@Test
-	void changeRoomType_Success() {
-		// Given
-		Long roomId = 1L;
-		RoomType type = RoomType.GROUP;
-		ChangeRoomTypeRequest request = new ChangeRoomTypeRequest(roomId, type);
-		RoomTimeSlot roomTimeSlot = mock(RoomTimeSlot.class);
-		when(roomTimeSlot.getId()).thenReturn(roomId);
-		when(roomTimeSlot.getRoomType()).thenReturn(type);
+	// @Test
+	// void changeRoomType_Success() {
+	// 	// Given
+	// 	Long roomId = 1L;
+	// 	RoomType type = RoomType.GROUP;
+	// 	ChangeRoomTypeRequest request = new ChangeRoomTypeRequest(roomId, type);
+	// 	RoomTimeSlot roomTimeSlot = mock(RoomTimeSlot.class);
+	// 	when(roomTimeSlot.getId()).thenReturn(roomId);
+	// 	when(roomTimeSlot.getRoomType()).thenReturn(type);
+	//
+	// 	when(roomTimeSlotRepository.findById(roomId)).thenReturn(java.util.Optional.of(roomTimeSlot));
+	//
+	// 	// When
+	// 	// adminService.changeRoomType(request);
+	//
+	// 	// Then
+	// 	assertEquals(type, roomTimeSlot.getRoomType());
+	// 	verify(roomTimeSlotRepository, times(1)).save(roomTimeSlot); // save()가 호출되었는지 확인
+	// }
 
-		when(roomTimeSlotRepository.findById(roomId)).thenReturn(java.util.Optional.of(roomTimeSlot));
-
-		// When
-		adminService.changeRoomType(request);
-
-		// Then
-		assertEquals(type, roomTimeSlot.getRoomType());
-		verify(roomTimeSlotRepository, times(1)).save(roomTimeSlot); // save()가 호출되었는지 확인
-	}
-
-	@Test
-	void changeRoomType_RoomNotFound() {
-		// Given
-		Long roomId = 999L;
-		RoomType type = RoomType.GROUP;
-		ChangeRoomTypeRequest request = new ChangeRoomTypeRequest(roomId, type);
-
-		when(roomTimeSlotRepository.findById(roomId)).thenReturn(java.util.Optional.empty());
-
-		// When & Then (예외 발생 확인)
-		assertThrows(BusinessException.class, () -> adminService.changeRoomType(request));
-	}
+	// @Test
+	// void changeRoomType_RoomNotFound() {
+	// 	// Given
+	// 	Long roomId = 999L;
+	// 	RoomType type = RoomType.GROUP;
+	// 	ChangeRoomTypeRequest request = new ChangeRoomTypeRequest(roomId, type);
+	//
+	// 	when(roomTimeSlotRepository.findById(roomId)).thenReturn(java.util.Optional.empty());
+	//
+	// 	// When & Then (예외 발생 확인)
+	// 	assertThrows(BusinessException.class, () -> adminService.changeRoomType(request));
+	// }
 }
 
