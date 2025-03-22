@@ -101,7 +101,7 @@ const usePenaltyLogic = () => {
       return;
     }
 
-    if (!window.confirm(`패널티를 삭제하시겠습니까?`)) {
+    if (!window.confirm(`정말 이 패널티를 비활성화하시겠습니까?`)) {
       return;
     }
 

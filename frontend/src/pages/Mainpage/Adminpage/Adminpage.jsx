@@ -57,7 +57,7 @@ const AdminPage = () => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
               onClick={() => handleTabChange(tab)}>
-              {tab === 'booking' ? '예약하기' : 
+              {tab === 'booking' ? '관리자 선점하기' :
                tab === 'penalty' ? '패널티 관리' : '예약 관리'}
             </button>
           ))}
@@ -202,7 +202,7 @@ const AdminPage = () => {
                       }`}
                       disabled={selectedTimes.length === 0}
                     >
-                      {selectedTimes.length > 0 ? '예약하기' : '시간을 선택해주세요'}
+                      {selectedTimes.length > 0 ? '예약 불가로 선점하기' : '시간을 선택해주세요'}
                     </button>
                   </div>
                 </div>
