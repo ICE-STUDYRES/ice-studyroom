@@ -2,10 +2,27 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import axios from 'axios';
 
-const DAYS = { "MONDAY": "월", "TUESDAY": "화", "WEDNESDAY": "수", "THURSDAY": "목", "FRIDAY": "금", "SATURDAY": "토", "SUNDAY": "일" };
+const getTodayDayOfWeek = () => {
+  const today = new Date();
+  return new Intl.DateTimeFormat('ko-KR', { weekday: 'short' }).format(today);
+};
+
+const DAYS = {
+  "MONDAY": "월",
+  "TUESDAY": "화",
+  "WEDNESDAY": "수",
+  "THURSDAY": "목",
+  "FRIDAY": "금",
+  "SATURDAY": "토",
+  "SUNDAY": "일"
+};
+
+const ENGLISH_DAYS = Object.fromEntries(
+  Object.entries(DAYS).map(([eng, kor]) => [kor, eng])
+);
 
 const BookingManagement = ({ rooms }) => {
-  const [selectedDay, setSelectedDay] = useState('월');
+  const [selectedDay, setSelectedDay] = useState(getTodayDayOfWeek());
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
   const [selectedTimes, setSelectedTimes] = useState([]);
@@ -29,50 +46,47 @@ const BookingManagement = ({ rooms }) => {
 
         const formatTimeRange = (startTime) => {
           const [hour, minute] = startTime.split(':').map(Number);
-          const endHour = hour + 1; // 한 시간 뒤 정각 설정
+          const endHour = hour + 1;
           return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}-${endHour.toString().padStart(2, '0')}:00`;
         };
 
-        // 원본 예약 데이터 구성 (시간 변환 후 저장)
-        const rawBookings = apiData.reduce((acc, { roomNumber, startTime, dayOfWeek }) => {
-          const day = DAYS[dayOfWeek] || dayOfWeek; // 영어 요일을 한글로 변환
-          if (!acc[day]) acc[day] = {};
-          if (!acc[day][roomNumber]) acc[day][roomNumber] = [];
+        const rawBookings = {};
 
-          acc[day][roomNumber].push(formatTimeRange(startTime));
-          return acc;
-        }, { "월": {}, "화": {}, "수": {}, "목": {}, "금": {} });
+        apiData.forEach(({ roomNumber, startTime, dayOfWeek }) => {
+          const day = DAYS[dayOfWeek] || dayOfWeek;
+          const time = formatTimeRange(startTime);
+        
+          if (!rawBookings[day]) rawBookings[day] = {};
+          if (!rawBookings[day][roomNumber]) rawBookings[day][roomNumber] = [];
+        
+          rawBookings[day][roomNumber].push(time);
+        });
 
-        setBookings(rawBookings); // 원본 데이터 저장
+        setBookings(rawBookings);
 
-        // UI에 병합된 데이터를 만들기
         const mergeTimes = (times) => {
           if (!times || times.length === 0) return [];
           const sortedTimes = [...times].sort();
           const merged = [];
-          let start = sortedTimes[0].split('-')[0]; // 시작 시간
-          let end = sortedTimes[0].split('-')[1]; // 종료 시간
+          let start = sortedTimes[0].split('-')[0];
+          let end = sortedTimes[0].split('-')[1];
 
           for (let i = 1; i < sortedTimes.length; i++) {
             const [currentStart, currentEnd] = sortedTimes[i].split('-');
 
             if (currentStart === end) {
-              // 시간이 연결되면 범위를 확장
               end = currentEnd;
             } else {
-              // 연결되지 않으면 새로운 범위를 저장
               merged.push(`${start}-${end}`);
               start = currentStart;
               end = currentEnd;
             }
           }
 
-          // 마지막 범위 추가
           merged.push(`${start}-${end}`);
           return merged;
         };
 
-        // 병합된 데이터를 저장
         const formattedMergedBookings = Object.keys(rawBookings).reduce((acc, day) => {
           acc[day] = {};
           Object.keys(rawBookings[day]).forEach(room => {
@@ -109,21 +123,83 @@ const BookingManagement = ({ rooms }) => {
     });
   };
 
-  const handleRelease = () => {
-    if (selectedTimes.length === 0) return;
-
-    setBookings(prev => ({
-      ...prev,
-      [selectedDay]: {
-        ...prev[selectedDay],
-        [selectedRoom]: prev[selectedDay][selectedRoom].filter(
-          time => !selectedTimes.includes(time)
-        )
+  const fetchSchedules = async () => {
+    const accessToken = sessionStorage.getItem("accessToken");
+    const englishDay = ENGLISH_DAYS[selectedDay];
+    const response = await axios.get(`/api/admin/room-time-slots?dayOfWeek=${englishDay}`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`
       }
-    }));
+    });
+  
+    const allSlots = response.data.data;
+  
+    const selectedIds = allSlots
+      .filter(item => {
+        const start = item.startTime.substring(0, 5).padStart(5, '0');
+        const end = item.endTime.substring(0, 5).padStart(5, '0');
+        const timeRange = `${start}-${end}`;
+        return (
+          item.roomNumber === selectedRoom &&
+          selectedTimes.includes(timeRange)
+        );
+      })
+      .map(item => item.id);
+  
+    return selectedIds;
+  };
+  
 
-    setIsModalOpen(false);
-    setSelectedTimes([]);
+  const handleRelease = async () => {
+    if (selectedTimes.length === 0 || !selectedRoom) return;
+  
+    try {
+      const accessToken = sessionStorage.getItem("accessToken");
+      if (!accessToken) return;
+  
+      const selectedIds = await fetchSchedules();
+      if (selectedIds.length === 0) {
+        console.warn("⚠️ 해제할 slot ID 없음");
+        return;
+      }
+
+      const englishDay = ENGLISH_DAYS[selectedDay];
+  
+      const requestBody = {
+        roomTimeSlotId: selectedIds,
+        dayOfWeek: englishDay
+      };      
+  
+      const response = await fetch("/api/admin/room-time-slots/release", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`
+        },
+        body: JSON.stringify(requestBody)
+      });
+  
+      const responseData = await response.json();
+      if (!response.ok) throw new Error(responseData.message || "해제 요청 실패");
+  
+      console.log("✅ 해제 성공:", responseData.data.message || "OK");
+  
+      setBookings(prev => ({
+        ...prev,
+        [selectedDay]: {
+          ...prev[selectedDay],
+          [selectedRoom]: prev[selectedDay][selectedRoom].filter(
+            time => !selectedTimes.includes(time)
+          )
+        }
+      }));
+  
+      setIsModalOpen(false);
+      setSelectedTimes([]);
+    } catch (error) {
+      console.error("❌ 해제 실패:", error.message);
+      alert("해제에 실패했습니다. 다시 시도해주세요.");
+    }
   };
 
   return (
