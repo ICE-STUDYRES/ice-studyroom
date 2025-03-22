@@ -19,8 +19,12 @@ const useAdminPageHandler = () => {
     '화': 'TUESDAY',
     '수': 'WEDNESDAY',
     '목': 'THURSDAY',
-    '금': 'FRIDAY'
+    '금': 'FRIDAY',
+    '토': 'SATURDAY',
+    '일': 'SUNDAY',
   };
+
+  const englishDay = dayMapping[dayOfWeek] || "MONDAY";
 
   useEffect(() => {
     setDayOfWeek(getTodayDayOfWeek());
@@ -38,8 +42,7 @@ const useAdminPageHandler = () => {
         if (!accessToken) {
           return;
         }
-  
-        const englishDay = dayMapping[dayOfWeek] || "Monday";
+        
         const response = await fetch(`/api/admin/room-time-slots?dayOfWeek=${englishDay}`, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -57,12 +60,15 @@ const useAdminPageHandler = () => {
         const uniqueTimeSlots = new Set();
   
         const roomTimeSlotIds = responseData.data
-          .filter(item => 
+        .filter(item => {
+          const timeRange = `${item.startTime.substring(0, 5)}~${item.endTime.substring(0, 5)}`;
+          const isMatch =
             item.roomNumber === selectedRoom &&
-            item.dayOfWeekStatus === englishDay &&
-            selectedTimes.includes(`${item.startTime.substring(0, 5)}~${item.endTime.substring(0, 5)}`)
-          )
-          .map(item => item.roomTimeSlotId);
+            selectedTimes.includes(timeRange);      
+          return isMatch;
+        })
+        .map(item => item.id);
+      
   
         responseData.data.forEach(item => {
           if (!roomMap.has(item.roomNumber)) {
@@ -72,8 +78,7 @@ const useAdminPageHandler = () => {
               features: item.facilities || [],
               status: 'available'
             });
-          }
-  
+          }  
           const timeRange = `${item.startTime.substring(0, 5)}~${item.endTime.substring(0, 5)}`;
           uniqueTimeSlots.add(timeRange);
         });
@@ -191,9 +196,9 @@ const useAdminPageHandler = () => {
 
   const getSelectedRoomTimeSlotIds = () => {
     return roomTimeSlots.filter(slot => slot !== undefined && slot !== null);
-};
+  };
 
-const handleReserve = async () => {
+const handleOccupy = async () => {
   try {
     let accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
@@ -209,11 +214,11 @@ const handleReserve = async () => {
 
     const requestBody = {
       roomTimeSlotId: selectedIds,
-      setOccupy: true
+      dayOfWeek: englishDay,
     };
 
     const response = await fetch("/api/admin/room-time-slots/occupy", {
-      method: "POST",
+      method: "PUT",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${accessToken}`
@@ -221,15 +226,15 @@ const handleReserve = async () => {
       body: JSON.stringify(requestBody)
     });
 
+    console.log("🚀 보내는 요청", requestBody);
+
     const responseData = await response.json();
     if (!response.ok) {
       throw new Error(responseData.message || "예약 처리 중 오류 발생");
     }
 
-    console.log("✅ 예약 성공:", responseData.data.message);
     alert("예약이 완료되었습니다!");
   } catch (error) {
-    console.error("❌ 예약 실패:", error.message);
     alert("예약에 실패했습니다. 다시 시도해주세요.");
   }
 };
@@ -255,7 +260,7 @@ const handleReserve = async () => {
     handleTabChange,
     handleRoomSelect,
     handleTimeSelect,
-    handleReserve,
+    handleOccupy,
   };
 };
 

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import axios from 'axios';
 
-const DAYS = { "Monday": "월", "Tuesday": "화", "Wednesday": "수", "Thursday": "목", "Friday": "금" };
+const DAYS = { "MONDAY": "월", "TUESDAY": "화", "WEDNESDAY": "수", "THURSDAY": "목", "FRIDAY": "금", "SATURDAY": "토", "SUNDAY": "일" };
 
 const BookingManagement = ({ rooms }) => {
   const [selectedDay, setSelectedDay] = useState('월');
@@ -19,7 +19,7 @@ const BookingManagement = ({ rooms }) => {
         if (!accessToken) {
           return;
         }
-        const response = await axios.get('api/admin/room-time-slots/occupy', {
+        const response = await axios.get('api/admin/room-time-slots/occupy-reserved', {
           headers: {
             Authorization: `Bearer ${accessToken}`
           }

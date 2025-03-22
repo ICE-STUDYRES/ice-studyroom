@@ -10,7 +10,6 @@ const AdminPage = () => {
     selectedRoom,
     selectedTimes,
     formattedSelectedTimes,
-    getSelectedRoomTimeSlotIds,
     setDayOfWeek,
     rooms,
     timeSlots,
@@ -19,11 +18,11 @@ const AdminPage = () => {
     handleTabChange,
     handleRoomSelect,
     handleTimeSelect,
-    handleReserve
+    handleOccupy,
   } = useAdminPageHandler();
 
-  const days = ['월', '화', '수', '목', '금'];
-  const todayIndex = new Date().getDay() -1;
+  const days = ['월', '화', '수', '목', '금', '토', '일'];
+  const todayIndex = new Date().getDay()-1;
   const [selectedDay, setSelectedDay] = useState(days[todayIndex]);
 
   useEffect(() => {
@@ -196,7 +195,7 @@ const AdminPage = () => {
                       </div>
                     </div>
                     <button 
-                      onClick={handleReserve}
+                      onClick={handleOccupy}
                       className={`w-full py-3 text-sm font-medium rounded-lg transition-colors ${
                         selectedTimes.length > 0
                           ? 'bg-gray-900 text-white hover:bg-gray-800'
