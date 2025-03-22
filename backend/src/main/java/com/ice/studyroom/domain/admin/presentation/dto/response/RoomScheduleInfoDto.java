@@ -29,7 +29,7 @@ public record RoomScheduleInfoDto(
 
 	public static RoomScheduleInfoDto from(Schedule schedule){
 		return new RoomScheduleInfoDto(
-			schedule.getId(),
+			schedule.getRoomTimeSlotId(),
 			schedule.getRoomNumber(),
 			schedule.getStatus(),
 			schedule.getStartTime(),
