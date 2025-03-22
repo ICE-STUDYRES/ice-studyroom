@@ -326,7 +326,11 @@ public class ReservationService {
 		}
 
 		LocalDateTime now = LocalDateTime.now(clock);
-		LocalDateTime startTime = LocalDateTime.of(now.toLocalDate(), reservation.getStartTime());
+
+		Schedule firstSchedule = scheduleRepository.findById(reservation.getFirstScheduleId())
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
+
+		LocalDateTime startTime = LocalDateTime.of(now.toLocalDate(), firstSchedule.getStartTime());
 
 		// 입실 1 시간 전 일 경우 패널티
 		if (now.isAfter(startTime)) {
@@ -341,14 +345,14 @@ public class ReservationService {
 		/*
 		 * 취소 프로세스 시작
 		 * 몇 개의 스케줄을 취소해야하는가?
-		 * 시간 비교를 하면 몇 개의 스케줄을 신청했는지 알 수 있다.
+		 * secondSchedule도 존재한다면 cancel로 currentRes를 -1을 더해준다.
 		 */
-		long hourDifference = Duration.between(reservation.getStartTime(), reservation.getEndTime()).toHours();
 
-		scheduleRepository.findById(reservation.getFirstScheduleId()).ifPresent(Schedule::cancel);
-		if (hourDifference == 2) {
-			scheduleRepository.findById(reservation.getSecondScheduleId()).ifPresent(Schedule::cancel);
-		}
+		firstSchedule.cancel();
+
+		Optional.ofNullable(reservation.getSecondScheduleId())
+			.flatMap(scheduleRepository::findById)
+			.ifPresent(Schedule::cancel);
 
 		reservation.markStatus(ReservationStatus.CANCELLED);
 		return new CancelReservationResponse(id);

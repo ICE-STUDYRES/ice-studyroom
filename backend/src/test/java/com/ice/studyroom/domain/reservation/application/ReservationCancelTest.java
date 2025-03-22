@@ -64,7 +64,72 @@ class ReservationCancelTest {
 	}
 
 	/**
-	 * 📌 테스트명: 예약_취소_성공
+	 * 📌 테스트명: 1시간_예약_취소_성공
+	 *
+	 * ✅ 목적:
+	 *   - 사용자가 본인의 예약을 **정상적으로 취소**할 경우,
+	 *     예약 상태가 변경되고, 해당 스케줄들도 취소 처리되는지 검증한다.
+	 *
+	 * 🧪 시나리오 설명:
+	 *   1. 사용자의 예약 시작 시간: 14:00
+	 *   2. 현재 시각: 12:30 → 입실 1시간 이상 이전이므로 패널티 없이 취소 가능
+	 *   3. JWT 토큰에서 사용자 이메일 추출 후 예약 정보와 일치하는지 확인
+	 *   4. 취소 요청 시:
+	 *      - 스케줄 1개 (first) 취소
+	 *      - 예약 상태를 `CANCELLED`로 변경
+	 *      - 응답 객체에 예약 ID가 포함되어 반환
+	 *
+	 * 📌 관련 비즈니스 규칙:
+	 *   - 입실 1시간 이상 전에 취소할 경우, **페널티 없이 예약 취소가 가능하다.**
+	 *   - 스케줄 슬롯도 함께 취소되어야 하며, 예약 상태는 `CANCELLED`로 전환
+	 *
+	 * 🧩 검증 포인트:
+	 *   - `reservation.markStatus(CANCELLED)`가 정확히 1번 호출되었는가?
+	 *   - `firstSchedule.cancel()` / `secondSchedule.cancel()`이 각각 호출되었는가?
+	 *   - `CancelReservationResponse` 응답이 null이 아니며, 올바른 ID를 포함하고 있는가?
+	 *
+	 * ✅ 기대 결과:
+	 *   - 예약 취소 성공 → 응답 OK
+	 *   - 스케줄도 함께 정상 취소됨
+	 *   - 패널티 없음, 예외 없음
+	 */
+	@Test
+	void 예약_1시간_취소_성공() {
+		// given
+		Long reservationId = 1L;
+		String token = "Bearer valid_token";
+		String userEmail = "user@hufs.ac.kr";
+
+		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 12, 30); // 현재 시각
+
+		// JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
+		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
+		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+		when(reservation.matchEmail(userEmail)).thenReturn(true);
+
+		when(clock.instant()).thenReturn(fixedNow.atZone(java.time.ZoneId.systemDefault()).toInstant());
+		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+
+		when(reservation.getFirstScheduleId()).thenReturn(100L);
+		when(scheduleRepository.findById(100L)).thenReturn(Optional.of(firstSchedule));
+		when(firstSchedule.getStartTime()).thenReturn(LocalTime.of(14, 0));
+
+		when(reservation.getSecondScheduleId()).thenReturn(null);
+		doNothing().when(reservation).markStatus(any());
+
+		// when
+		CancelReservationResponse response = reservationService.cancelReservation(reservationId, token);
+
+		// then
+		assertNotNull(response);
+		assertEquals(reservationId, response.id());
+
+		verify(reservation, times(1)).markStatus(ReservationStatus.CANCELLED);
+		verify(firstSchedule, times(1)).cancel();
+	}
+
+	/**
+	 * 📌 테스트명: 2시간_예약_취소_성공
 	 *
 	 * ✅ 목적:
 	 *   - 사용자가 본인의 예약을 **정상적으로 취소**할 경우,
@@ -94,7 +159,7 @@ class ReservationCancelTest {
 	 *   - 패널티 없음, 예외 없음
 	 */
 	@Test
-	void 예약_취소_성공() {
+	void 예약_2시간_취소_성공() {
 		// given
 		Long reservationId = 1L;
 		String token = "Bearer valid_token";
@@ -102,22 +167,19 @@ class ReservationCancelTest {
 
 		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 12, 30); // 현재 시각
 
-		// JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
-		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
-		when(scheduleRepository.findById(100L)).thenReturn(Optional.of(firstSchedule));
-		when(reservation.matchEmail(userEmail)).thenReturn(true);
-
 		when(clock.instant()).thenReturn(fixedNow.atZone(java.time.ZoneId.systemDefault()).toInstant());
 		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
-		when(reservation.getStartTime()).thenReturn(LocalTime.of(14, 0));
-		when(reservation.getEndTime()).thenReturn(LocalTime.of(16, 0));
+
+		// JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
+		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
+		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+		when(reservation.matchEmail(userEmail)).thenReturn(true);
 
 		when(reservation.getFirstScheduleId()).thenReturn(100L);
 		when(reservation.getSecondScheduleId()).thenReturn(101L);
-
+		when(scheduleRepository.findById(100L)).thenReturn(Optional.of(firstSchedule));
 		when(scheduleRepository.findById(101L)).thenReturn(Optional.of(secondSchedule));
-
-		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+		when(firstSchedule.getStartTime()).thenReturn(LocalTime.of(14, 0));
 		doNothing().when(reservation).markStatus(any());
 
 		// when
@@ -181,7 +243,7 @@ class ReservationCancelTest {
 	 * 📌 테스트명: 입실_1시간_전이면_패널티_부여
 	 *
 	 * ✅ 목적:
-	 *   - 사용자가 예약한 입실 시간 기준 **1시간 이내**에 예약을 취소할 경우,
+	 *   - 사용자가 예약한 입실 시간 기준 **1시간 이하로 남았을 경우**에 예약을 취소할 경우,
 	 *     시스템이 자동으로 **패널티를 부여하는지** 검증한다.
 	 *
 	 * 🧪 시나리오 설명:
@@ -215,18 +277,19 @@ class ReservationCancelTest {
 		String userEmail = "user@hufs.ac.kr";
 
 		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 12, 30); // 현재 시각
+
 		when(clock.instant()).thenReturn(fixedNow.atZone(java.time.ZoneId.systemDefault()).toInstant());
 		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 
 		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
 		when(reservation.matchEmail(userEmail)).thenReturn(true);
-		when(reservation.getStartTime()).thenReturn(LocalTime.of(13, 0));
-		when(reservation.getEndTime()).thenReturn(LocalTime.of(15, 0));
+		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+
 		when(reservation.getFirstScheduleId()).thenReturn(100L);
 		when(reservation.getSecondScheduleId()).thenReturn(101L);
 		when(scheduleRepository.findById(100L)).thenReturn(Optional.of(firstSchedule));
 		when(scheduleRepository.findById(101L)).thenReturn(Optional.of(secondSchedule));
-		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+		when(firstSchedule.getStartTime()).thenReturn(LocalTime.of(13, 0));
 
 		doNothing().when(reservation).markStatus(any());
 		when(memberRepository.getMemberByEmail(any())).thenReturn(mock(Member.class));
@@ -283,18 +346,19 @@ class ReservationCancelTest {
 		String userEmail = "user@hufs.ac.kr";
 
 		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 12, 0); // 현재 시각
+
 		when(clock.instant()).thenReturn(fixedNow.atZone(java.time.ZoneId.systemDefault()).toInstant());
 		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 
 		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
 		when(reservation.matchEmail(userEmail)).thenReturn(true);
-		when(reservation.getStartTime()).thenReturn(LocalTime.of(13, 0));
-		when(reservation.getEndTime()).thenReturn(LocalTime.of(15, 0));
+		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+
 		when(reservation.getFirstScheduleId()).thenReturn(100L);
 		when(reservation.getSecondScheduleId()).thenReturn(101L);
 		when(scheduleRepository.findById(100L)).thenReturn(Optional.of(firstSchedule));
 		when(scheduleRepository.findById(101L)).thenReturn(Optional.of(secondSchedule));
-		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+		when(firstSchedule.getStartTime()).thenReturn(LocalTime.of(13, 0));
 
 		doNothing().when(reservation).markStatus(any());
 		when(memberRepository.getMemberByEmail(any())).thenReturn(mock(Member.class));
@@ -400,8 +464,11 @@ class ReservationCancelTest {
 		// 예약 정보: 시작 시각 13:00 → 현재 시간보다 이전
 		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
 		when(reservation.matchEmail(userEmail)).thenReturn(true);
-		when(reservation.getStartTime()).thenReturn(LocalTime.of(13, 0));
 		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
+
+		when(reservation.getFirstScheduleId()).thenReturn(100L);
+		when(scheduleRepository.findById(100L)).thenReturn(Optional.of(firstSchedule));
+		when(firstSchedule.getStartTime()).thenReturn(LocalTime.of(13, 0));
 
 		// when & then
 		BusinessException exception = assertThrows(BusinessException.class,
