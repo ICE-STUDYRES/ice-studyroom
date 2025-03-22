@@ -63,14 +63,17 @@ public class Reservation {
 	@Column(nullable = false)
 	private LocalTime endTime;
 
+	private LocalDateTime enterTime;
+
+	private LocalDateTime exitTime;
+
 	@Enumerated(EnumType.STRING)
 	@Column(nullable = false)
 	@Builder.Default
 	private ReservationStatus status = ReservationStatus.RESERVED;
 
-	private LocalDateTime enterTime;
-
-	private LocalDateTime exitTime;
+	@Column(name = "is_holder", nullable = false)
+	private boolean isHolder;
 
 	@Column(nullable = false, updatable = false)
 	@Builder.Default
@@ -120,7 +123,7 @@ public class Reservation {
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	public static Reservation from(List<Schedule> schedules, String email, String userName) {
+	public static Reservation from(List<Schedule> schedules, String email, String userName, boolean isReservationHolder) {
 		if (schedules == null || schedules.isEmpty()) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "Schedules List가 비어있습니다.");
 		}
@@ -142,6 +145,7 @@ public class Reservation {
 			.startTime(firstSchedule.getStartTime())
 			.endTime(secondSchedule != null ? secondSchedule.getEndTime() : firstSchedule.getEndTime())
 			.status(ReservationStatus.RESERVED)
+			.isHolder(isReservationHolder)
 			.build();
 	}
 }
