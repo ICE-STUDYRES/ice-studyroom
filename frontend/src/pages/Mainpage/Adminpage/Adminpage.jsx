@@ -13,6 +13,7 @@ const AdminPage = () => {
     setDayOfWeek,
     rooms,
     timeSlots,
+    disabledTimeSlots,
     penaltyData,
     availableRoomsCount,
     handleTabChange,
@@ -119,20 +120,9 @@ const AdminPage = () => {
                           <div className="flex items-center gap-4">
                             <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full">
                               <span className="text-sm font-medium text-gray-600">
-                                {room.capacity}명
                               </span>
                             </div>
-                            <Monitor className="text-gray-400" size={20} />
                           </div>
-                        </div>
-
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {room.features.map(feature => (
-                            <span key={feature} 
-                              className="px-3 py-1.5 text-sm font-medium text-gray-600 bg-gray-50 rounded-full">
-                              {feature}
-                            </span>
-                          ))}
                         </div>
 
                         <button 
@@ -156,23 +146,28 @@ const AdminPage = () => {
                   <div className="h-[calc(100vh-520px)] overflow-y-auto pr-4 -mr-4">
                     <div className="space-y-2">
                     {timeSlots && timeSlots.length > 0 ? (
-                      timeSlots.map(time => (
+                      timeSlots.map(time => {
+                        const isDisabled = disabledTimeSlots.includes(time);
+                        return (
                           <button
-                              key={time}
-                              onClick={() => handleTimeSelect(time)}
-                              className={`w-full p-3.5 rounded-lg text-sm font-medium transition-colors ${
-                                  selectedTimes.includes(time) 
-                                      ? 'bg-gray-900 text-white'
-                                      : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
-                              }`}
+                            key={time}
+                            onClick={() => !isDisabled && handleTimeSelect(time)}
+                            disabled={isDisabled}
+                            className={`w-full p-3.5 rounded-lg text-sm font-medium transition-colors ${
+                              isDisabled
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                                : selectedTimes.includes(time)
+                                  ? 'bg-gray-900 text-white'
+                                  : 'bg-white border border-gray-200 text-gray-700 hover:border-gray-400 hover:bg-gray-50'
+                            }`}
                           >
-                              {time}
+                            {time}
                           </button>
-                      ))
-                  ) : (
+                        );
+                      })
+                    ) : (
                       <p className="text-gray-500 text-center">시간 슬롯이 없습니다.</p>
-                  )}
-
+                    )}
                     </div>
                   </div>
                 </div>
@@ -180,6 +175,10 @@ const AdminPage = () => {
                 <div>
                   <h2 className="text-xl font-semibold text-gray-900 mb-4">예약 정보</h2>
                   <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                    <div className="mb-4">
+                      <div className="text-sm font-medium text-gray-500 mb-1.5">선택한 요일</div>
+                      <div className="text-lg font-semibold text-gray-900">{selectedDay}요일</div>
+                    </div>
                     <div className="mb-4">
                       <div className="text-sm font-medium text-gray-500 mb-1.5">선택한 스터디룸</div>
                       <div className="text-lg font-semibold text-gray-900">{selectedRoom}</div>

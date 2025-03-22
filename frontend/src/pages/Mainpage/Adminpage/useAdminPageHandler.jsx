@@ -13,6 +13,7 @@ const useAdminPageHandler = () => {
   const [timeSlots, setTimeSlots] = useState([]);
   const [roomTimeSlots, setRoomTimeSlots] = useState([]);
   const [dayOfWeek, setDayOfWeek] = useState(getTodayDayOfWeek());
+  const [disabledTimeSlots, setDisabledTimeSlots] = useState([]);
 
   const dayMapping = {
     '월': 'MONDAY',
@@ -69,23 +70,26 @@ const useAdminPageHandler = () => {
         })
         .map(item => item.id);
       
+        const disabledSlots = [];
   
         responseData.data.forEach(item => {
           if (!roomMap.has(item.roomNumber)) {
             roomMap.set(item.roomNumber, {
               id: item.roomNumber,
-              capacity: item.capacity || 0,
-              features: item.facilities || [],
               status: 'available'
             });
           }  
           const timeRange = `${item.startTime.substring(0, 5)}~${item.endTime.substring(0, 5)}`;
           uniqueTimeSlots.add(timeRange);
+          if (item.roomNumber === selectedRoom && item.status === 'UNAVAILABLE') {
+            disabledSlots.push(timeRange); // 🔥 이 시간은 비활성화
+          }
         });
   
         setRoomsState([...roomMap.values()]);
         setTimeSlots([...uniqueTimeSlots].sort());
         setRoomTimeSlots(roomTimeSlotIds);
+        setDisabledTimeSlots(disabledSlots);
       } finally {
       }
     };
@@ -247,6 +251,7 @@ const handleOccupy = async () => {
     setSelectedTimes,
     getSelectedRoomTimeSlotIds,
     formattedSelectedTimes,
+    disabledTimeSlots,
     
     // Data
     dayOfWeek,
