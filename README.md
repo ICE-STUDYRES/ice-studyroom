@@ -2,6 +2,18 @@
 
 - 한국외국어대학교 정보통신공학과 스터디룸 예약 시스템 프로젝트
 
+## 🙋‍♂️ 팀원 소개
+
+<div align="center">
+
+| 도성현 | 심재성 | 이호진 | 김원빈 | 양재원 |
+|:------:|:------:|:------:|:------:|:------:|
+| <img src="https://avatars.githubusercontent.com/u/52828205?v=4" alt="도성현" width="150"> | <img src="https://avatars.githubusercontent.com/u/89987940?v=4" alt="심재성" width="150"> | <img src="https://avatars.githubusercontent.com/u/128957586?v=4" alt="이호진" width="150"> | <img src="https://avatars.githubusercontent.com/u/67516846?v=4" alt="김원빈" width="150"> | <img src="https://avatars.githubusercontent.com/u/101964792?v=4" alt="양재원" width="150"> |
+| BE | BE | BE | FE | FE|
+| [GitHub](https://github.com/glaxyt) | [GitHub](https://github.com/simjaesung) | [GitHub](https://github.com/HoreungHoreung) | [GitHub](https://github.com/been12151) | [GitHub](https://github.com/jay-onee) |
+
+</div>
+
 ## 🛠️ 기술 스택
 
 ### 🎨 Frontend
