@@ -6,7 +6,12 @@ const getTodayDayOfWeek = () => {
 };
 
 const useAdminPageHandler = () => {
-  const [activeTab, setActiveTab] = useState('booking');
+
+  const getInitialTab = () => {
+    return sessionStorage.getItem("adminActiveTab") || "booking";
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [selectedRoom, setSelectedRoom] = useState('');
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [roomsState, setRoomsState] = useState([]);
@@ -123,43 +128,9 @@ const useAdminPageHandler = () => {
     return merged;
   };
 
-  const penaltyData = useMemo(() => [
-    {
-      name: '김원빈',
-      studentId: '201900969',
-      reason: '취소 패널티 2회',
-      issueDate: '2024-01-20',
-      expiryDate: '2024-01-30',
-      status: 'active'
-    },
-    {
-      name: '양재원',
-      studentId: '201900123',
-      reason: '예약 불참 2회',
-      issueDate: '2024-01-15',
-      expiryDate: '2024-01-25',
-      status: 'inactive'
-    },
-    {
-      name: '정순인',
-      studentId: '201800234',
-      reason: '취소 패널티 2회',
-      issueDate: '2024-01-20',
-      expiryDate: '2024-01-30',
-      status: 'active'
-    },
-    {
-      name: '도성현',
-      studentId: '201900345',
-      reason: '취소 패널티 2회',
-      issueDate: '2024-01-20',
-      expiryDate: '2024-01-30',
-      status: 'active'
-    }
-  ], []);
-
   const handleTabChange = useCallback((tab) => {
     setActiveTab(tab);
+    sessionStorage.setItem("adminActiveTab", tab);
   }, []);
 
   const handleRoomSelect = useCallback((roomId) => {
@@ -238,6 +209,7 @@ const handleOccupy = async () => {
     }
 
     alert("예약이 완료되었습니다!");
+    window.location.reload();
   } catch (error) {
     alert("예약에 실패했습니다. 다시 시도해주세요.");
   }
@@ -258,7 +230,6 @@ const handleOccupy = async () => {
     setDayOfWeek,
     rooms: roomsState,
     timeSlots,
-    penaltyData,
     availableRoomsCount,
     
     // Handlers
