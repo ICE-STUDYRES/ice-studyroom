@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.reservation.application;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -65,6 +66,9 @@ public class ReservationService {
 	private final MemberDomainService memberDomainService;
 	private final EmailService emailService;
 
+	// 테스트 코드 작성을 위해 필요한 clock 속성
+	private final Clock clock;
+
 	//todo : N+1 문제 해결
 	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
@@ -83,7 +87,7 @@ public class ReservationService {
 						reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
 					List<ParticipantResponse> participants = sameReservations.stream()
 						.map(sameRes -> memberRepository.findByEmail(Email.of(sameRes.getUserEmail()))
-							.map(ParticipantResponse::from)
+							.map(member -> ParticipantResponse.from(member, sameRes.isHolder()))
 							.orElse(null))
 						.filter(Objects::nonNull)
 						.collect(Collectors.toList());
@@ -182,7 +186,7 @@ public class ReservationService {
 		// 예약 객체 생성 및 저장
 		String userName = reserver.getName();
 		String userEmail = reserver.getEmail().getValue();
-		Reservation reservation = Reservation.from(schedules, userEmail, userName);
+		Reservation reservation = Reservation.from(schedules, userEmail, userName, true);
 		reservationRepository.save(reservation);
 
 		// QR 코드 생성 및 저장
@@ -285,18 +289,18 @@ public class ReservationService {
 		// 예약 생성 및 저장
 		for (String email : uniqueEmails) {
 			String userName = emailToNameMap.get(email);
-			Reservation reservation = Reservation.from(schedules, email, userName);
-			reservations.add(reservation);
-			reservationRepository.save(reservation);
-
-			// QR 코드 생성 (예약 ID + 이메일 조합)
-			String qrCodeBase64 = qrCodeUtil.generateQRCode(email, reservation.getId().toString());
-			qrCodeService.saveQRCode(email, reservation.getId(), request.scheduleId().toString(), qrCodeBase64);
-			qrCodeMap.put(email, qrCodeBase64);
+			boolean isHolder = email.equals(reserverEmail);
+			reservations.add(Reservation.from(schedules, email, userName, isHolder));
 		}
 
-		// 예약 저장
 		reservationRepository.saveAll(reservations);
+
+		// QR 코드 생성 (예약 ID + 이메일 조합)
+		for (Reservation reservation : reservations) {
+			String qrCodeBase64 = qrCodeUtil.generateQRCode(reservation.getUserEmail(), reservation.getId().toString());
+			qrCodeService.saveQRCode(reservation.getUserEmail(), reservation.getId(), request.scheduleId().toString(), qrCodeBase64);
+			qrCodeMap.put(reservation.getUserEmail(), qrCodeBase64);
+		}
 
 		for (Schedule schedule : schedules) {
 			schedule.setCurrentRes(totalParticipants); // 현재 사용 인원을 예약자 + 참여자 숫자로 지정
@@ -311,7 +315,9 @@ public class ReservationService {
 
 	@Transactional
 	public CancelReservationResponse cancelReservation(Long id, String authorizationHeader) {
-		Reservation reservation = findReservationById(id);
+		Reservation reservation = reservationRepository.findById(id)
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다."));
+
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
@@ -319,8 +325,12 @@ public class ReservationService {
 			throw new BusinessException(StatusCode.NOT_FOUND, "이전에 예약이 되지 않았습니다.");
 		}
 
-		LocalDateTime now = LocalDateTime.now();
-		LocalDateTime startTime = LocalDateTime.of(LocalDate.now(), reservation.getStartTime());
+		LocalDateTime now = LocalDateTime.now(clock);
+
+		Schedule firstSchedule = scheduleRepository.findById(reservation.getFirstScheduleId())
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
+
+		LocalDateTime startTime = LocalDateTime.of(now.toLocalDate(), firstSchedule.getStartTime());
 
 		// 입실 1 시간 전 일 경우 패널티
 		if (now.isAfter(startTime)) {
@@ -335,14 +345,14 @@ public class ReservationService {
 		/*
 		 * 취소 프로세스 시작
 		 * 몇 개의 스케줄을 취소해야하는가?
-		 * 시간 비교를 하면 몇 개의 스케줄을 신청했는지 알 수 있다.
+		 * secondSchedule도 존재한다면 cancel로 currentRes를 -1을 더해준다.
 		 */
-		long hourDifference = Duration.between(reservation.getStartTime(), reservation.getEndTime()).toHours();
 
-		scheduleRepository.findById(reservation.getFirstScheduleId()).ifPresent(Schedule::cancel);
-		if (hourDifference == 2) {
-			scheduleRepository.findById(reservation.getSecondScheduleId()).ifPresent(Schedule::cancel);
-		}
+		firstSchedule.cancel();
+
+		Optional.ofNullable(reservation.getSecondScheduleId())
+			.flatMap(scheduleRepository::findById)
+			.ifPresent(Schedule::cancel);
 
 		reservation.markStatus(ReservationStatus.CANCELLED);
 		return new CancelReservationResponse(id);
@@ -350,7 +360,9 @@ public class ReservationService {
 
 	@Transactional
 	public String extendReservation(Long reservationId, String authorizationHeader) {
-		Reservation reservation = this.findReservationById(reservationId);
+		Reservation reservation = reservationRepository.findById(reservationId)
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다."));
+
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		if (!reservation.matchEmail(email)) {
@@ -421,12 +433,6 @@ public class ReservationService {
 		}
 
 		return "Success";
-	}
-
-	//TODO: 추후 Jpa에 종합할 예정
-	private Reservation findReservationById(Long reservationId) {
-		return reservationRepository.findById(reservationId)
-			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다."));
 	}
 
 	private List<Schedule> findSchedules(Long[] scheduleIds) {
