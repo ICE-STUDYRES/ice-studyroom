@@ -186,7 +186,7 @@ public class ReservationService {
 		// 예약 객체 생성 및 저장
 		String userName = reserver.getName();
 		String userEmail = reserver.getEmail().getValue();
-		Reservation reservation = Reservation.from(schedules, userEmail, userName, true);
+		Reservation reservation = Reservation.from(schedules, userEmail, userName, true, reserver);
 		reservationRepository.save(reservation);
 
 		// QR 코드 생성 및 저장
@@ -240,8 +240,8 @@ public class ReservationService {
 		uniqueEmails.add(reserverEmail); // 예약자 이메일 포함
 
 		// 예약자와 참여자의 이메일을 저장 (이름 포함)
-		Map<String, String> emailToNameMap = new HashMap<>();
-		emailToNameMap.put(reserverEmail, reserver.getName());
+		Map<String, Member> emailToMemberMap = new HashMap<>();
+		emailToMemberMap.put(reserverEmail, reserver);
 
 		// 참여자 리스트 추가 (중복 검사 및 user_name 조회)
 		if (!ObjectUtils.isEmpty(request.participantEmail())) {
@@ -266,7 +266,7 @@ public class ReservationService {
 					}
 				}
 
-				emailToNameMap.put(email, participant.getName());
+				emailToMemberMap.put(email, participant);
 			}
 		}
 
@@ -288,9 +288,9 @@ public class ReservationService {
 
 		// 예약 생성 및 저장
 		for (String email : uniqueEmails) {
-			String userName = emailToNameMap.get(email);
+			Member member = emailToMemberMap.get(email);
 			boolean isHolder = email.equals(reserverEmail);
-			reservations.add(Reservation.from(schedules, email, userName, isHolder));
+			reservations.add(Reservation.from(schedules, email, member.getName(), isHolder, member));
 		}
 
 		reservationRepository.saveAll(reservations);
