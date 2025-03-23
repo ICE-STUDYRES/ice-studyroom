@@ -182,8 +182,6 @@ const BookingManagement = ({ rooms }) => {
       const responseData = await response.json();
       if (!response.ok) throw new Error(responseData.message || "해제 요청 실패");
   
-      console.log("✅ 해제 성공:", responseData.data.message || "OK");
-  
       setBookings(prev => ({
         ...prev,
         [selectedDay]: {
@@ -196,6 +194,8 @@ const BookingManagement = ({ rooms }) => {
   
       setIsModalOpen(false);
       setSelectedTimes([]);
+      alert("해제가 완료되었습니다!");
+      window.location.reload();
     } catch (error) {
       console.error("❌ 해제 실패:", error.message);
       alert("해제에 실패했습니다. 다시 시도해주세요.");
