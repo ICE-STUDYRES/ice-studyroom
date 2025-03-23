@@ -1,5 +1,5 @@
 import { React, useState, useEffect } from 'react';
-import { Home, LogOut, Monitor } from 'lucide-react';
+import { Home, LogOut } from 'lucide-react';
 import useAdminPageHandler from './useAdminPageHandler';
 import PenaltyManagement from './PenaltyManagement';
 import BookingManagement from './BookingManagement';
