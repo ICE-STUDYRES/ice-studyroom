@@ -6,8 +6,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
+import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
-import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 
@@ -15,9 +15,12 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -38,6 +41,10 @@ public class Reservation {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
+
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "member_id")
+	private Member member;
 
 	@Column(name = "first_schedule_id")
 	private Long firstScheduleId;
@@ -123,7 +130,7 @@ public class Reservation {
 		this.updatedAt = LocalDateTime.now();
 	}
 
-	public static Reservation from(List<Schedule> schedules, String email, String userName, boolean isReservationHolder) {
+	public static Reservation from(List<Schedule> schedules, String email, String userName, boolean isReservationHolder, Member member) {
 		if (schedules == null || schedules.isEmpty()) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "Schedules List가 비어있습니다.");
 		}
@@ -138,6 +145,7 @@ public class Reservation {
 		return Reservation.builder()
 			.firstScheduleId(firstSchedule.getId())
 			.secondScheduleId(secondSchedule != null ? secondSchedule.getId() : null)
+			.member(member)
 			.userEmail(email)
 			.userName(userName)
 			.scheduleDate(firstSchedule.getScheduleDate())
