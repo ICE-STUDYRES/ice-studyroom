@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
+import { useTokenHandler } from "../handlers/TokenHandler";
 
 const usePenaltyLogic = () => {
   const [penalties, setPenalties] = useState([]);
@@ -11,6 +12,7 @@ const usePenaltyLogic = () => {
     issueDate: new Date().toISOString().split("T")[0],
     expiryDate: "",
   });
+  const { refreshTokens } = useTokenHandler();
 
   // ✅ 패널티 목록 불러오기
   const fetchPenalties = useCallback(async () => {
@@ -21,6 +23,15 @@ const usePenaltyLogic = () => {
       const response = await axios.get("/api/admin/penalty", {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
+
+      if (response.status === 401) {
+        const newAccessToken = await refreshTokens();
+        if (newAccessToken) {
+          return fetchPenalties();
+        } else {
+          throw new Error("토큰 갱신 실패");
+        }
+      }
 
       if (!response.data || !Array.isArray(response.data.data)) return;
 
@@ -74,6 +85,15 @@ const usePenaltyLogic = () => {
         },
         body: JSON.stringify(newPenalty),
       });
+
+      if (response.status === 401) {
+        const newAccessToken = await refreshTokens();
+        if (newAccessToken) {
+          return handleAddPenalty();
+        } else {
+          throw new Error("토큰 갱신 실패");
+        }
+      }
 
       if (!response.ok) {
         alert("❌ 패널티 추가 실패.");
