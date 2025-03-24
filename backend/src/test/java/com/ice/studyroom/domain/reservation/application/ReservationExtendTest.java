@@ -51,10 +51,7 @@ public class ReservationExtendTest {
 	private Reservation reservation;
 
 	@Mock
-	private Schedule firstSchedule;
-
-	@Mock
-	private Schedule secondSchedule;
+	private Schedule schedule;
 
 	@Mock
 	private Member member;
@@ -63,8 +60,7 @@ public class ReservationExtendTest {
 	void setUp() {
 		// 공통 객체 생성 (Mock 객체만 설정)
 		reservation = mock(Reservation.class);
-		firstSchedule = mock(Schedule.class);
-		secondSchedule = mock(Schedule.class);
+		schedule = mock(Schedule.class);
 		member = mock(Member.class);
 	}
 
@@ -112,10 +108,7 @@ public class ReservationExtendTest {
 		String token = "Bearer token";
 		String ownerEmail = "owner@hufs.ac.kr";
 
-		// 예약 정보 확인 로직 통과
-		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
-		given(tokenService.extractEmailFromAccessToken(token)).willReturn(ownerEmail);
-		given(reservation.isOwnedBy(ownerEmail)).willReturn(true);
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 
 		// 현재 시각: 13:49
 		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 13, 49);
@@ -141,12 +134,9 @@ public class ReservationExtendTest {
 		// given
 		Long reservationId = 1L;
 		String token = "Bearer token";
-		String ownerEmail = "owner@huf은.ac.kr";
+		String ownerEmail = "owner@hufs.ac.kr";
 
-		// 예약 정보 확인 로직 통과
-		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
-		given(tokenService.extractEmailFromAccessToken(token)).willReturn(ownerEmail);
-		given(reservation.isOwnedBy(ownerEmail)).willReturn(true);
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 
 		// 현재 시각: 14:01
 		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 14, 1);
@@ -165,6 +155,78 @@ public class ReservationExtendTest {
 		);
 
 		assertEquals("연장 가능한 시간이 지났습니다.", ex.getMessage());
+	}
+
+	@Test
+	void 스케줄이_존재하지_않을_경우_예외() {
+		// given
+		Long reservationId = 1L;
+		String token = "Bearer token";
+		String ownerEmail = "owner@hufs.ac.kr";
+		Long scheduleFirstId = 10L;
+
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		스케줄_연장_시간_검증_셋업();
+
+		// 임의의 스케줄 ID 설정
+		given(reservation.getFirstScheduleId()).willReturn(scheduleFirstId);
+		given(reservation.getSecondScheduleId()).willReturn(null);
+		// 다음 스케줄이 존재하지 않을 경우
+		given(scheduleRepository.findById(scheduleFirstId + 1)).willReturn(Optional.empty());
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.extendReservation(reservationId, token)
+		);
+
+		assertEquals("스터디룸 이용 가능 시간을 확인해주세요.", ex.getMessage());
+	}
+
+	@Test
+	void 다음_스케줄의_방번호가_다를_경우_예외() {
+		Long reservationId = 1L;
+		String token = "Bearer token";
+		String ownerEmail = "owner@hufs.ac.kr";
+		Long scheduleFirstId = 10L;
+
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		스케줄_연장_시간_검증_셋업();
+
+		// 임의의 스케줄 ID 설정
+		given(reservation.getFirstScheduleId()).willReturn(scheduleFirstId);
+		given(reservation.getSecondScheduleId()).willReturn(null);
+
+		// 다음 스케줄이 존재하지만, 다른 방의 스케줄일 경우
+		given(scheduleRepository.findById(scheduleFirstId + 1)).willReturn(Optional.of(schedule));
+		given(schedule.getRoomNumber()).willReturn("409-1");
+		given(reservation.getRoomNumber()).willReturn("409-2");
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.extendReservation(reservationId, token)
+		);
+
+		assertEquals("스터디룸 이용 가능 시간을 확인해주세요.", ex.getMessage());
+
+	}
+
+	private void 통과된_기본_예약_검증_셋업(Long reservationId, String token, String email) {
+		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
+		given(tokenService.extractEmailFromAccessToken(token)).willReturn(email);
+		given(reservation.isOwnedBy(email)).willReturn(true);
+	}
+
+	private void 스케줄_연장_시간_검증_셋업() {
+		// 현재 시각: 13:59
+		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 13, 59);
+		when(clock.instant()).thenReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
+		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+
+		// 예약 종료 시간: 14:00
+		LocalDate reservationDate = LocalDate.of(2025, 3, 22);
+		LocalTime reservationEndTime = LocalTime.of(14, 0);
+		given(reservation.getScheduleDate()).willReturn(reservationDate);
+		given(reservation.getEndTime()).willReturn(reservationEndTime);
 	}
 
 }
