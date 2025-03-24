@@ -1,17 +1,14 @@
 package com.ice.studyroom.domain.reservation.application;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -73,24 +70,29 @@ public class ReservationService {
 	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		List<Reservation> reservations = reservationRepository.findByUserEmail(email);
+		Member member = memberRepository.findByEmail(Email.of(email))
+			.orElseThrow(() -> new BusinessException(StatusCode.UNAUTHORIZED, "회원 정보를 찾을 수 없습니다."));
+
+		List<Reservation> reservations = reservationRepository.findByMember(member);
+
 		Map<String, List<ParticipantResponse>> reservationParticipantsMap = new HashMap<>();
 
 		for (Reservation reservation : reservations) {
 			String key = reservation.getRoomNumber() + "_" + reservation.getScheduleDate() + "_" + reservation.getStartTime();
 
 			if (!reservationParticipantsMap.containsKey(key)) {
+
 				Schedule schedule = scheduleRepository.findById(reservation.getFirstScheduleId())
 					.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
+
 				if (schedule.getRoomType() == RoomType.GROUP) {
 					List<Reservation> sameReservations = reservationRepository.findByRoomNumberAndScheduleDateAndStartTime(
 						reservation.getRoomNumber(), reservation.getScheduleDate(), reservation.getStartTime());
+
 					List<ParticipantResponse> participants = sameReservations.stream()
-						.map(sameRes -> memberRepository.findByEmail(Email.of(sameRes.getUserEmail()))
-							.map(member -> ParticipantResponse.from(member, sameRes.isHolder()))
-							.orElse(null))
-						.filter(Objects::nonNull)
+						.map(sameRes -> ParticipantResponse.from(sameRes.getMember(), sameRes.isHolder()))
 						.collect(Collectors.toList());
+
 					reservationParticipantsMap.put(key, participants);
 				}
 				// 그룹예약인지 개인 예약인지 확인
@@ -320,8 +322,8 @@ public class ReservationService {
 
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		// JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
-		if (!reservation.matchEmail(email)) {
+		// JWT 를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
+		if (!reservation.isOwnedBy(email)) {
 			throw new BusinessException(StatusCode.NOT_FOUND, "이전에 예약이 되지 않았습니다.");
 		}
 
@@ -337,7 +339,7 @@ public class ReservationService {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "입실 시간이 초과하였기에 취소할 수 없습니다.");
 		}
 
-		if (!now.isBefore(startTime.minus(1, ChronoUnit.HOURS))) {
+		if (!now.isBefore(startTime.minusHours(1))) {
 			// 취소 패널티 부여
 			penaltyService.assignPenalty(memberRepository.getMemberByEmail(Email.of(email)), id, PenaltyReasonType.CANCEL);
 		}
@@ -365,30 +367,17 @@ public class ReservationService {
 
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		if (!reservation.matchEmail(email)) {
+		if (!reservation.isOwnedBy(email)) {
 			throw new BusinessException(StatusCode.NOT_FOUND, "해당 예약 정보가 존재하지 않습니다.");
 		}
 
 		//연장 가능 시간 검증
-		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime now = LocalDateTime.now(clock);
 		LocalDateTime endTime = LocalDateTime.of(reservation.getScheduleDate(), reservation.getEndTime());
 		if (now.isAfter(endTime)) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "연장 가능한 시간이 지났습니다.");
 		} else if (now.isBefore(endTime.minusMinutes(10))) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "연장은 퇴실 시간 10분 전부터 가능합니다.");
-		}
-
-		//요청한 예약과 동일한 예약을 모두 가져온다.
-		List<Reservation> reservations = reservationRepository.findByFirstScheduleId(reservation.getFirstScheduleId());
-
-		//동일한 예약에 대해 모든 이메일을 가져온다.
-		List<String> reservationEmails = reservations.stream().map(Reservation::getUserEmail).toList();
-
-		for (String reservationEmail : reservationEmails) {
-			Member member = memberRepository.getMemberByEmail(Email.of(reservationEmail));
-			if(member.isPenalty()){
-				throw new BusinessException(StatusCode.FORBIDDEN, "패널티가 있는 멤버로 인해 연장이 불가능합니다.");
-			}
 		}
 
 		Long lastScheduleId = reservation.getSecondScheduleId() != null ?
@@ -398,7 +387,7 @@ public class ReservationService {
 		Schedule nextSchedule = scheduleRepository.findById(lastScheduleId + 1)
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요."));
 
-		if(nextSchedule.getRoomNumber() != reservation.getRoomNumber()){
+		if (!nextSchedule.getRoomNumber().equals(reservation.getRoomNumber())){
 			throw new BusinessException(StatusCode.BAD_REQUEST, "스터디룸 이용 가능 시간을 확인해주세요.");
 		}
 
@@ -407,9 +396,19 @@ public class ReservationService {
 		}
 
 		if (nextSchedule.getRoomType() == RoomType.GROUP) {
+			// 그룹 예약 이기에 같은 시간대의 예약 레코드를 모두 가져온다(참여자 검증 필요). memeber 1차 캐시되며 이 값을 사용할 예정
+			List<Reservation> reservations = reservationRepository.findByFirstScheduleId(reservation.getFirstScheduleId());
+
+			// 패널티를 부여받고 있는 참여자가 존재할 경우 예약 연장 진행 불가
+			for (Reservation res : reservations) {
+				if (res.getMember().isPenalty()) {
+					throw new BusinessException(StatusCode.FORBIDDEN, "패널티가 있는 멤버로 인해 연장이 불가능합니다.");
+				}
+			}
+
 			for (Reservation res : reservations) {
 				//1명이라도 입실하지 않은 경우
-				if(res.getStatus() != ReservationStatus.ENTRANCE){
+				if (res.isEntered()){
 					//지각 입실은 앞서 패널티 체킹으로 연장 불가 처리
 					throw new BusinessException(StatusCode.BAD_REQUEST, "입실 처리 되어있지 않은 유저가 있어 연장이 불가능합니다.");
 				}
@@ -420,14 +419,14 @@ public class ReservationService {
 			}
 
 			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
-			nextSchedule.setCurrentRes(reservationEmails.size());
-		}else{
-			if(reservation.getStatus() != ReservationStatus.ENTRANCE){
+			nextSchedule.setCurrentRes(reservations.size());
+		} else {
+			if(!reservation.isEntered()){
 				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 연장은 입실 후 가능합니다.");
 			}
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + 1);
-			if(!nextSchedule.isCurrentResLessThanCapacity()){
+			if (!nextSchedule.isCurrentResLessThanCapacity()){
 				nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			}
 		}
