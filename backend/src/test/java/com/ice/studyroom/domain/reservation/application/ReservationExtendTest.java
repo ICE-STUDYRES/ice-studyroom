@@ -166,7 +166,7 @@ public class ReservationExtendTest {
 		Long scheduleFirstId = 10L;
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
-		스케줄_연장_시간_검증_셋업();
+		통과된_스케줄_연장_시간_검증_셋업();
 
 		// 임의의 스케줄 ID 설정
 		given(reservation.getFirstScheduleId()).willReturn(scheduleFirstId);
@@ -190,7 +190,7 @@ public class ReservationExtendTest {
 		Long scheduleFirstId = 10L;
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
-		스케줄_연장_시간_검증_셋업();
+		통과된_스케줄_연장_시간_검증_셋업();
 
 		// 임의의 스케줄 ID 설정
 		given(reservation.getFirstScheduleId()).willReturn(scheduleFirstId);
@@ -207,7 +207,56 @@ public class ReservationExtendTest {
 		);
 
 		assertEquals("스터디룸 이용 가능 시간을 확인해주세요.", ex.getMessage());
+	}
 
+	/**
+	 * 다음 스케줄의 상태가 UNAVAILABLE 이거나 RESERVED 인 경우 예외
+	 */
+	@Test
+	void 다음_스케줄_예약_불가_예외1(){
+		Long reservationId = 1L;
+		String token = "Bearer token";
+		String ownerEmail = "owner@hufs.ac.kr";
+		Long scheduleFirstId = 10L;
+
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		통과된_스케줄_연장_시간_검증_셋업();
+		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
+
+		// 다음 스케줄이 예약 상태이거나 이용 불가 상태일 경우
+		given(schedule.isCurrentResLessThanCapacity()).willReturn(true);
+		given(schedule.isAvailable()).willReturn(false);
+
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.extendReservation(reservationId, token)
+		);
+
+		assertEquals("다음 시간대가 이미 예약이 완료되었거나, 이용이 불가능한 상태입니다.", ex.getMessage());
+
+	}
+
+	/**
+	 *  다음 스케줄의 예약의 인원수가 이미 가득 찬 경우 예외
+	 */
+	@Test
+	void 다음_스케줄_예약_불가_예외2(){
+		Long reservationId = 1L;
+		String token = "Bearer token";
+		String ownerEmail = "owner@hufs.ac.kr";
+		Long scheduleFirstId = 10L;
+
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		통과된_스케줄_연장_시간_검증_셋업();
+		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
+
+		// 다음 스케줄의 예약이 이미 가득 찬 경우
+		given(schedule.isCurrentResLessThanCapacity()).willReturn(false);
+
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.extendReservation(reservationId, token)
+		);
+
+		assertEquals("다음 시간대가 이미 예약이 완료되었거나, 이용이 불가능한 상태입니다.", ex.getMessage());
 	}
 
 	private void 통과된_기본_예약_검증_셋업(Long reservationId, String token, String email) {
@@ -216,7 +265,7 @@ public class ReservationExtendTest {
 		given(reservation.isOwnedBy(email)).willReturn(true);
 	}
 
-	private void 스케줄_연장_시간_검증_셋업() {
+	private void 통과된_스케줄_연장_시간_검증_셋업() {
 		// 현재 시각: 13:59
 		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 13, 59);
 		when(clock.instant()).thenReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
@@ -227,6 +276,22 @@ public class ReservationExtendTest {
 		LocalTime reservationEndTime = LocalTime.of(14, 0);
 		given(reservation.getScheduleDate()).willReturn(reservationDate);
 		given(reservation.getEndTime()).willReturn(reservationEndTime);
+	}
+
+	private void 통과된_다음_스케줄_존재_여부_셋업(Long scheduleId){
+		// 임의의 스케줄 ID 설정
+		given(reservation.getFirstScheduleId()).willReturn(scheduleId);
+		given(reservation.getSecondScheduleId()).willReturn(null);
+		given(reservation.getRoomNumber()).willReturn("409-1");
+
+		// 다음 스케줄이 같은 방인 경우에는 예외 발생하지 않음
+		given(scheduleRepository.findById(scheduleId + 1)).willReturn(Optional.of(schedule));
+		given(schedule.getRoomNumber()).willReturn("409-1");
+	}
+
+	private void 통과된_다음_스케줄_이용_가능_여부_셋업(){
+		given(schedule.isCurrentResLessThanCapacity()).willReturn(true);
+		given(schedule.isAvailable()).willReturn(false);
 	}
 
 }
