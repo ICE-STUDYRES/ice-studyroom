@@ -7,6 +7,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
@@ -102,6 +103,68 @@ public class ReservationExtendTest {
 		);
 
 		assertEquals("해당 예약 정보가 존재하지 않습니다.", ex.getMessage());
+	}
+
+	@Test
+	void 연장_요청이_이른_경우_예외() {
+		// given
+		Long reservationId = 1L;
+		String token = "Bearer token";
+		String ownerEmail = "owner@hufs.ac.kr";
+
+		// 예약 정보 확인 로직 통과
+		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
+		given(tokenService.extractEmailFromAccessToken(token)).willReturn(ownerEmail);
+		given(reservation.isOwnedBy(ownerEmail)).willReturn(true);
+
+		// 현재 시각: 13:49
+		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 13, 49);
+		when(clock.instant()).thenReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
+		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+
+		// 예약 종료 시간: 14:00
+		LocalDate reservationDate = LocalDate.of(2025, 3, 22);
+		LocalTime reservationEndTime = LocalTime.of(14, 0);
+		given(reservation.getScheduleDate()).willReturn(reservationDate);
+		given(reservation.getEndTime()).willReturn(reservationEndTime);
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.extendReservation(reservationId, token)
+		);
+
+		assertEquals("연장은 퇴실 시간 10분 전부터 가능합니다.", ex.getMessage());
+	}
+
+	@Test
+	void 연장_요청이_늦은_경우_예외() {
+		// given
+		Long reservationId = 1L;
+		String token = "Bearer token";
+		String ownerEmail = "owner@huf은.ac.kr";
+
+		// 예약 정보 확인 로직 통과
+		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
+		given(tokenService.extractEmailFromAccessToken(token)).willReturn(ownerEmail);
+		given(reservation.isOwnedBy(ownerEmail)).willReturn(true);
+
+		// 현재 시각: 14:01
+		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 14, 1);
+		when(clock.instant()).thenReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
+		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+
+		// 예약 종료 시간: 14:00
+		LocalDate reservationDate = LocalDate.of(2025, 3, 22);
+		LocalTime reservationEndTime = LocalTime.of(14, 0);
+		given(reservation.getScheduleDate()).willReturn(reservationDate);
+		given(reservation.getEndTime()).willReturn(reservationEndTime);
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.extendReservation(reservationId, token)
+		);
+
+		assertEquals("연장 가능한 시간이 지났습니다.", ex.getMessage());
 	}
 
 }
