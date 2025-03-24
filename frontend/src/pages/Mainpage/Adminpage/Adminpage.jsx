@@ -3,6 +3,7 @@ import { Home, LogOut } from 'lucide-react';
 import useAdminPageHandler from './useAdminPageHandler';
 import PenaltyManagement from './PenaltyManagement';
 import BookingManagement from './BookingManagement';
+import { useMemberHandlers } from '../handlers/MemberHandlers';
 
 const AdminPage = () => {
   const {
@@ -25,9 +26,10 @@ const AdminPage = () => {
   const days = ['월', '화', '수', '목', '금', '토', '일'];
   const todayIndex = new Date().getDay()-1;
   const [selectedDay, setSelectedDay] = useState(days[todayIndex]);
+  const { handleLogout } = useMemberHandlers();
 
   useEffect(() => {
-    setDayOfWeek(selectedDay); // 🔥 요일이 변경될 때마다 API 요청 업데이트
+    setDayOfWeek(selectedDay);
   }, [selectedDay, setDayOfWeek]);
 
   return (
@@ -35,12 +37,16 @@ const AdminPage = () => {
       <header className="w-full bg-gray-900 text-white shadow-md">
         <div className="w-[1024px] mx-auto flex justify-between items-center h-16">
           <div className="flex items-center gap-6">
-            <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+            <button
+            onClick={() => window.location.reload()}
+            className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
               <Home size={22} />
             </button>
             <h1 className="text-xl tracking-tight font-semibold">정보통신공학과 스터디룸</h1>
           </div>
-          <button className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
+          <button 
+          onClick={handleLogout}
+          className="p-2 hover:bg-gray-800 rounded-lg transition-colors">
             <LogOut size={22} />
           </button>
         </div>
@@ -92,7 +98,7 @@ const AdminPage = () => {
                         selectedDay === day
                           ? 'bg-gray-900 text-white'
                           : index < todayIndex
-                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed' // 비활성화 스타일
+                          ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
                           : 'bg-white border border-gray-200 text-gray-600 hover:border-gray-400'
                       }`}
                     >
