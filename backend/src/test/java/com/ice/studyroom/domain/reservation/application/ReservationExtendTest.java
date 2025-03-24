@@ -23,6 +23,7 @@ import com.ice.studyroom.domain.identity.domain.service.TokenService;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.global.exception.BusinessException;
@@ -56,7 +57,7 @@ public class ReservationExtendTest {
 	private List<Reservation> reservations;
 
 	@Mock
-	private Schedule schedule;
+	private Schedule nextSchedule;
 
 	@Mock
 	private Member member1;
@@ -75,7 +76,7 @@ public class ReservationExtendTest {
 		// 공통 객체 생성 (Mock 객체만 설정)
 		reservation = mock(Reservation.class);
 		reservation2 = mock(Reservation.class);
-		schedule = mock(Schedule.class);
+		nextSchedule = mock(Schedule.class);
 		member1 = mock(Member.class);
 		member2 = mock(Member.class);
 		reservations = List.of(reservation, reservation2);
@@ -124,15 +125,10 @@ public class ReservationExtendTest {
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 
 		// 현재 시각: 13:49
-		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 13, 49);
-		when(clock.instant()).thenReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
-		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+		setFixedNow(13, 49);
 
 		// 예약 종료 시간: 14:00
-		LocalDate reservationDate = LocalDate.of(2025, 3, 22);
-		LocalTime reservationEndTime = LocalTime.of(14, 0);
-		given(reservation.getScheduleDate()).willReturn(reservationDate);
-		given(reservation.getEndTime()).willReturn(reservationEndTime);
+		setReservationEndTime(14, 0);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -148,15 +144,10 @@ public class ReservationExtendTest {
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 
 		// 현재 시각: 14:01
-		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, 14, 1);
-		when(clock.instant()).thenReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
-		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+		setFixedNow(14, 1);
 
 		// 예약 종료 시간: 14:00
-		LocalDate reservationDate = LocalDate.of(2025, 3, 22);
-		LocalTime reservationEndTime = LocalTime.of(14, 0);
-		given(reservation.getScheduleDate()).willReturn(reservationDate);
-		given(reservation.getEndTime()).willReturn(reservationEndTime);
+		setReservationEndTime(14, 0);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -197,8 +188,8 @@ public class ReservationExtendTest {
 		given(reservation.getSecondScheduleId()).willReturn(null);
 
 		// 다음 스케줄이 존재하지만, 다른 방의 스케줄일 경우
-		given(scheduleRepository.findById(scheduleFirstId + 1)).willReturn(Optional.of(schedule));
-		given(schedule.getRoomNumber()).willReturn("409-1");
+		given(scheduleRepository.findById(scheduleFirstId + 1)).willReturn(Optional.of(nextSchedule));
+		given(nextSchedule.getRoomNumber()).willReturn("409-1");
 		given(reservation.getRoomNumber()).willReturn("409-2");
 
 		// when & then
@@ -220,8 +211,8 @@ public class ReservationExtendTest {
 		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
 
 		// 다음 스케줄이 예약 상태이거나 이용 불가 상태일 경우
-		given(schedule.isCurrentResLessThanCapacity()).willReturn(true);
-		given(schedule.isAvailable()).willReturn(false);
+		given(nextSchedule.isCurrentResLessThanCapacity()).willReturn(true);
+		given(nextSchedule.isAvailable()).willReturn(false);
 
 		BusinessException ex = assertThrows(BusinessException.class, () ->
 			reservationService.extendReservation(reservationId, token)
@@ -242,7 +233,7 @@ public class ReservationExtendTest {
 		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
 
 		// 다음 스케줄의 예약이 이미 가득 찬 경우
-		given(schedule.isCurrentResLessThanCapacity()).willReturn(false);
+		given(nextSchedule.isCurrentResLessThanCapacity()).willReturn(false);
 
 		BusinessException ex = assertThrows(BusinessException.class, () ->
 			reservationService.extendReservation(reservationId, token)
@@ -260,7 +251,7 @@ public class ReservationExtendTest {
 		통과된_다음_스케줄_이용_가능_여부_셋업();
 
 		// 그룹 예약일 경우
-		given(schedule.getRoomType()).willReturn(RoomType.GROUP);
+		given(nextSchedule.getRoomType()).willReturn(RoomType.GROUP);
 		given(reservationRepository.findByFirstScheduleId(scheduleFirstId)).willReturn(reservations);
 		given(reservation.getMember()).willReturn(member1);
 		given(reservation2.getMember()).willReturn(member2);
@@ -285,7 +276,7 @@ public class ReservationExtendTest {
 		통과된_다음_스케줄_이용_가능_여부_셋업();
 
 		// 그룹 예약 설정
-		given(schedule.getRoomType()).willReturn(RoomType.GROUP);
+		given(nextSchedule.getRoomType()).willReturn(RoomType.GROUP);
 		given(reservationRepository.findByFirstScheduleId(scheduleFirstId)).willReturn(reservations);
 		given(reservation.getMember()).willReturn(member1);
 		// reservation2 는 reservation과 같은 예약이라, reservations 에 속해있음
@@ -313,7 +304,7 @@ public class ReservationExtendTest {
 		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
 		통과된_다음_스케줄_이용_가능_여부_셋업();
 
-		given(schedule.getRoomType()).willReturn(RoomType.INDIVIDUAL);
+		given(nextSchedule.getRoomType()).willReturn(RoomType.INDIVIDUAL);
 		given(reservation.getMember()).willReturn(member1);
 		given(reservation.getMember().isPenalty()).willReturn(true);
 
@@ -332,7 +323,7 @@ public class ReservationExtendTest {
 		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
 		통과된_다음_스케줄_이용_가능_여부_셋업();
 
-		given(schedule.getRoomType()).willReturn(RoomType.INDIVIDUAL);
+		given(nextSchedule.getRoomType()).willReturn(RoomType.INDIVIDUAL);
 		given(reservation.getMember()).willReturn(member1);
 		given(reservation.getMember().isPenalty()).willReturn(false);
 		given(reservation.isEntered()).willReturn(false);
@@ -342,6 +333,50 @@ public class ReservationExtendTest {
 		);
 
 		assertEquals("예약 연장은 입실 후 가능합니다.", ex.getMessage());
+	}
+
+	@Test
+	void 그룹_예약_연장_성공(){
+
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		통과된_스케줄_연장_시간_검증_셋업();
+		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
+		통과된_다음_스케줄_이용_가능_여부_셋업();
+		통과된_그룹_예약_입실_및_패널티_검증_셋업();
+
+		// when
+		String result = reservationService.extendReservation(reservationId, token);
+
+		// then
+		assertEquals("Success", result);
+		verify(nextSchedule).updateStatus(ScheduleSlotStatus.RESERVED);
+		verify(nextSchedule).setCurrentRes(reservations.size());
+
+		for (Reservation res : reservations) {
+			verify(res).extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
+		}
+	}
+
+	@Test
+	void 개인_예약_연장_성공(){
+
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		통과된_스케줄_연장_시간_검증_셋업();
+		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
+		통과된_다음_스케줄_이용_가능_여부_셋업();
+		통과된_개인_예약_입실_및_패널티_검증_셋업();
+
+		// 용량 초과 X (updateStatus 호출 안 됨)
+		given(nextSchedule.isCurrentResLessThanCapacity()).willReturn(true);
+
+		// when
+		String result = reservationService.extendReservation(reservationId, token);
+
+		// then
+		assertEquals("Success", result);
+		verify(reservation).extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
+		verify(nextSchedule).setCurrentRes(anyInt());
+		verify(nextSchedule, never()).updateStatus(ScheduleSlotStatus.RESERVED);
 	}
 
 	private void 통과된_기본_예약_검증_셋업(Long reservationId, String token, String email) {
@@ -370,13 +405,44 @@ public class ReservationExtendTest {
 		given(reservation.getRoomNumber()).willReturn("409-1");
 
 		// 다음 스케줄이 같은 방인 경우에는 예외 발생하지 않음
-		given(scheduleRepository.findById(scheduleId + 1)).willReturn(Optional.of(schedule));
-		given(schedule.getRoomNumber()).willReturn("409-1");
+		given(scheduleRepository.findById(scheduleId + 1)).willReturn(Optional.of(nextSchedule));
+		given(nextSchedule.getRoomNumber()).willReturn("409-1");
 	}
 
 	private void 통과된_다음_스케줄_이용_가능_여부_셋업(){
-		given(schedule.isCurrentResLessThanCapacity()).willReturn(true);
-		given(schedule.isAvailable()).willReturn(true);
+		given(nextSchedule.isCurrentResLessThanCapacity()).willReturn(true);
+		given(nextSchedule.isAvailable()).willReturn(true);
+	}
+
+	private void 통과된_개인_예약_입실_및_패널티_검증_셋업(){
+		given(nextSchedule.getRoomType()).willReturn(RoomType.INDIVIDUAL);
+		given(reservation.getMember()).willReturn(member1);
+		given(reservation.getMember().isPenalty()).willReturn(false);
+		given(reservation.isEntered()).willReturn(true);
+	}
+
+	private void 통과된_그룹_예약_입실_및_패널티_검증_셋업(){
+		given(nextSchedule.getRoomType()).willReturn(RoomType.GROUP);
+		given(reservationRepository.findByFirstScheduleId(scheduleFirstId)).willReturn(reservations);
+		given(reservation.getMember()).willReturn(member1);
+		given(reservation2.getMember()).willReturn(member2);
+
+		given(reservations.get(0).getMember().isPenalty()).willReturn(false);
+		given(reservations.get(1).getMember().isPenalty()).willReturn(false);
+
+		given(reservations.get(0).isEntered()).willReturn(true);
+		given(reservations.get(1).isEntered()).willReturn(true);
+	}
+
+	private void setFixedNow(int hour, int minute) {
+		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, hour, minute);
+		when(clock.instant()).thenReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
+		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
+	}
+
+	private void setReservationEndTime(int hour, int minute) {
+		given(reservation.getScheduleDate()).willReturn(LocalDate.of(2025, 3, 22));
+		given(reservation.getEndTime()).willReturn(LocalTime.of(hour, minute));
 	}
 
 }
