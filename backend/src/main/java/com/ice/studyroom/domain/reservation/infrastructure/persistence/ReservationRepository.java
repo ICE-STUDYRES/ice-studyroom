@@ -9,11 +9,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
 
-	List<Reservation> findByUserEmail(String email);
+	List<Reservation> findByMember(Member member);
 
 	List<Reservation> findByScheduleDateAndEndTime(LocalDate scheduleDate, LocalTime time);
 
