@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import axios from 'axios';
+import { useTokenHandler } from "../handlers/TokenHandler";
 
 const getTodayDayOfWeek = () => {
   const today = new Date();
@@ -28,6 +29,7 @@ const BookingManagement = ({ rooms }) => {
   const [selectedTimes, setSelectedTimes] = useState([]);
   const [bookings, setBookings] = useState({});
   const [mergedBookings, setMergedBookings] = useState({});
+  const { refreshTokens } = useTokenHandler();
 
   useEffect(() => {
     const fetchBookings = async () => {
@@ -97,7 +99,20 @@ const BookingManagement = ({ rooms }) => {
 
         setMergedBookings(formattedMergedBookings);
       } catch (error) {
-        console.error('예약 정보를 불러오는 중 오류 발생:', error);
+        if (error.response && error.response.status === 401) {
+          try {
+            const newAccessToken = await refreshTokens();
+            if (newAccessToken) {
+              return fetchBookings();
+            } else {
+              console.error("⚠️ 토큰 갱신 실패");
+            }
+          } catch (refreshError) {
+            console.error("🔁 토큰 갱신 중 오류:", refreshError);
+          }
+        } else {
+          console.error('예약 정보를 불러오는 중 오류 발생:', error);
+        }
       }
     };
 
@@ -197,8 +212,19 @@ const BookingManagement = ({ rooms }) => {
       alert("해제가 완료되었습니다!");
       window.location.reload();
     } catch (error) {
-      console.error("❌ 해제 실패:", error.message);
-      alert("해제에 실패했습니다. 다시 시도해주세요.");
+      if (error.response && error.response.status === 401) {
+        try {
+          const newAccessToken = await refreshTokens();
+          if (newAccessToken) {
+            return handleRelease();
+          }
+        } catch (refreshError) {
+          console.error("🔁 토큰 갱신 중 오류:", refreshError);
+        }
+      } else {
+        console.error("❌ 해제 실패:", error.message);
+        alert("해제에 실패했습니다. 다시 시도해주세요.");
+      }
     }
   };
 

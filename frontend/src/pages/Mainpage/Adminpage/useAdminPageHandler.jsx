@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useTokenHandler } from "../handlers/TokenHandler";
 
 const getTodayDayOfWeek = () => {
   const today = new Date();
@@ -19,6 +20,7 @@ const useAdminPageHandler = () => {
   const [roomTimeSlots, setRoomTimeSlots] = useState([]);
   const [dayOfWeek, setDayOfWeek] = useState(getTodayDayOfWeek());
   const [disabledTimeSlots, setDisabledTimeSlots] = useState([]);
+  const { refreshTokens } = useTokenHandler();
 
   const dayMapping = {
     '월': 'MONDAY',
@@ -54,6 +56,15 @@ const useAdminPageHandler = () => {
             Authorization: `Bearer ${accessToken}`,
           },
         });
+
+        if (response.status === 401) {
+          const newAccessToken = await refreshTokens();
+          if (newAccessToken) {
+            return fetchSchedules();
+          } else {
+            throw new Error("토큰 갱신 실패");
+          }
+        }
   
         if (!response.ok) throw new Error("스케줄 정보를 가져오는 데 실패했습니다.");
   
@@ -87,7 +98,7 @@ const useAdminPageHandler = () => {
           const timeRange = `${item.startTime.substring(0, 5)}~${item.endTime.substring(0, 5)}`;
           uniqueTimeSlots.add(timeRange);
           if (item.roomNumber === selectedRoom && item.status === 'UNAVAILABLE') {
-            disabledSlots.push(timeRange); // 🔥 이 시간은 비활성화
+            disabledSlots.push(timeRange);
           }
         });
   
@@ -177,7 +188,6 @@ const handleOccupy = async () => {
   try {
     let accessToken = sessionStorage.getItem("accessToken");
     if (!accessToken) {
-      console.error("⚠️ 인증 토큰이 없습니다.");
       return;
     }
 
@@ -201,7 +211,14 @@ const handleOccupy = async () => {
       body: JSON.stringify(requestBody)
     });
 
-    console.log("🚀 보내는 요청", requestBody);
+    if (response.status === 401) {
+      const newAccessToken = await refreshTokens();
+      if (newAccessToken) {
+        return handleOccupy();
+      } else {
+        throw new Error("토큰 갱신 실패");
+      }
+    }
 
     const responseData = await response.json();
     if (!response.ok) {
