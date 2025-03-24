@@ -56,26 +56,36 @@ public class ReservationExtendTest {
 	@Mock
 	private Member member;
 
+	private Long reservationId;
+	private String token;
+	private String ownerEmail;
+	private String notOwnerEmail;
+	private Long scheduleFirstId;
+
 	@BeforeEach
 	void setUp() {
 		// 공통 객체 생성 (Mock 객체만 설정)
 		reservation = mock(Reservation.class);
 		schedule = mock(Schedule.class);
 		member = mock(Member.class);
+
+		// 공통 값 설정
+		reservationId = 1L;
+		token = "Bearer token";
+		ownerEmail = "owner@hufs.ac.kr";
+		notOwnerEmail = "not-owner@hufs.ac.kr";
+		scheduleFirstId = 10L;
 	}
 
 	@Test
 	void 존재하지_않을_예약일_경우_예외() {
 		// given
-		Long invalidReservationId = 999L;
-		String token = "Bearer token";
-
-		given(reservationRepository.findById(invalidReservationId))
+		given(reservationRepository.findById(reservationId))
 			.willReturn(Optional.empty());
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
-			reservationService.extendReservation(invalidReservationId, token)
+			reservationService.extendReservation(reservationId, token)
 		);
 
 		assertEquals(StatusCode.NOT_FOUND, ex.getStatusCode());
@@ -84,10 +94,6 @@ public class ReservationExtendTest {
 
 	@Test
 	void 예약_소유자가_아닌_경우_예외() {
-		// given
-		Long reservationId = 1L;
-		String token = "Bearer token";
-		String notOwnerEmail = "not-owner@hufs.ac.kr";
 
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(notOwnerEmail);
@@ -103,10 +109,6 @@ public class ReservationExtendTest {
 
 	@Test
 	void 연장_요청이_이른_경우_예외() {
-		// given
-		Long reservationId = 1L;
-		String token = "Bearer token";
-		String ownerEmail = "owner@hufs.ac.kr";
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 
@@ -131,10 +133,6 @@ public class ReservationExtendTest {
 
 	@Test
 	void 연장_요청이_늦은_경우_예외() {
-		// given
-		Long reservationId = 1L;
-		String token = "Bearer token";
-		String ownerEmail = "owner@hufs.ac.kr";
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 
@@ -159,11 +157,6 @@ public class ReservationExtendTest {
 
 	@Test
 	void 스케줄이_존재하지_않을_경우_예외() {
-		// given
-		Long reservationId = 1L;
-		String token = "Bearer token";
-		String ownerEmail = "owner@hufs.ac.kr";
-		Long scheduleFirstId = 10L;
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 		통과된_스케줄_연장_시간_검증_셋업();
@@ -184,10 +177,6 @@ public class ReservationExtendTest {
 
 	@Test
 	void 다음_스케줄의_방번호가_다를_경우_예외() {
-		Long reservationId = 1L;
-		String token = "Bearer token";
-		String ownerEmail = "owner@hufs.ac.kr";
-		Long scheduleFirstId = 10L;
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 		통과된_스케줄_연장_시간_검증_셋업();
@@ -214,10 +203,6 @@ public class ReservationExtendTest {
 	 */
 	@Test
 	void 다음_스케줄_예약_불가_예외1(){
-		Long reservationId = 1L;
-		String token = "Bearer token";
-		String ownerEmail = "owner@hufs.ac.kr";
-		Long scheduleFirstId = 10L;
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 		통과된_스케줄_연장_시간_검증_셋업();
@@ -240,10 +225,6 @@ public class ReservationExtendTest {
 	 */
 	@Test
 	void 다음_스케줄_예약_불가_예외2(){
-		Long reservationId = 1L;
-		String token = "Bearer token";
-		String ownerEmail = "owner@hufs.ac.kr";
-		Long scheduleFirstId = 10L;
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 		통과된_스케줄_연장_시간_검증_셋업();
