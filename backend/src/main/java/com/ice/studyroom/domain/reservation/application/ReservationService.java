@@ -385,7 +385,7 @@ public class ReservationService {
 
 		//예약의 마지막 스케줄 ID를 통해 다음 스케줄을 찾는다.
 		Schedule nextSchedule = scheduleRepository.findById(lastScheduleId + 1).orElseThrow(
-			() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
+			() -> new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요."));
 
 		if(!nextSchedule.getRoomNumber().equals(reservation.getRoomNumber())) {
 			throw new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요.");
