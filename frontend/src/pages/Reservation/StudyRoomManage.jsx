@@ -59,19 +59,26 @@ const StudyRoomManage = () => {
           if (reservedBookings.length > 0) {
             const bookingData = getNearestBooking(reservedBookings);
             if (bookingData) {
+              const holder = bookingData.participants?.find(p => p.isHolder) || null;
+              const others = bookingData.participants?.filter(p => !p.isHolder) || [];          
+            
               setBooking({
                 id: bookingData.id || '',
                 room: bookingData.roomNumber || '',
                 date: bookingData.scheduleDate || '',
                 time: `${getFormattedTime(bookingData.startTime)}~${getFormattedTime(bookingData.endTime)}`,
-                userName: bookingData.userName || '',
-                userId: bookingData.studentId || '',
-                participants: Array.isArray(bookingData.participants) ? bookingData.participants : [],
+                userName: holder?.name || bookingData.userName || '',
+                userId: holder?.studentNum || '',
+                participants: others,
                 endTime: getFormattedTime(bookingData.endTime),
                 extendDeadline: getExtendDeadline(bookingData.endTime),
-                status: bookingData.status || '', // 🔹 추가됨
+                status: bookingData.status || '',
+                holder,
+                others
               });
+              
             }
+            
           } else {
             setBooking({});
           }
@@ -307,17 +314,26 @@ const StudyRoomManage = () => {
               </div>
 
               <div className="space-y-2">
+                {/* 예약자 */}
                 <div>
                   <div className="text-sm text-gray-600 mb-1">예약자</div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-medium text-gray-900">{booking.userName}</span>
-                  </div>
+                  {booking.holder ? (
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-gray-900">{booking.holder.name}</span>
+                      <span className="text-sm text-gray-500">({booking.holder.studentNum})</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1">
+                      <span className="font-medium text-gray-900">{booking.userName}</span>
+                    </div>
+                  )}
                 </div>
-                
-                {booking.participants.length > 1 && (
+
+                {/* 참여자 */}
+                {booking.others?.length > 0 && (
                   <div>
                     <div className="text-sm text-gray-600 mb-1">참여자</div>
-                    {booking.participants.slice(1).map((participant, index) => (
+                    {[...booking.others].reverse().map((participant, index) => (
                       <div key={index} className="flex items-center gap-1">
                         <span className="font-medium text-gray-900">{participant.name}</span>
                         <span className="text-sm text-gray-500">({participant.studentNum})</span>
@@ -426,20 +442,29 @@ const StudyRoomManage = () => {
                   <span className="text-gray-900 font-medium">{booking.time}</span>
                 </div>
                 <div className="space-y-2">
+                  {/* 예약자 */}
                   <div>
                     <div className="text-sm text-gray-600 mb-1">예약자</div>
-                  <div className="flex items-center gap-1">
-                    <span className="font-medium text-gray-900">{booking.userName}</span>
-                  </div>
+                    {booking.holder ? (
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-gray-900">{booking.holder.name}</span>
+                        <span className="text-sm text-gray-500">({booking.holder.studentNum})</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <span className="font-medium text-gray-900">{booking.userName}</span>
+                      </div>
+                    )}
                   </div>
 
-                  {booking.participants.length > 1 && (
+                  {/* 참여자 */}
+                  {booking.others?.length > 0 && (
                     <div>
                       <div className="text-sm text-gray-600 mb-1">참여자</div>
-                      {booking.participants.slice(1).map((participant, index) => (
+                      {[...booking.others].reverse().map((p, index) => (
                         <div key={index} className="flex items-center gap-1">
-                          <span className="font-medium text-gray-900">{participant.name}</span>
-                          <span className="text-sm text-gray-500">({participant.studentNum})</span>
+                          <span className="font-medium text-gray-900">{p.name}</span>
+                          <span className="text-sm text-gray-500">({p.studentNum})</span>
                         </div>
                       ))}
                     </div>
