@@ -18,12 +18,11 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
-import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
-import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.global.exception.BusinessException;
@@ -51,10 +50,19 @@ public class ReservationExtendTest {
 	private Reservation reservation;
 
 	@Mock
+	private Reservation reservation2;
+
+	@Mock
+	private List<Reservation> reservations;
+
+	@Mock
 	private Schedule schedule;
 
 	@Mock
-	private Member member;
+	private Member member1;
+
+	@Mock
+	private Member member2;
 
 	private Long reservationId;
 	private String token;
@@ -66,8 +74,11 @@ public class ReservationExtendTest {
 	void setUp() {
 		// 공통 객체 생성 (Mock 객체만 설정)
 		reservation = mock(Reservation.class);
+		reservation2 = mock(Reservation.class);
 		schedule = mock(Schedule.class);
-		member = mock(Member.class);
+		member1 = mock(Member.class);
+		member2 = mock(Member.class);
+		reservations = List.of(reservation, reservation2);
 
 		// 공통 값 설정
 		reservationId = 1L;
@@ -240,6 +251,99 @@ public class ReservationExtendTest {
 		assertEquals("다음 시간대가 이미 예약이 완료되었거나, 이용이 불가능한 상태입니다.", ex.getMessage());
 	}
 
+	@Test
+	void 그룹_예약일_때_패널티_멤버가_있을_경우_예외() {
+
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		통과된_스케줄_연장_시간_검증_셋업();
+		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
+		통과된_다음_스케줄_이용_가능_여부_셋업();
+
+		// 그룹 예약일 경우
+		given(schedule.getRoomType()).willReturn(RoomType.GROUP);
+		given(reservationRepository.findByFirstScheduleId(scheduleFirstId)).willReturn(reservations);
+		given(reservation.getMember()).willReturn(member1);
+		given(reservation2.getMember()).willReturn(member2);
+
+		// 첫 번째 멤버는 패널티가 없고, 두 번째 멤버는 패널티가 있는 경우
+		given(reservations.get(0).getMember().isPenalty()).willReturn(false);
+		given(reservations.get(1).getMember().isPenalty()).willReturn(true);
+
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.extendReservation(reservationId, token)
+		);
+
+		assertEquals("패널티가 있는 멤버로 인해 연장이 불가능합니다.", ex.getMessage());
+	}
+
+	@Test
+	void 그룹_예약일_때_입실하지_않은_멤버가_있을_경우_예외() {
+
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		통과된_스케줄_연장_시간_검증_셋업();
+		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
+		통과된_다음_스케줄_이용_가능_여부_셋업();
+
+		// 그룹 예약 설정
+		given(schedule.getRoomType()).willReturn(RoomType.GROUP);
+		given(reservationRepository.findByFirstScheduleId(scheduleFirstId)).willReturn(reservations);
+		given(reservation.getMember()).willReturn(member1);
+		// reservation2 는 reservation과 같은 예약이라, reservations 에 속해있음
+		given(reservation2.getMember()).willReturn(member2);
+
+		given(reservations.get(0).getMember().isPenalty()).willReturn(false);
+		given(reservations.get(1).getMember().isPenalty()).willReturn(false);
+
+		// 첫 번째 멤버는 입실 처리가 되어있고, 두 번째 멤버는 입실 처리가 되어있지 않은 경우
+		given(reservations.get(0).isEntered()).willReturn(true);
+		given(reservations.get(1).isEntered()).willReturn(false);
+
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.extendReservation(reservationId, token)
+		);
+
+		assertEquals("입실 처리 되어있지 않은 유저가 있어 연장이 불가능합니다.", ex.getMessage());
+	}
+
+	@Test
+	void 개인_예약일_때_패널티_사용자_예외() {
+
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		통과된_스케줄_연장_시간_검증_셋업();
+		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
+		통과된_다음_스케줄_이용_가능_여부_셋업();
+
+		given(schedule.getRoomType()).willReturn(RoomType.INDIVIDUAL);
+		given(reservation.getMember()).willReturn(member1);
+		given(reservation.getMember().isPenalty()).willReturn(true);
+
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.extendReservation(reservationId, token)
+		);
+
+		assertEquals("패넡티 상태이므로, 연장이 불가능합니다.", ex.getMessage());
+	}
+
+	@Test
+	void 개인_예약일_때_입실하지_않은_경우_예외() {
+
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		통과된_스케줄_연장_시간_검증_셋업();
+		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
+		통과된_다음_스케줄_이용_가능_여부_셋업();
+
+		given(schedule.getRoomType()).willReturn(RoomType.INDIVIDUAL);
+		given(reservation.getMember()).willReturn(member1);
+		given(reservation.getMember().isPenalty()).willReturn(false);
+		given(reservation.isEntered()).willReturn(false);
+
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.extendReservation(reservationId, token)
+		);
+
+		assertEquals("예약 연장은 입실 후 가능합니다.", ex.getMessage());
+	}
+
 	private void 통과된_기본_예약_검증_셋업(Long reservationId, String token, String email) {
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(email);
@@ -272,7 +376,7 @@ public class ReservationExtendTest {
 
 	private void 통과된_다음_스케줄_이용_가능_여부_셋업(){
 		given(schedule.isCurrentResLessThanCapacity()).willReturn(true);
-		given(schedule.isAvailable()).willReturn(false);
+		given(schedule.isAvailable()).willReturn(true);
 	}
 
 }
