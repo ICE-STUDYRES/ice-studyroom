@@ -7,6 +7,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
@@ -90,11 +91,16 @@ public class Reservation {
 	@Builder.Default
 	private LocalDateTime updatedAt = LocalDateTime.now();
 
-	public boolean isReserved() {
-		return status == ReservationStatus.RESERVED;
+	public boolean isEntered() {
+		return status == ReservationStatus.ENTRANCE;
 	}
 
+	// TODO: 삭제 예정인 메서드 사유: userEmail, userName 삭제 예정
 	public boolean matchEmail(String email) { return userEmail.equals(email); }
+
+	public boolean isOwnedBy(String rawEmail) {
+		return this.member.getEmail().equals(Email.of(rawEmail));
+	}
 
 	// 정상 입실인지 지각인지 노쇼인지 판단하는 코드
 	public ReservationStatus checkAttendanceStatus(LocalDateTime now) {
