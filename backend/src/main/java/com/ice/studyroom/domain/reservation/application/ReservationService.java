@@ -408,7 +408,7 @@ public class ReservationService {
 
 			for (Reservation res : reservations) {
 				//1명이라도 입실하지 않은 경우
-				if (res.isEntered()){
+				if (!res.isEntered()){
 					//지각 입실은 앞서 패널티 체킹으로 연장 불가 처리
 					throw new BusinessException(StatusCode.BAD_REQUEST, "입실 처리 되어있지 않은 유저가 있어 연장이 불가능합니다.");
 				}
@@ -421,12 +421,12 @@ public class ReservationService {
 			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			nextSchedule.setCurrentRes(reservations.size());
 		} else {
-			if(!reservation.isEntered()){
-				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 연장은 입실 후 가능합니다.");
-			}
-
 			if(reservation.getMember().isPenalty()){
 				throw new BusinessException(StatusCode.FORBIDDEN, "패넡티 상태이므로, 연장이 불가능합니다.");
+			}
+
+			if(!reservation.isEntered()){
+				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 연장은 입실 후 가능합니다.");
 			}
 
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
