@@ -105,7 +105,7 @@ class ReservationCancelTest {
 		// JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
 		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
 		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
-		when(reservation.matchEmail(userEmail)).thenReturn(true);
+		when(reservation.isOwnedBy(userEmail)).thenReturn(true);
 
 		when(clock.instant()).thenReturn(fixedNow.atZone(java.time.ZoneId.systemDefault()).toInstant());
 		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
@@ -173,7 +173,7 @@ class ReservationCancelTest {
 		// JWT를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
 		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
 		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
-		when(reservation.matchEmail(userEmail)).thenReturn(true);
+		when(reservation.isOwnedBy(userEmail)).thenReturn(true);
 
 		when(reservation.getFirstScheduleId()).thenReturn(100L);
 		when(reservation.getSecondScheduleId()).thenReturn(101L);
@@ -226,7 +226,7 @@ class ReservationCancelTest {
 		Long reservationId = 1L;
 		String token = "Bearer valid_token";
 		when(tokenService.extractEmailFromAccessToken(token)).thenReturn("wrong@example.com");
-		when(reservation.matchEmail("wrong@example.com")).thenReturn(false);
+		when(reservation.isOwnedBy("wrong@example.com")).thenReturn(false);
 		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
 
 		// when & then
@@ -282,7 +282,7 @@ class ReservationCancelTest {
 		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 
 		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
-		when(reservation.matchEmail(userEmail)).thenReturn(true);
+		when(reservation.isOwnedBy(userEmail)).thenReturn(true);
 		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
 
 		when(reservation.getFirstScheduleId()).thenReturn(100L);
@@ -351,7 +351,7 @@ class ReservationCancelTest {
 		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 
 		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
-		when(reservation.matchEmail(userEmail)).thenReturn(true);
+		when(reservation.isOwnedBy(userEmail)).thenReturn(true);
 		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
 
 		when(reservation.getFirstScheduleId()).thenReturn(100L);
@@ -463,7 +463,7 @@ class ReservationCancelTest {
 
 		// 예약 정보: 시작 시각 13:00 → 현재 시간보다 이전
 		when(tokenService.extractEmailFromAccessToken(token)).thenReturn(userEmail);
-		when(reservation.matchEmail(userEmail)).thenReturn(true);
+		when(reservation.isOwnedBy(userEmail)).thenReturn(true);
 		when(reservationRepository.findById(reservationId)).thenReturn(Optional.of(reservation));
 
 		when(reservation.getFirstScheduleId()).thenReturn(100L);

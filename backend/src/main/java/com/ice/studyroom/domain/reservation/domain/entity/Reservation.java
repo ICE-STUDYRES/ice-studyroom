@@ -95,9 +95,6 @@ public class Reservation {
 		return status == ReservationStatus.ENTRANCE;
 	}
 
-	// TODO: 삭제 예정인 메서드 사유: userEmail, userName 삭제 예정
-	public boolean matchEmail(String email) { return userEmail.equals(email); }
-
 	public boolean isOwnedBy(String rawEmail) {
 		return this.member.getEmail().equals(Email.of(rawEmail));
 	}
