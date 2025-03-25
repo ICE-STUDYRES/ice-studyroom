@@ -209,7 +209,7 @@ public class ReservationService {
 				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 가능한 자리가 없습니다.");
 			}
 
-			schedule.setCurrentRes(schedule.getCurrentRes() + 1); // 개인예약은 현재사용인원에서 +1 진행
+			schedule.reserve(); // 개인예약은 현재사용인원에서 +1 진행
 			if (schedule.getCurrentRes().equals(schedule.getCapacity())) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
 				schedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			}
@@ -313,7 +313,7 @@ public class ReservationService {
 		}
 
 		for (Schedule schedule : schedules) {
-			schedule.setCurrentRes(totalParticipants); // 현재 사용 인원을 예약자 + 참여자 숫자로 지정
+			schedule.updateGroupCurrentRes(totalParticipants); // 현재 사용 인원을 예약자 + 참여자 숫자로 지정
 			schedule.updateStatus(ScheduleSlotStatus.RESERVED);
 		}
 
@@ -424,10 +424,10 @@ public class ReservationService {
 
 			for (Reservation res : reservations) {
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
-
+				nextSchedule.reserve();
 			}
 			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
-			nextSchedule.setCurrentRes(reservations.size());
+
 		} else {
 			if(reservation.getMember().isPenalty()){
 				throw new BusinessException(StatusCode.BAD_REQUEST, "패넡티 상태이므로, 연장이 불가능합니다.");
@@ -437,7 +437,7 @@ public class ReservationService {
 				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 연장은 입실 후 가능합니다.");
 			}
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
-			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + 1);
+			nextSchedule.reserve();
 			if (!nextSchedule.isCurrentResLessThanCapacity()){
 				nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			}

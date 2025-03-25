@@ -21,11 +21,10 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "schedule")
-@Getter @Setter //todo: setter 제거
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 @Builder
@@ -86,9 +85,8 @@ public class Schedule extends BaseTimeEntity {
 		this.status = newStatus;
 	}
 
-	public void updateCurrentRes(int totalParticipants) {
+	public void updateGroupCurrentRes(int totalParticipants) {
 		this.currentRes = totalParticipants;
-		ifCurrentResFullThanMakeReserved();
 	}
 
 	public void reserve() {

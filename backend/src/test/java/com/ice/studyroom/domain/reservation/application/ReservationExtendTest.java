@@ -350,7 +350,6 @@ public class ReservationExtendTest {
 		// then
 		assertEquals("Success", result);
 		verify(nextSchedule).updateStatus(ScheduleSlotStatus.RESERVED);
-		verify(nextSchedule).setCurrentRes(reservations.size());
 
 		for (Reservation res : reservations) {
 			verify(res).extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
@@ -375,7 +374,7 @@ public class ReservationExtendTest {
 		// then
 		assertEquals("Success", result);
 		verify(reservation).extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
-		verify(nextSchedule).setCurrentRes(anyInt());
+		verify(nextSchedule).reserve();
 		verify(nextSchedule, never()).updateStatus(ScheduleSlotStatus.RESERVED);
 	}
 
