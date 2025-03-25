@@ -1,14 +1,12 @@
 package com.ice.studyroom.domain.reservation.domain.entity;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
-import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateScheduleRequest;
-import com.ice.studyroom.domain.reservation.presentation.dto.response.ScheduleResponse;
+import com.ice.studyroom.global.entity.BaseTimeEntity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -27,57 +25,50 @@ import lombok.Setter;
 
 @Entity
 @Table(name = "schedule")
-@Getter
-@Setter
+@Getter @Setter //todo: setter 제거
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class Schedule {
+@Builder
+public class Schedule extends BaseTimeEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private RoomType roomType;
+	@Column(name = "room_type", nullable = false)
+	@Builder.Default
+	private RoomType roomType = RoomType.GROUP;
 
-	@Column(nullable = false)
+	@Column(name = "schedule_date", nullable = false)
 	private LocalDate scheduleDate;
 
-	@Column(nullable = false)
+	@Column(name = "room_number", nullable = false, length = 20)
 	private String roomNumber;
 
 	@Column(name = "room_time_slot_id", nullable = false)
 	private Long roomTimeSlotId;
 
-	@Column(nullable = false)
+	@Column(name = "start_time", nullable = false)
 	private LocalTime startTime;
 
-	@Column(nullable = false)
+	@Column(name = "end_time",nullable = false)
 	private LocalTime endTime;
 
-	@Column(nullable = false)
-	private Integer currentRes;
+	@Column(name = "current_res", nullable = false)
+	@Builder.Default
+	private Integer currentRes = 0;
+
+	@Column(name = "capacity", nullable = false)
+	private Integer capacity;
 
 	@Column(name = "min_res", nullable = false)
 	private Integer minRes;
 
-	@Column(nullable = false)
-	private Integer capacity;
-
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
+	@Column(name = "status", nullable = false)
 	@Builder.Default
 	private ScheduleSlotStatus status = ScheduleSlotStatus.AVAILABLE;
-
-	@Column(nullable = false, updatable = false)
-	@Builder.Default
-	private LocalDateTime createdAt = LocalDateTime.now();
-
-	@Column(nullable = false)
-	@Builder.Default
-	private LocalDateTime updatedAt = LocalDateTime.now();
 
 	@Enumerated(EnumType.STRING)
 	@Column(name = "day_of_week", nullable = false)
@@ -95,44 +86,26 @@ public class Schedule {
 		this.status = newStatus;
 	}
 
+	public void reserve() {
+		this.currentRes++;
+		ifCurrentResFullThanMakeReserved();
+	}
+
 	public void cancel() {
 		this.currentRes--;
 		ifCurrentResZeroThanMakeAvailable();
 	}
 
-	private void ifCurrentResZeroThanMakeAvailable() {
-		if (this.currentRes == 0) {
-			available();
+	private void ifCurrentResFullThanMakeReserved() {
+		if (this.currentRes.equals(this.capacity)) {
+			this.status = ScheduleSlotStatus.RESERVED;
 		}
 	}
 
-	public void available() {
-		this.status = ScheduleSlotStatus.AVAILABLE;
+	private void ifCurrentResZeroThanMakeAvailable() {
+		if (this.currentRes == 0) {
+			this.status = ScheduleSlotStatus.AVAILABLE;
+		}
 	}
 
-	public ScheduleResponse toResponse() {
-		return ScheduleResponse.builder()
-			.id(id)
-			.scheduleDate(scheduleDate)
-			.roomNumber(roomNumber)
-			.startTime(startTime)
-			.endTime(endTime)
-			.capacity(capacity)
-			.status(status)
-			.dayOfWeek(dayOfWeek)
-			.createdAt(createdAt)
-			.updatedAt(updatedAt)
-			.build();
-	}
-
-	public static Schedule from(CreateScheduleRequest request) {
-		return Schedule.builder()
-			.scheduleDate(request.getScheduleDate())
-			.roomNumber(request.getRoomNumber())
-			.startTime(request.getStartTime())
-			.endTime(request.getEndTime())
-			.capacity(request.getCapacity())
-			.dayOfWeek(request.getDayOfWeek())
-			.build();
-	}
 }
