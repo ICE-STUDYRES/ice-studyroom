@@ -76,6 +76,36 @@ class IndividualReservationTest {
 		secondSchedule = mock(Schedule.class);
 	}
 
+	/**
+	 * 📌 테스트명: 개인_예약_1시간_성공
+	 *
+	 * ✅ 목적:
+	 *   - 사용자가 예약 가능한 1개의 스케줄에 대해 개인 예약을 정상적으로 생성할 수 있는지 검증한다.
+	 *
+	 * 🧪 시나리오 설명:
+	 *   1. 현재 시각은 12:30, 예약할 스케줄은 13:30 시작 (예약 가능 시간)
+	 *   2. 스케줄 상태는 AVAILABLE, RoomType은 INDIVIDUAL, 정원이 남아 있음
+	 *   3. JWT 토큰에서 이메일 추출 → 회원 조회 성공, 패널티 없음
+	 *   4. 중복 예약 없음
+	 *   5. 예약 저장 후 QR 코드 생성 및 저장
+	 *   6. 스케줄의 currentRes 증가 → 저장
+	 *
+	 * 📌 관련 비즈니스 규칙:
+	 *   - 예약은 AVAILABLE 상태에서만 가능
+	 *   - 개인 예약은 RoomType이 INDIVIDUAL인 방에서만 가능
+	 *   - 패널티가 없는 유효한 회원만 예약 가능
+	 *   - 기존 예약이 없을 경우에만 신규 예약 허용
+	 *
+	 * 🧩 검증 포인트:
+	 *   - reservationRepository.save()가 호출되는가?
+	 *   - scheduleRepository.saveAll()이 호출되는가?
+	 *   - qrCodeService.saveQRCode()가 정확한 파라미터로 호출되는가?
+	 *
+	 * ✅ 기대 결과:
+	 *   - "Success" 응답 반환
+	 *   - 스케줄 정보가 저장되며, QR 코드 생성 및 저장됨
+	 *   - 예외 없이 정상적으로 개인 예약 생성 완료
+	 */
 	@DisplayName("정상적으로 스케줄을 1시간 예약 성공")
 	@Test
 	void 개인_예약_1시간_성공() {
@@ -104,6 +134,31 @@ class IndividualReservationTest {
 		verify(qrCodeService).saveQRCode(eq(email), eq(123L), eq(request.scheduleId().toString()), eq("fake-qrcode"));
 	}
 
+	/**
+	 * 📌 테스트명: 개인_예약_2시간_성공
+	 *
+	 * ✅ 목적:
+	 *   - 사용자가 연속된 2개의 스케줄에 대해 예약을 정상적으로 생성할 수 있는지 검증한다.
+	 *
+	 * 🧪 시나리오 설명:
+	 *   1. 현재 시각은 12:30, 예약할 스케줄은 13:30 시작
+	 *   2. 스케줄 2개 모두 AVAILABLE, INDIVIDUAL, 수용 가능
+	 *   3. 패널티 없음, 중복 예약 없음
+	 *   4. 예약 저장 및 QR 코드 저장
+	 *
+	 * 📌 관련 비즈니스 규칙:
+	 *   - 예약은 최대 2시간까지 가능
+	 *   - 스케줄은 모두 INDIVIDUAL이어야 하며 예약 가능 상태여야 함
+	 *
+	 * 🧩 검증 포인트:
+	 *   - reservationRepository.save() 호출
+	 *   - scheduleRepository.saveAll() 호출
+	 *   - QR 코드 저장 여부
+	 *
+	 * ✅ 기대 결과:
+	 *   - "Success" 반환
+	 *   - 예약 성공 및 관련 데이터 저장 완료
+	 */
 	@DisplayName("정상적으로 스케줄을 2시간 예약 성공")
 	@Test
 	void 개인_예약_2시간_성공() {
@@ -135,6 +190,26 @@ class IndividualReservationTest {
 		verify(qrCodeService).saveQRCode(eq(email), eq(123L), eq(request.scheduleId().toString()), eq("fake-qrcode"));
 	}
 
+	/**
+	 * 📌 테스트명: 사용_불가능한_스케줄로_예약_시도는_예외_발생
+	 *
+	 * ✅ 목적:
+	 *   - 예약이 불가능한 스케줄에 대해 예약을 시도할 경우 예외가 발생하는지 검증한다.
+	 *
+	 * 🧪 시나리오 설명:
+	 *   1. 예약할 스케줄의 상태가 AVAILABLE이 아님 (RESERVED)
+	 *   2. findById()는 Optional.of(schedule)를 반환하나, 상태 조건 미달
+	 *   3. 예외 발생: "존재하지 않거나 사용 불가능한 스케줄입니다."
+	 *
+	 * 📌 관련 비즈니스 규칙:
+	 *   - 예약은 AVAILABLE 상태의 스케줄에만 가능
+	 *
+	 * 🧩 검증 포인트:
+	 *   - 예외가 발생해야 하며, 예약/QR 저장 로직은 실행되지 않아야 함
+	 *
+	 * ✅ 기대 결과:
+	 *   - 예외 발생 및 저장 로직 미호출
+	 */
 	@DisplayName("사용 불가능한 스케줄로 예약 시도는 예외 발생")
 	@Test
 	void 사용_불가능한_스케줄로_예약_시도는_예외_발생() {
@@ -158,6 +233,26 @@ class IndividualReservationTest {
 		verify(qrCodeService, never()).saveQRCode(any(), any(), any(), any());
 	}
 
+	/**
+	 * 📌 테스트명: 단체전용방_예약_시도는_예외_발생
+	 *
+	 * ✅ 목적:
+	 *   - 개인 예약 요청 시, RoomType이 GROUP일 경우 예외가 발생하는지 검증한다.
+	 *
+	 * 🧪 시나리오 설명:
+	 *   1. 예약할 스케줄의 RoomType이 GROUP
+	 *   2. createIndividualReservation 내부에서 예외 발생
+	 *
+	 * 📌 관련 비즈니스 규칙:
+	 *   - 개인 예약은 INDIVIDUAL 타입의 방에서만 가능
+	 *
+	 * 🧩 검증 포인트:
+	 *   - BusinessException이 발생하는가?
+	 *   - 저장 로직이 호출되지 않는가?
+	 *
+	 * ✅ 기대 결과:
+	 *   - 예외 발생 ("해당 방은 단체예약 전용입니다.")
+	 */
 	@DisplayName("단체전용방 예약 시도는 예외 발생")
 	@Test
 	void 단체전용방_예약_시도는_예외_발생() {
@@ -179,6 +274,26 @@ class IndividualReservationTest {
 		verify(reservationRepository, never()).save(any());
 	}
 
+	/**
+	 * 📌 테스트명: 존재하지_않는_회원의_예약_요청은_예외_발생
+	 *
+	 * ✅ 목적:
+	 *   - JWT 토큰에서 추출한 이메일로 회원 조회 실패 시 예외가 발생하는지 검증한다.
+	 *
+	 * 🧪 시나리오 설명:
+	 *   1. JWT에서 이메일 추출
+	 *   2. memberRepository.findByEmail() → Optional.empty()
+	 *   3. 예외 발생: NOT_FOUND
+	 *
+	 * 📌 관련 비즈니스 규칙:
+	 *   - 예약자는 시스템에 등록된 유효한 회원이어야 한다
+	 *
+	 * 🧩 검증 포인트:
+	 *   - 예외 발생 및 저장 로직 미호출
+	 *
+	 * ✅ 기대 결과:
+	 *   - 예외 메시지: "예약자 이메일이 존재하지 않습니다: ... "
+	 */
 	@DisplayName("존재하지 않는 회원의 예약 요청은 예외 발생")
 	@Test
 	void 존재하지_않는_회원의_예약_요청은_예외_발생() {
@@ -203,6 +318,26 @@ class IndividualReservationTest {
 		verify(reservationRepository, never()).save(any());
 	}
 
+	/**
+	 * 📌 테스트명: 패널티를_받은_회원의_예약_요청은_예외_발생
+	 *
+	 * ✅ 목적:
+	 *   - 패널티 상태인 회원이 예약을 시도할 경우 예외가 발생하는지 검증한다.
+	 *
+	 * 🧪 시나리오 설명:
+	 *   1. JWT로 이메일 추출 → 회원 조회 성공
+	 *   2. member.isPenalty() == true
+	 *   3. 예외 발생: FORBIDDEN ("사용정지 상태입니다.")
+	 *
+	 * 📌 관련 비즈니스 규칙:
+	 *   - 패널티 상태의 회원은 예약할 수 없다
+	 *
+	 * 🧩 검증 포인트:
+	 *   - 예외가 발생하고, 저장 로직은 수행되지 않아야 한다
+	 *
+	 * ✅ 기대 결과:
+	 *   - 예외 발생 및 저장 미수행
+	 */
 	@DisplayName("패널티를 받은 회원의 예약 요청은 예외 발생")
 	@Test
 	void 패널티를_받은_회원의_예약_요청은_예외_발생() {
@@ -227,6 +362,27 @@ class IndividualReservationTest {
 		verify(reservationRepository, never()).save(any());
 	}
 
+	/**
+	 * 📌 테스트명: 예약이_중복된다면_에러_발생
+	 *
+	 * ✅ 목적:
+	 *   - 기존에 예약이 진행 중인 사용자가 다시 예약을 시도하면 예외가 발생하는지 검증한다.
+	 *
+	 * 🧪 시나리오 설명:
+	 *   1. JWT에서 이메일 추출 → 회원 조회 성공
+	 *   2. 최근 예약 상태가 RESERVED 또는 ENTRANCE
+	 *   3. 예외 발생: CONFLICT
+	 *
+	 * 📌 관련 비즈니스 규칙:
+	 *   - RESERVED 또는 ENTRANCE 상태의 예약이 존재하면 새 예약 불가
+	 *
+	 * 🧩 검증 포인트:
+	 *   - 예외 메시지가 명확한가?
+	 *   - 저장 로직이 호출되지 않는가?
+	 *
+	 * ✅ 기대 결과:
+	 *   - 예외 발생 및 중복 예약 방지
+	 */
 	@DisplayName("예약이 중복된다면 에러 발생")
 	@Test
 	void 예약이_중복된다면_에러_발생() {
