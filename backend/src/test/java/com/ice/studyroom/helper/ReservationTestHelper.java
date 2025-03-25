@@ -23,8 +23,6 @@ public class ReservationTestHelper {
 			.endTime(startTime.plusHours(2))
 			.enterTime(null) // 출석 시간 설정 가능
 			.status(ReservationStatus.RESERVED)
-			.createdAt(LocalDateTime.now())
-			.updatedAt(LocalDateTime.now())
 			.build();
 	}
 }

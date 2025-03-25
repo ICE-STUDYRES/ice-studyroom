@@ -424,8 +424,8 @@ public class ReservationService {
 
 			for (Reservation res : reservations) {
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
-			}
 
+			}
 			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			nextSchedule.setCurrentRes(reservations.size());
 		} else {

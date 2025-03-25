@@ -86,6 +86,11 @@ public class Schedule extends BaseTimeEntity {
 		this.status = newStatus;
 	}
 
+	public void updateCurrentRes(int totalParticipants) {
+		this.currentRes = totalParticipants;
+		ifCurrentResFullThanMakeReserved();
+	}
+
 	public void reserve() {
 		this.currentRes++;
 		ifCurrentResFullThanMakeReserved();
@@ -107,5 +112,4 @@ public class Schedule extends BaseTimeEntity {
 			this.status = ScheduleSlotStatus.AVAILABLE;
 		}
 	}
-
 }
