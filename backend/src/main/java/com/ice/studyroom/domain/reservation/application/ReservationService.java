@@ -165,18 +165,24 @@ public class ReservationService {
 	@Transactional
 	public String createIndividualReservation(String authorizationHeader, CreateReservationRequest request) {
 		// 예약 가능 여부 확인
-		List<Schedule> schedules = findSchedules(request.scheduleId());
+		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
+		List<Schedule> schedules = scheduleRepository.findAllByIdIn(idList);
+
+		if (schedules.size() != idList.size()) {
+			throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
+		}
+
 		validateSchedulesAvailable(schedules);
 		RoomType roomType = schedules.get(0).getRoomType();
 		if(roomType == RoomType.GROUP) throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다.");
-		System.out.println("룸 타입 검증");
+
 		// JWT에서 예약자 이메일 추출
 		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// 예약자 확인
 		Member reserver = memberRepository.findByEmail(Email.of(reserverEmail))
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"예약자 이메일이 존재하지 않습니다: " + reserverEmail));
-		System.out.println("멤버 검증");
+
 		// 패널티 상태 확인 (예약 불가)
 		if (reserver.isPenalty()) {
 			throw new BusinessException(StatusCode.FORBIDDEN, "사용정지 상태입니다.");
@@ -184,15 +190,13 @@ public class ReservationService {
 
 		// 예약 중복 방지
 		checkDuplicateReservation(reserverEmail);
-		System.out.println("예약 중복 검증");
 
 		// 예약 객체 생성 및 저장
 		String userName = reserver.getName();
 		String userEmail = reserver.getEmail().getValue();
-		System.out.println("firstSchedule: " + schedules);
 
 		Reservation reservation = Reservation.from(schedules, userEmail, userName, true, reserver);
-		System.out.println("스케줄 저장되나요?");
+
 		reservationRepository.save(reservation);
 
 		// QR 코드 생성 및 저장

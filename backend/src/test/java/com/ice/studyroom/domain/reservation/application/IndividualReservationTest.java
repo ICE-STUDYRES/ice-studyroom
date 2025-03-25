@@ -9,6 +9,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -111,12 +113,13 @@ class IndividualReservationTest {
 	void 개인_예약_1시간_성공() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
-			new Long[]{firstScheduleId},
+			new Long[]{ firstScheduleId },
 			new String[]{} // 개인 예약이라 참여자 없음
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_설정(firstSchedule, firstScheduleId, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
+		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 		스케줄_인원_제한_설정(firstSchedule, 6, 0);
 		예약자_패널티_설정(false);
 		QrCode_생성();
@@ -163,7 +166,6 @@ class IndividualReservationTest {
 	@Test
 	void 개인_예약_2시간_성공() {
 		// given
-		String name = "홍길동";
 		Long secondSchuduleId = 2L;
 		CreateReservationRequest request = new CreateReservationRequest(
 			new Long[]{firstScheduleId, secondSchuduleId},
@@ -171,9 +173,10 @@ class IndividualReservationTest {
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_설정(firstSchedule, firstScheduleId, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
+		스케줄_리스트_설정(request.scheduleId(), firstSchedule, secondSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 		스케줄_인원_제한_설정(firstSchedule, 6, 0);
-		스케줄_설정(secondSchedule, secondSchuduleId, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
+		스케줄_설정(secondSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 		스케줄_인원_제한_설정(secondSchedule, 6, 0);
 		예약자_패널티_설정(false);
 		QrCode_생성();
@@ -225,7 +228,8 @@ class IndividualReservationTest {
 		);
 
 		시간_고정_셋업(13, 0);
-		스케줄_설정(firstSchedule, firstScheduleId, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 0);
+		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 0);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -265,15 +269,16 @@ class IndividualReservationTest {
 			new String[]{}// 개인 예약이라 참여자 없음
 		);
 
-		given(scheduleRepository.findById(firstScheduleId)).willReturn(Optional.of(firstSchedule));
-		given(firstSchedule.getStatus()).willReturn(ScheduleSlotStatus.RESERVED); // not AVAILABLE
+		시간_고정_셋업(12, 30);
+		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.RESERVED, RoomType.INDIVIDUAL, 13, 0);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
 			reservationService.createIndividualReservation(token, request)
 		);
 
-		assertThat(ex.getMessage()).isEqualTo("존재하지 않거나 사용 불가능한 스케줄입니다.");
+		assertThat(ex.getMessage()).isEqualTo("예약이 불가능합니다.");
 
 		verify(reservationRepository, never()).save(any());
 		verify(qrCodeService, never()).saveQRCode(any(), any(), any(), any());
@@ -309,7 +314,8 @@ class IndividualReservationTest {
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_설정(firstSchedule, firstScheduleId, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 30);
+		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 30);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -350,7 +356,8 @@ class IndividualReservationTest {
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_설정(firstSchedule, firstScheduleId, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
+		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(email);
 		given(memberRepository.findByEmail(Email.of(email))).willReturn(Optional.empty());
@@ -393,10 +400,9 @@ class IndividualReservationTest {
 			new String[]{}
 		);
 
-		String name = "도성현";
-
 		시간_고정_셋업(12, 30);
-		스케줄_설정(firstSchedule, firstScheduleId, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
+		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 		예약자_패널티_설정(true);
 
 		// when & then
@@ -441,25 +447,14 @@ class IndividualReservationTest {
 		String name = "도성현";
 
 		시간_고정_셋업(12, 30);
-		스케줄_설정(firstSchedule, firstScheduleId, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
-		// 회원 정보 찾기
-		given(tokenService.extractEmailFromAccessToken(token)).willReturn(email);
-		given(memberRepository.findByEmail(Email.of(email))).willReturn(Optional.empty());
-
-		// 패널티 여부 확인
-		Member member = Member.builder()
-			.email(Email.of(email))
-			.name(name)
-			.isPenalty(false)
-			.build();
-
-		given(memberRepository.findByEmail(Email.of(email))).willReturn(Optional.of(member));
+		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
+		예약자_패널티_설정(false);
 
 		Reservation duplicatedReservation = mock(Reservation.class);
 		given(duplicatedReservation.getStatus()).willReturn(ReservationStatus.RESERVED); // 진행 중인 예약
 		given(reservationRepository.findLatestReservationByUserEmail(email))
 			.willReturn(Optional.of(duplicatedReservation));
-
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -476,14 +471,17 @@ class IndividualReservationTest {
 		given(clock.getZone()).willReturn(ZoneId.systemDefault());
 	}
 
-	void 스케줄_설정(Schedule schedule, Long scheduleId, ScheduleSlotStatus scheduleSlotStatus, RoomType roomType, int hour, int minute) {
+	void 스케줄_리스트_설정(Long[] ids, Schedule... schedules) {
+		given(scheduleRepository.findAllByIdIn(Arrays.stream(ids).toList()))
+			.willReturn(List.of(schedules));
+	}
+
+	void 스케줄_설정(Schedule schedule, ScheduleSlotStatus scheduleSlotStatus, RoomType roomType, int hour, int minute) {
 		given(schedule.getScheduleDate()).willReturn(LocalDate.of(2025, 3, 22));
 		given(schedule.getStartTime()).willReturn(LocalTime.of(hour, minute));
-		given(schedule.isAvailable()).willReturn(true);
-		given(schedule.isCurrentResLessThanCapacity()).willReturn(true);
-		given(schedule.getStatus()).willReturn(scheduleSlotStatus);
+		given(schedule.isAvailable()).willReturn(ScheduleSlotStatus.AVAILABLE == scheduleSlotStatus);
+		lenient().when(schedule.isCurrentResLessThanCapacity()).thenReturn(true);
 		lenient().when(schedule.getRoomType()).thenReturn(roomType);
-		given(scheduleRepository.findById(scheduleId)).willReturn(Optional.of(schedule));
 	}
 
 	void 스케줄_인원_제한_설정(Schedule schedule, int capacity, int curResCnt) {
