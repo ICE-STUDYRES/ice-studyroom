@@ -18,11 +18,4 @@ public record CreateReservationRequest(
 			throw new BusinessException(StatusCode.BAD_REQUEST, "예약은 1~2시간만 가능합니다.");
 		}
 	}
-
-	public boolean isConsecutiveReservation() {
-		return scheduleId.length == 2;
-	}
-
-	public void validateScheduleIds() {
-	}
 }
