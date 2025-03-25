@@ -460,7 +460,7 @@ public class ReservationService {
 	}
 
 	private void validateSchedulesAvailable(List<Schedule> schedules) {
-		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime now = LocalDateTime.now(clock);
 
 		if (schedules.stream().anyMatch(schedule -> {
 			LocalDateTime scheduleStartDateTime = LocalDateTime.of(schedule.getScheduleDate(), schedule.getStartTime());
@@ -482,7 +482,7 @@ public class ReservationService {
 		}
 	}
 
-	private void sendReservationSuccessEmail(RoomType type, String reserverEmail, Set<String> participantsEmail,
+	protected void sendReservationSuccessEmail(RoomType type, String reserverEmail, Set<String> participantsEmail,
 		Schedule schedule) {
 
 		String subject = "[ICE-STUDYRES] 스터디룸 예약이 완료되었습니다.";
