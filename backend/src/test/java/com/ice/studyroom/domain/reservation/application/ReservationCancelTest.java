@@ -18,6 +18,7 @@ import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelRese
 import com.ice.studyroom.global.exception.BusinessException;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -100,6 +101,7 @@ class ReservationCancelTest {
 	 *   - 패널티 없음, 예외 없음
 	 */
 	@Test
+	@DisplayName("입실 1시간 취소 성공")
 	void 예약_1시간_취소_성공() {
 		// given
 		기본_예약_정보_셋업(token, reservationId, userEmail);
@@ -149,6 +151,7 @@ class ReservationCancelTest {
 	 *   - 패널티 없음, 예외 없음
 	 */
 	@Test
+	@DisplayName("예약 2시간 취소 성공")
 	void 예약_2시간_취소_성공() {
 		기본_예약_정보_셋업(token, reservationId, userEmail);
 		시간_고정_셋업(12, 30);
@@ -192,6 +195,7 @@ class ReservationCancelTest {
 	 *   - 시스템이 사용자 권한을 정확히 체크하고, 타인의 예약 변경을 방지함을 보장
 	 */
 	@Test
+	@DisplayName("본인 예약이 아닐 경우 예외")
 	void 본인_예약이_아닐_경우_예외() {
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn("wrong@example.com");
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
@@ -236,6 +240,7 @@ class ReservationCancelTest {
 	 *   - 실제 서비스에서도 해당 시간 조건이 정확히 반영됨을 확인 가능
 	 */
 	@Test
+	@DisplayName("입실까지 1시간보다 적게 남았으면 패널티 부여")
 	void 입실까지_1시간보다_적게_남았으면_패널티_부여() {
 		기본_예약_정보_셋업(token, reservationId, userEmail);
 		시간_고정_셋업(12, 30);
@@ -285,6 +290,7 @@ class ReservationCancelTest {
 	 *   - 실제 서비스에서도 해당 시간 조건이 정확히 반영됨을 확인 가능
 	 */
 	@Test
+	@DisplayName("경계값 테스트 입실까지 정확히 60분 남았을 때 취소하면 패널티 부여")
 	void 경계값_테스트_입실까지_정확히_60분_남았을_때_취소하면_패널티_부여() {
 		기본_예약_정보_셋업(token, reservationId, userEmail);
 		시간_고정_셋업(12, 0);
@@ -329,6 +335,7 @@ class ReservationCancelTest {
 	 *   - 내부 로직 (상태 변경, 패널티, 스케줄 등)은 전혀 실행되지 않음
 	 */
 	@Test
+	@DisplayName("예약이 존재하지 않을 경우 예외")
 	void 예약이_존재하지_않을_경우_예외() {
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.empty());
 
@@ -370,6 +377,7 @@ class ReservationCancelTest {
 	 *   - 비즈니스 정책이 정확하게 적용되며, 시스템 안정성 확보
 	 */
 	@Test
+	@DisplayName("입실 시간 이후 취소는 불가능 하다는 예외 발생")
 	void 입실_시간_이후_취소는_불가능_하다는_예외_발생() {
 		시간_고정_셋업(13, 30);
 		기본_예약_정보_셋업(token, reservationId, userEmail);

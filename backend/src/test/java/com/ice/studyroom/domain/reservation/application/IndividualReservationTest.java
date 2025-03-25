@@ -108,8 +108,8 @@ class IndividualReservationTest {
 	 *   - 스케줄 정보가 저장되며, QR 코드 생성 및 저장됨
 	 *   - 예외 없이 정상적으로 개인 예약 생성 완료
 	 */
-	@DisplayName("정상적으로 스케줄을 1시간 예약 성공")
 	@Test
+	@DisplayName("정상적으로 스케줄을 1시간 예약 성공")
 	void 개인_예약_1시간_성공() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
@@ -162,8 +162,8 @@ class IndividualReservationTest {
 	 *   - "Success" 반환
 	 *   - 예약 성공 및 관련 데이터 저장 완료
 	 */
-	@DisplayName("정상적으로 스케줄을 2시간 예약 성공")
 	@Test
+	@DisplayName("정상적으로 스케줄을 2시간 예약 성공")
 	void 개인_예약_2시간_성공() {
 		// given
 		Long secondSchuduleId = 2L;
@@ -260,8 +260,8 @@ class IndividualReservationTest {
 	 * ✅ 기대 결과:
 	 *   - 예외 발생 및 저장 로직 미호출
 	 */
-	@DisplayName("사용 불가능한 스케줄로 예약 시도는 예외 발생")
 	@Test
+	@DisplayName("사용 불가능한 스케줄로 예약 시도는 예외 발생")
 	void 사용_불가능한_스케줄로_예약_시도는_예외_발생() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
@@ -304,8 +304,8 @@ class IndividualReservationTest {
 	 * ✅ 기대 결과:
 	 *   - 예외 발생 ("해당 방은 단체예약 전용입니다.")
 	 */
-	@DisplayName("단체전용방 예약 시도는 예외 발생")
 	@Test
+	@DisplayName("단체전용방 예약 시도는 예외 발생")
 	void 단체전용방_예약_시도는_예외_발생() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
@@ -346,8 +346,8 @@ class IndividualReservationTest {
 	 * ✅ 기대 결과:
 	 *   - 예외 메시지: "예약자 이메일이 존재하지 않습니다: ... "
 	 */
-	@DisplayName("존재하지 않는 회원의 예약 요청은 예외 발생")
 	@Test
+	@DisplayName("존재하지 않는 회원의 예약 요청은 예외 발생")
 	void 존재하지_않는_회원의_예약_요청은_예외_발생() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
@@ -391,8 +391,8 @@ class IndividualReservationTest {
 	 * ✅ 기대 결과:
 	 *   - 예외 발생 및 저장 미수행
 	 */
-	@DisplayName("패널티를 받은 회원의 예약 요청은 예외 발생")
 	@Test
+	@DisplayName("패널티를 받은 회원의 예약 요청은 예외 발생")
 	void 패널티를_받은_회원의_예약_요청은_예외_발생() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
@@ -435,8 +435,8 @@ class IndividualReservationTest {
 	 * ✅ 기대 결과:
 	 *   - 예외 발생 및 중복 예약 방지
 	 */
-	@DisplayName("예약이 중복된다면 에러 발생")
 	@Test
+	@DisplayName("예약이 중복된다면 에러 발생")
 	void 예약이_중복된다면_에러_발생() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
