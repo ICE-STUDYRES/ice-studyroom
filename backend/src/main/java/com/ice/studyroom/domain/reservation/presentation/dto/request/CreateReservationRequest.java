@@ -7,10 +7,7 @@ import com.ice.studyroom.global.type.StatusCode;
 
 public record CreateReservationRequest(
 	Long[] scheduleId,
-	String[] participantEmail,
-	String roomNumber,
-	LocalTime startTime,
-	LocalTime endTime
+	String[] participantEmail
 ) {
 	public CreateReservationRequest {
 		// 생성자 내부에서 기본 유효성 검사 수행

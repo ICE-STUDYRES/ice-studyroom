@@ -82,10 +82,7 @@ class IndividualReservationTest {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
 			new Long[]{firstScheduleId},
-			new String[]{}, // 개인 예약이라 참여자 없음
-			"305-1",        // 예시 방 번호
-			LocalTime.of(12, 0),
-			LocalTime.of(13, 0)
+			new String[]{} // 개인 예약이라 참여자 없음
 		);
 
 		시간_고정_셋업(12, 30);
@@ -115,10 +112,7 @@ class IndividualReservationTest {
 		Long secondSchuduleId = 2L;
 		CreateReservationRequest request = new CreateReservationRequest(
 			new Long[]{firstScheduleId, secondSchuduleId},
-			new String[]{}, // 개인 예약이라 참여자 없음
-			"305-1",        // 예시 방 번호
-			LocalTime.of(12, 0),
-			LocalTime.of(13, 0)
+			new String[]{} // 개인 예약이라 참여자 없음
 		);
 
 		시간_고정_셋업(12, 30);
@@ -147,10 +141,7 @@ class IndividualReservationTest {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
 			new Long[]{ firstScheduleId },
-			new String[]{}, // 개인 예약이라 참여자 없음
-			"305-1",        // 예시 방 번호
-			LocalTime.of(12, 0),
-			LocalTime.of(13, 0)
+			new String[]{}// 개인 예약이라 참여자 없음
 		);
 
 		given(scheduleRepository.findById(firstScheduleId)).willReturn(Optional.of(firstSchedule));
@@ -173,10 +164,7 @@ class IndividualReservationTest {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
 			new Long[]{firstScheduleId},
-			new String[]{},
-			"305-1",
-			LocalTime.of(12, 0),
-			LocalTime.of(13, 0)
+			new String[]{}
 		);
 
 		시간_고정_셋업(12, 30);
@@ -197,10 +185,7 @@ class IndividualReservationTest {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
 			new Long[]{firstScheduleId},
-			new String[]{},
-			"305-1",
-			LocalTime.of(12, 0),
-			LocalTime.of(13, 0)
+			new String[]{}
 		);
 
 		시간_고정_셋업(12, 30);
@@ -224,10 +209,7 @@ class IndividualReservationTest {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
 			new Long[]{firstScheduleId},
-			new String[]{}, // 개인 예약이라 참여자 없음
-			"305-1",        // 예시 방 번호
-			LocalTime.of(12, 0),
-			LocalTime.of(13, 0)
+			new String[]{}
 		);
 
 		String name = "도성현";
@@ -251,10 +233,7 @@ class IndividualReservationTest {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
 			new Long[]{firstScheduleId},
-			new String[]{}, // 개인 예약이라 참여자 없음
-			"305-1",        // 예시 방 번호
-			LocalTime.of(12, 0),
-			LocalTime.of(13, 0)
+			new String[]{}
 		);
 
 		String name = "도성현";
