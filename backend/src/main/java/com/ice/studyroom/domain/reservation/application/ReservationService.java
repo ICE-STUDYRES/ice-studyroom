@@ -82,7 +82,7 @@ public class ReservationService {
 
 			if (!reservationParticipantsMap.containsKey(key)) {
 
-				Schedule schedule = scheduleRepository.findById(reservation.getFirstScheduleId())
+				Schedule schedule = scheduleRepository.findById(reservation.getFirstSchedule().getId())
 					.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
 
 				if (schedule.getRoomType() == RoomType.GROUP) {
@@ -337,7 +337,7 @@ public class ReservationService {
 
 		LocalDateTime now = LocalDateTime.now(clock);
 
-		Schedule firstSchedule = scheduleRepository.findById(reservation.getFirstScheduleId())
+		Schedule firstSchedule = scheduleRepository.findById(reservation.getFirstSchedule().getId())
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
 
 		LocalDateTime startTime = LocalDateTime.of(now.toLocalDate(), firstSchedule.getStartTime());
@@ -360,7 +360,7 @@ public class ReservationService {
 
 		firstSchedule.cancel();
 
-		Optional.ofNullable(reservation.getSecondScheduleId())
+		Optional.ofNullable(reservation.getSecondSchedule().getId())
 			.flatMap(scheduleRepository::findById)
 			.ifPresent(Schedule::cancel);
 
@@ -388,8 +388,8 @@ public class ReservationService {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "연장은 퇴실 시간 10분 전부터 가능합니다.");
 		}
 
-		Long lastScheduleId = reservation.getSecondScheduleId() != null ?
-			reservation.getSecondScheduleId() : reservation.getFirstScheduleId();
+		Long lastScheduleId = reservation.getSecondSchedule() != null ?
+			reservation.getSecondSchedule().getId() : reservation.getFirstSchedule().getId();
 
 		//예약의 마지막 스케줄 ID를 통해 다음 스케줄을 찾는다.
 		Schedule nextSchedule = scheduleRepository.findById(lastScheduleId + 1)
@@ -405,7 +405,7 @@ public class ReservationService {
 
 		if (nextSchedule.getRoomType() == RoomType.GROUP) {
 			// 그룹 예약 이기에 같은 시간대의 예약 레코드를 모두 가져온다(참여자 검증 필요). memeber 1차 캐시되며 이 값을 사용할 예정
-			List<Reservation> reservations = reservationRepository.findByFirstScheduleId(reservation.getFirstScheduleId());
+			List<Reservation> reservations = reservationRepository.findByFirstSchedule_Id(reservation.getFirstSchedule().getId());
 
 			// 패널티를 부여받고 있는 참여자가 존재할 경우 예약 연장 진행 불가
 			for (Reservation res : reservations) {
@@ -423,16 +423,16 @@ public class ReservationService {
 			}
 
 			for (Reservation res : reservations) {
-				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
-			}
+				res.extendReservation(nextSchedule, nextSchedule.getEndTime());
 
+			}
 			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			nextSchedule.setCurrentRes(reservations.size());
 		} else {
 			if(!reservation.isEntered()){
 				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 연장은 입실 후 가능합니다.");
 			}
-			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
+			reservation.extendReservation(nextSchedule, nextSchedule.getEndTime());
 			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + 1);
 			if (!nextSchedule.isCurrentResLessThanCapacity()){
 				nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);

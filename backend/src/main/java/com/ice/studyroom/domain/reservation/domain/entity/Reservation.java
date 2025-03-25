@@ -9,6 +9,7 @@ import java.util.List;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
+import com.ice.studyroom.global.entity.BaseTimeEntity;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 
@@ -28,51 +29,53 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 
 @Entity
 @Table(name = "reservation")
 @Getter
-@Setter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Builder
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
-public class Reservation {
+public class Reservation extends BaseTimeEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
 	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "member_id")
+	@JoinColumn(name = "member_id", nullable = false)
 	private Member member;
 
-	@Column(name = "first_schedule_id")
-	private Long firstScheduleId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "first_schedule_id", nullable = false)
+	private Schedule firstSchedule;
 
-	@Column(name = "second_schedule_id")
-	private Long secondScheduleId;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "second_schedule_id")
+	private Schedule secondSchedule;
 
-	@Column(nullable = false)
+	@Column(name = "user_email", nullable = false)
 	private String userEmail;
 
-	@Column(nullable = false)
+	@Column(name = "user_name", nullable = false)
 	private String userName;
 
-	@Column(nullable = false)
+	@Column(name = "schedule_date", nullable = false)
 	private LocalDate scheduleDate;
 
-	@Column(nullable = false)
+	@Column(name = "room_number", nullable = false, length = 20)
 	private String roomNumber;
 
-	@Column(nullable = false)
+	@Column(name = "start_time", nullable = false)
 	private LocalTime startTime;
 
-	@Column(nullable = false)
+	@Column(name = "end_time", nullable = false)
 	private LocalTime endTime;
 
+	@Column(name = "enter_time")
 	private LocalDateTime enterTime;
 
+	@Column(name = "exit_time")
 	private LocalDateTime exitTime;
 
 	@Enumerated(EnumType.STRING)
@@ -82,14 +85,6 @@ public class Reservation {
 
 	@Column(name = "is_holder", nullable = false)
 	private boolean isHolder;
-
-	@Column(nullable = false, updatable = false)
-	@Builder.Default
-	private LocalDateTime createdAt = LocalDateTime.now();
-
-	@Column(nullable = false)
-	@Builder.Default
-	private LocalDateTime updatedAt = LocalDateTime.now();
 
 	public boolean isEntered() {
 		return status == ReservationStatus.ENTRANCE;
@@ -120,17 +115,15 @@ public class Reservation {
 
 	public void markStatus(ReservationStatus status) {
 		this.status = status;
-		this.updatedAt = LocalDateTime.now();
 		if(status != ReservationStatus.CANCELLED && status != ReservationStatus.NO_SHOW
 			&& status != ReservationStatus.COMPLETED) {
 			this.enterTime = LocalDateTime.now();
 		}
 	}
 
-	public void extendReservation(Long secondScheduleId, LocalTime endTime) {
-		this.secondScheduleId = secondScheduleId;
+	public void extendReservation(Schedule secondSchedule, LocalTime endTime) {
+		this.secondSchedule = secondSchedule;
 		this.endTime = endTime;
-		this.updatedAt = LocalDateTime.now();
 	}
 
 	public static Reservation from(List<Schedule> schedules, String email, String userName, boolean isReservationHolder, Member member) {
@@ -146,8 +139,8 @@ public class Reservation {
 		}
 
 		return Reservation.builder()
-			.firstScheduleId(firstSchedule.getId())
-			.secondScheduleId(secondSchedule != null ? secondSchedule.getId() : null)
+			.firstSchedule(firstSchedule)
+			.secondSchedule(secondSchedule)
 			.member(member)
 			.userEmail(email)
 			.userName(userName)
