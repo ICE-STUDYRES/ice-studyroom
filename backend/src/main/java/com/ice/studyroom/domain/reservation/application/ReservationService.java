@@ -400,7 +400,7 @@ public class ReservationService {
 		}
 
 		if (!nextSchedule.isCurrentResLessThanCapacity() || !nextSchedule.isAvailable()) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 예약이 완료된 스터디룸입니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "다음 시간대가 이미 예약이 완료되었거나, 이용이 불가능한 상태입니다.");
 		}
 
 		if (nextSchedule.getRoomType() == RoomType.GROUP) {
@@ -416,7 +416,7 @@ public class ReservationService {
 
 			for (Reservation res : reservations) {
 				//1명이라도 입실하지 않은 경우
-				if (res.isEntered()){
+				if (!res.isEntered()){
 					//지각 입실은 앞서 패널티 체킹으로 연장 불가 처리
 					throw new BusinessException(StatusCode.BAD_REQUEST, "입실 처리 되어있지 않은 유저가 있어 연장이 불가능합니다.");
 				}
@@ -429,6 +429,10 @@ public class ReservationService {
 			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			nextSchedule.setCurrentRes(reservations.size());
 		} else {
+			if(reservation.getMember().isPenalty()){
+				throw new BusinessException(StatusCode.BAD_REQUEST, "패넡티 상태이므로, 연장이 불가능합니다.");
+			}
+
 			if(!reservation.isEntered()){
 				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 연장은 입실 후 가능합니다.");
 			}
