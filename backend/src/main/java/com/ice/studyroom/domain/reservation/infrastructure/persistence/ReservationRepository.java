@@ -20,7 +20,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
 	List<Reservation> findByRoomNumberAndScheduleDateAndStartTime(String roomNumber, LocalDate scheduleDate, LocalTime startTime);
 
-	List<Reservation> findByFirstSchedule_Id(Long firstScheduleId);
+	List<Reservation> findByFirstScheduleId(Long firstScheduleId);
 
 	@Query("SELECT r FROM Reservation r WHERE r.userEmail = :email ORDER BY r.createdAt DESC LIMIT 1")
 	Optional<Reservation> findLatestReservationByUserEmail(@Param("email") String email);

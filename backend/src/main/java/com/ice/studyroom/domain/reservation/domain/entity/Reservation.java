@@ -46,13 +46,11 @@ public class Reservation extends BaseTimeEntity {
 	@JoinColumn(name = "member_id", nullable = false)
 	private Member member;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "first_schedule_id", nullable = false)
-	private Schedule firstSchedule;
+	@Column(name = "first_schedule_id")
+	private Long firstScheduleId;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "second_schedule_id")
-	private Schedule secondSchedule;
+	@Column(name = "second_schedule_id")
+	private Long secondScheduleId;
 
 	@Column(name = "user_email", nullable = false)
 	private String userEmail;
@@ -121,8 +119,8 @@ public class Reservation extends BaseTimeEntity {
 		}
 	}
 
-	public void extendReservation(Schedule secondSchedule, LocalTime endTime) {
-		this.secondSchedule = secondSchedule;
+	public void extendReservation(Long secondScheduleId, LocalTime endTime) {
+		this.secondScheduleId = secondScheduleId;
 		this.endTime = endTime;
 	}
 
@@ -139,8 +137,8 @@ public class Reservation extends BaseTimeEntity {
 		}
 
 		return Reservation.builder()
-			.firstSchedule(firstSchedule)
-			.secondSchedule(secondSchedule)
+			.firstScheduleId(firstSchedule.getId())
+			.secondScheduleId(secondSchedule != null ? secondSchedule.getId() : null)
 			.member(member)
 			.userEmail(email)
 			.userName(userName)
