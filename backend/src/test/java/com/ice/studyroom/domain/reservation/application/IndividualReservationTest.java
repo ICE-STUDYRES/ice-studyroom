@@ -506,9 +506,12 @@ class IndividualReservationTest {
 	void QrCode_생성() {
 		given(reservationRepository.save(any())).willAnswer(invocation -> {
 			Reservation reservation = invocation.getArgument(0);
+
+			//setter 삭제로 인한 리플렉션으로 강제 세팅
 			Field idField = Reservation.class.getDeclaredField("id");
 			idField.setAccessible(true);
 			idField.set(reservation, 123L);
+
 			return reservation;
 		});
 
