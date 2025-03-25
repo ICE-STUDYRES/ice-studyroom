@@ -191,6 +191,52 @@ class IndividualReservationTest {
 	}
 
 	/**
+	 * 📌 테스트명: 예약_시작시간_직전에_예약_시도_예외_발생
+	 *
+	 * ✅ 목적:
+	 *   - 사용자가 예약 시작 시간과 **정확히 같은 시간**에 예약을 시도할 경우,
+	 *     예약이 거부되는지 검증한다. (경계값 테스트)
+	 *
+	 * 🧪 시나리오 설명:
+	 *   1. 예약할 스케줄: 13:00 시작
+	 *   2. 현재 시간: 13:00 (== 시작 시간)
+	 *   3. 스케줄 상태: AVAILABLE, INDIVIDUAL, 수용 가능
+	 *   4. 회원: 존재하고 패널티 없음
+	 *   5. 중복 예약 없음
+	 *   6. 예약 시도 시, validateSchedulesAvailable()에서 시간 조건에 걸려 예외 발생
+	 *
+	 * 📌 관련 비즈니스 규칙:
+	 *   - 스케줄 시작 시간이 현재 시간보다 **이후**여야 예약 가능
+	 *
+	 * 🧩 검증 포인트:
+	 *   - 예외 메시지가 "예약이 불가능합니다."인지 확인
+	 *   - reservationRepository, scheduleRepository, qrCodeService는 호출되지 않아야 함
+	 *
+	 * ✅ 기대 결과:
+	 *   - 예약이 생성되지 않으며 예외가 발생
+	 */
+	@Test
+	@DisplayName("스케줄 시작 시간과 동일한 시간에 예약 시도 시 예외 발생")
+	void 예약_시작시간_직전에_예약_시도_예외_발생() {
+		// given
+		CreateReservationRequest request = new CreateReservationRequest(
+			new Long[]{ firstScheduleId },
+			new String[]{}
+		);
+
+		시간_고정_셋업(13, 0);
+		스케줄_설정(firstSchedule, firstScheduleId, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 0);
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.createIndividualReservation(token, request)
+		);
+
+		assertThat(ex.getMessage()).isEqualTo("예약이 불가능합니다.");
+		verify(reservationRepository, never()).save(any());
+	}
+
+	/**
 	 * 📌 테스트명: 사용_불가능한_스케줄로_예약_시도는_예외_발생
 	 *
 	 * ✅ 목적:
