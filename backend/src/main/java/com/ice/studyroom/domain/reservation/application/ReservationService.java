@@ -165,7 +165,13 @@ public class ReservationService {
 	@Transactional
 	public String createIndividualReservation(String authorizationHeader, CreateReservationRequest request) {
 		// 예약 가능 여부 확인
-		List<Schedule> schedules = findSchedules(request.scheduleId());
+		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
+		List<Schedule> schedules = scheduleRepository.findAllByIdIn(idList);
+
+		if (schedules.size() != idList.size()) {
+			throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
+		}
+
 		validateSchedulesAvailable(schedules);
 		RoomType roomType = schedules.get(0).getRoomType();
 		if(roomType == RoomType.GROUP) throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다.");
@@ -188,7 +194,9 @@ public class ReservationService {
 		// 예약 객체 생성 및 저장
 		String userName = reserver.getName();
 		String userEmail = reserver.getEmail().getValue();
+
 		Reservation reservation = Reservation.from(schedules, userEmail, userName, true, reserver);
+
 		reservationRepository.save(reservation);
 
 		// QR 코드 생성 및 저장
@@ -202,7 +210,7 @@ public class ReservationService {
 			}
 
 			schedule.setCurrentRes(schedule.getCurrentRes() + 1); // 개인예약은 현재사용인원에서 +1 진행
-			if (schedule.getCurrentRes() == schedule.getCapacity()) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
+			if (schedule.getCurrentRes().equals(schedule.getCapacity())) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
 				schedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			}
 		}
@@ -460,13 +468,13 @@ public class ReservationService {
 	}
 
 	private void validateSchedulesAvailable(List<Schedule> schedules) {
-		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime now = LocalDateTime.now(clock);
 
 		if (schedules.stream().anyMatch(schedule -> {
 			LocalDateTime scheduleStartDateTime = LocalDateTime.of(schedule.getScheduleDate(), schedule.getStartTime());
 			return !schedule.isAvailable() ||
 				!schedule.isCurrentResLessThanCapacity() ||
-				scheduleStartDateTime.isBefore(now); // 현재 시간보다 이전이면 예외 발생
+				!scheduleStartDateTime.isAfter(now); // 현재 시간보다 이전이면 예외 발생
 		})) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다.");
 		}
@@ -482,7 +490,7 @@ public class ReservationService {
 		}
 	}
 
-	private void sendReservationSuccessEmail(RoomType type, String reserverEmail, Set<String> participantsEmail,
+	protected void sendReservationSuccessEmail(RoomType type, String reserverEmail, Set<String> participantsEmail,
 		Schedule schedule) {
 
 		String subject = "[ICE-STUDYRES] 스터디룸 예약이 완료되었습니다.";

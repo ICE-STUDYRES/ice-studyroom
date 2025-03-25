@@ -51,7 +51,6 @@ export const roomBookingManager = () => {
     return false;
   };
 
-
   // 시간 클릭 처리
   const handleTimeClick = (time) => {
     if (!canSelectTime(time)) return;
@@ -84,9 +83,6 @@ export const roomBookingManager = () => {
     const requestData = {
       scheduleId: scheduleIds,
       participantEmail: participantEmails,
-      roomNumber: selectedRoom,
-      startTime: selectedTimes[0].split("~")[0],
-      endTime: selectedTimes[selectedTimes.length - 1].split("~")[1],
     };
 
     const apiEndpoint = bookedSlots[roomId]?.roomType === "INDIVIDUAL" ? "/reservations/individual" : "/reservations/group";
