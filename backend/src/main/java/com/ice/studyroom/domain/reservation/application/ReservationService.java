@@ -392,19 +392,19 @@ public class ReservationService {
 			reservation.getSecondScheduleId() : reservation.getFirstScheduleId();
 
 		//예약의 마지막 스케줄 ID를 통해 다음 스케줄을 찾는다.
-		Schedule nextSchedule = scheduleRepository.findById(lastScheduleId + 1)
-			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요."));
+		Schedule nextSchedule = scheduleRepository.findById(lastScheduleId + 1).orElseThrow(
+			() -> new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요."));
 
-		if (!nextSchedule.getRoomNumber().equals(reservation.getRoomNumber())){
-			throw new BusinessException(StatusCode.BAD_REQUEST, "스터디룸 이용 가능 시간을 확인해주세요.");
+		if(!nextSchedule.getRoomNumber().equals(reservation.getRoomNumber())) {
+			throw new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요.");
 		}
 
 		if (!nextSchedule.isCurrentResLessThanCapacity() || !nextSchedule.isAvailable()) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 예약이 완료된 스터디룸입니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "다음 시간대가 이미 예약이 완료되었거나, 이용이 불가능한 상태입니다.");
 		}
 
 		if (nextSchedule.getRoomType() == RoomType.GROUP) {
-			// 그룹 예약 이기에 같은 시간대의 예약 레코드를 모두 가져온다(참여자 검증 필요). memeber 1차 캐시되며 이 값을 사용할 예정
+			// 그룹 예약 이기에 같은 시간대의 예약 레코드를 모두 가져온다(참여자 검증 필요). member를 통해 검증 예정
 			List<Reservation> reservations = reservationRepository.findByFirstScheduleId(reservation.getFirstScheduleId());
 
 			// 패널티를 부여받고 있는 참여자가 존재할 경우 예약 연장 진행 불가
@@ -416,7 +416,7 @@ public class ReservationService {
 
 			for (Reservation res : reservations) {
 				//1명이라도 입실하지 않은 경우
-				if (res.isEntered()){
+				if (!res.isEntered()){
 					//지각 입실은 앞서 패널티 체킹으로 연장 불가 처리
 					throw new BusinessException(StatusCode.BAD_REQUEST, "입실 처리 되어있지 않은 유저가 있어 연장이 불가능합니다.");
 				}
@@ -429,9 +429,14 @@ public class ReservationService {
 			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			nextSchedule.setCurrentRes(reservations.size());
 		} else {
+			if(reservation.getMember().isPenalty()){
+				throw new BusinessException(StatusCode.FORBIDDEN, "패넡티 상태이므로, 연장이 불가능합니다.");
+			}
+
 			if(!reservation.isEntered()){
 				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 연장은 입실 후 가능합니다.");
 			}
+
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 			nextSchedule.setCurrentRes(nextSchedule.getCurrentRes() + 1);
 			if (!nextSchedule.isCurrentResLessThanCapacity()){
