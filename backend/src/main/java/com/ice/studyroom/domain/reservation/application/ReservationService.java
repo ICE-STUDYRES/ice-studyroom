@@ -169,14 +169,14 @@ public class ReservationService {
 		validateSchedulesAvailable(schedules);
 		RoomType roomType = schedules.get(0).getRoomType();
 		if(roomType == RoomType.GROUP) throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다.");
-
+		System.out.println("룸 타입 검증");
 		// JWT에서 예약자 이메일 추출
 		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// 예약자 확인
 		Member reserver = memberRepository.findByEmail(Email.of(reserverEmail))
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"예약자 이메일이 존재하지 않습니다: " + reserverEmail));
-
+		System.out.println("멤버 검증");
 		// 패널티 상태 확인 (예약 불가)
 		if (reserver.isPenalty()) {
 			throw new BusinessException(StatusCode.FORBIDDEN, "사용정지 상태입니다.");
@@ -184,11 +184,15 @@ public class ReservationService {
 
 		// 예약 중복 방지
 		checkDuplicateReservation(reserverEmail);
+		System.out.println("예약 중복 검증");
 
 		// 예약 객체 생성 및 저장
 		String userName = reserver.getName();
 		String userEmail = reserver.getEmail().getValue();
+		System.out.println("firstSchedule: " + schedules);
+
 		Reservation reservation = Reservation.from(schedules, userEmail, userName, true, reserver);
+		System.out.println("스케줄 저장되나요?");
 		reservationRepository.save(reservation);
 
 		// QR 코드 생성 및 저장
@@ -202,7 +206,7 @@ public class ReservationService {
 			}
 
 			schedule.setCurrentRes(schedule.getCurrentRes() + 1); // 개인예약은 현재사용인원에서 +1 진행
-			if (schedule.getCurrentRes() == schedule.getCapacity()) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
+			if (schedule.getCurrentRes().equals(schedule.getCapacity())) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
 				schedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			}
 		}
@@ -466,7 +470,7 @@ public class ReservationService {
 			LocalDateTime scheduleStartDateTime = LocalDateTime.of(schedule.getScheduleDate(), schedule.getStartTime());
 			return !schedule.isAvailable() ||
 				!schedule.isCurrentResLessThanCapacity() ||
-				scheduleStartDateTime.isBefore(now); // 현재 시간보다 이전이면 예외 발생
+				!scheduleStartDateTime.isAfter(now); // 현재 시간보다 이전이면 예외 발생
 		})) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다.");
 		}
