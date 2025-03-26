@@ -246,26 +246,26 @@ public class ReservationService {
 		if(roomType == RoomType.INDIVIDUAL) throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 개인예약 전용입니다.");
 
 		// JWT에서 예약자 이메일 추출
-		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// 예약자(User) 확인 및 user_name 가져오기
-		Member reserver = memberRepository.findByEmail(Email.of(reserverEmail))
-			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reserverEmail));
+		Member reservationOwner = memberRepository.findByEmail(Email.of(reservationOwnerEmail))
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reservationOwnerEmail));
 
-		if(reserver.isPenalty()) {
+		if(reservationOwner.isPenalty()) {
 			throw new BusinessException(StatusCode.FORBIDDEN, "예약자가 패널티 상태입니다. 예약이 불가능합니다.");
 		}
 
 		// 예약 중복 방지
-		checkDuplicateReservation(Email.of(reserverEmail));
+		checkDuplicateReservation(Email.of(reservationOwnerEmail));
 
 		// 중복된 이메일 검사 (예약자 포함)
 		Set<String> uniqueEmails = new HashSet<>();
-		uniqueEmails.add(reserverEmail); // 예약자 이메일 포함
+		uniqueEmails.add(reservationOwnerEmail); // 예약자 이메일 포함
 
 		// 예약자와 참여자의 이메일을 저장 (이름 포함)
 		Map<String, Member> emailToMemberMap = new HashMap<>();
-		emailToMemberMap.put(reserverEmail, reserver);
+		emailToMemberMap.put(reservationOwnerEmail, reservationOwner);
 
 		// 참여자 리스트 추가 (중복 검사 및 user_name 조회)
 		if (!ObjectUtils.isEmpty(request.participantEmail())) {
@@ -313,7 +313,7 @@ public class ReservationService {
 		// 예약 생성 및 저장
 		for (String email : uniqueEmails) {
 			Member member = emailToMemberMap.get(email);
-			boolean isHolder = email.equals(reserverEmail);
+			boolean isHolder = email.equals(reservationOwnerEmail);
 			reservations.add(Reservation.from(schedules, isHolder, member));
 		}
 
@@ -325,7 +325,7 @@ public class ReservationService {
 		}
 
 		scheduleRepository.saveAll(schedules);
-		sendReservationSuccessEmail(roomType, reserverEmail, uniqueEmails, schedules.get(0));
+		sendReservationSuccessEmail(roomType, reservationOwnerEmail, uniqueEmails, schedules.get(0));
 
 		return "Success";
 	}
