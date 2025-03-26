@@ -489,8 +489,8 @@ public class ReservationService {
 		}
 	}
 
-	private void checkDuplicateReservation(Email reserverEmail){
-		Optional<Reservation> recentReservation = reservationRepository.findLatestReservationByMemberEmail(reserverEmail);
+	private void checkDuplicateReservation(Email reservationOwnerEmail){
+		Optional<Reservation> recentReservation = reservationRepository.findLatestReservationByMemberEmail(reservationOwnerEmail);
 		if (recentReservation.isPresent()) {
 			ReservationStatus recentStatus = recentReservation.get().getStatus();
 			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
