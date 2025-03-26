@@ -145,11 +145,10 @@ public class ReservationService {
 
 	@Transactional
 	public QrEntranceResponse qrEntrance(QrEntranceRequest request) {
-		// 이미지를 저장.
-		String qrCode = request.qrCode();
+		// 클라이언트로부터 전달된 토큰 저장
+		String token = request.qrToken();
 
 		// 토큰으로 예약 ID 조회
-		String token = qrCodeUtil.decodeQRCodeImage(qrCode);
 		Long reservationId = qrCodeService.getReservationIdByToken(token);
 		if (reservationId == null) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "만료되었거나 유효하지 않은 QR 코드입니다.");
