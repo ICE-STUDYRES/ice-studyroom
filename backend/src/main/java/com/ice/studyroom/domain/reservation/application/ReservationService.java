@@ -63,10 +63,8 @@ public class ReservationService {
 	private final MemberDomainService memberDomainService;
 	private final EmailService emailService;
 
-	// 테스트 코드 작성을 위해 필요한 clock 속성
 	private final Clock clock;
 
-	//todo : N+1 문제 해결
 	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
@@ -111,7 +109,7 @@ public class ReservationService {
 
 	public Optional<GetMostRecentReservationResponse> getMyMostRecentReservation(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		return reservationRepository.findLatestReservationByUserEmail(email)
+		return reservationRepository.findLatestReservationByMemberEmail(Email.of(email))
 			.map(GetMostRecentReservationResponse::from);
 	}
 
@@ -189,7 +187,7 @@ public class ReservationService {
 		}
 
 		// 예약 중복 방지
-		checkDuplicateReservation(reserverEmail);
+		checkDuplicateReservation(Email.of(reserverEmail));
 
 		// 예약 객체 생성 및 저장
 		String userName = reserver.getName();
@@ -243,7 +241,7 @@ public class ReservationService {
 		}
 
 		// 예약 중복 방지
-		checkDuplicateReservation(reserverEmail);
+		checkDuplicateReservation(Email.of(reserverEmail));
 
 		// 중복된 이메일 검사 (예약자 포함)
 		Set<String> uniqueEmails = new HashSet<>();
@@ -268,7 +266,7 @@ public class ReservationService {
 				}
 
 				//참여자 최근 예약 상태 확인
-				Optional<Reservation> recentReservationOpt = reservationRepository.findLatestReservationByUserEmail(email);
+				Optional<Reservation> recentReservationOpt = reservationRepository.findLatestReservationByMemberEmail(Email.of(email));
 				if(recentReservationOpt.isPresent()) {
 					ReservationStatus recentStatus = recentReservationOpt.get().getStatus();
 					if(recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
@@ -307,9 +305,10 @@ public class ReservationService {
 
 		// QR 코드 생성 (예약 ID + 이메일 조합)
 		for (Reservation reservation : reservations) {
-			String qrCodeBase64 = qrCodeUtil.generateQRCode(reservation.getUserEmail(), reservation.getId().toString());
-			qrCodeService.saveQRCode(reservation.getUserEmail(), reservation.getId(), request.scheduleId().toString(), qrCodeBase64);
-			qrCodeMap.put(reservation.getUserEmail(), qrCodeBase64);
+			String userEmail = reservation.getMember().getEmail().toString();
+			String qrCodeBase64 = qrCodeUtil.generateQRCode(userEmail, reservation.getId().toString());
+			qrCodeService.saveQRCode(userEmail, reservation.getId(), request.scheduleId().toString(), qrCodeBase64);
+			qrCodeMap.put(userEmail, qrCodeBase64);
 		}
 
 		for (Schedule schedule : schedules) {
@@ -484,8 +483,8 @@ public class ReservationService {
 		}
 	}
 
-	private void checkDuplicateReservation(String reserverEmail){
-		Optional<Reservation> recentReservation = reservationRepository.findLatestReservationByUserEmail(reserverEmail);
+	private void checkDuplicateReservation(Email reserverEmail){
+		Optional<Reservation> recentReservation = reservationRepository.findLatestReservationByMemberEmail(reserverEmail);
 		if (recentReservation.isPresent()) {
 			ReservationStatus recentStatus = recentReservation.get().getStatus();
 			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
