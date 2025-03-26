@@ -67,8 +67,8 @@ const StudyRoomManage = () => {
                 room: bookingData.roomNumber || '',
                 date: bookingData.scheduleDate || '',
                 time: `${getFormattedTime(bookingData.startTime)}~${getFormattedTime(bookingData.endTime)}`,
-                userName: holder?.name || bookingData.userName || '',
-                userId: holder?.studentNum || '',
+                userName: holder?.name || bookingData.member.name || '',
+                userId: holder?.studentNum || bookingData.member.studentNum || '',
                 participants: others,
                 endTime: getFormattedTime(bookingData.endTime),
                 extendDeadline: getExtendDeadline(bookingData.endTime),
@@ -325,6 +325,7 @@ const StudyRoomManage = () => {
                   ) : (
                     <div className="flex items-center gap-1">
                       <span className="font-medium text-gray-900">{booking.userName}</span>
+                      <span className="text-sm text-gray-500">({booking.userId})</span>
                     </div>
                   )}
                 </div>
@@ -453,6 +454,7 @@ const StudyRoomManage = () => {
                     ) : (
                       <div className="flex items-center gap-1">
                         <span className="font-medium text-gray-900">{booking.userName}</span>
+                        <span className="text-sm text-gray-500">({booking.userId})</span>
                       </div>
                     )}
                   </div>
