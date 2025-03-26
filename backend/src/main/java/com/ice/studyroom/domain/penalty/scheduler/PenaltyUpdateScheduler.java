@@ -70,7 +70,7 @@ public class PenaltyUpdateScheduler {
 			if (reservation.getStatus() == ReservationStatus.RESERVED
 				&& reservation.checkAttendanceStatus(now) == ReservationStatus.NO_SHOW) {
 				reservation.markStatus(ReservationStatus.NO_SHOW);
-				Member member = memberDomainService.getMemberByEmail(reservation.getUserEmail());
+				Member member = reservation.getMember();
 				penaltyService.assignPenalty(member, reservation.getId(), PenaltyReasonType.NO_SHOW);
 				log.info("해당 유저가 노쇼로 인해 7일 패널티가 부여되었습니다. 이름 : {} 학번 : {}", member.getName(), member.getStudentNum());
 			}

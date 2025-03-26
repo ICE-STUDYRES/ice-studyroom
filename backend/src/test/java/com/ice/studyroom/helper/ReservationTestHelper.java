@@ -15,8 +15,6 @@ public class ReservationTestHelper {
 			.id(1L)
 			.firstScheduleId(100L)
 			.secondScheduleId(200L)
-			.userEmail("test@example.com")
-			.userName("테스트 유저")
 			.scheduleDate(LocalDate.now())
 			.roomNumber("A101")
 			.startTime(startTime)

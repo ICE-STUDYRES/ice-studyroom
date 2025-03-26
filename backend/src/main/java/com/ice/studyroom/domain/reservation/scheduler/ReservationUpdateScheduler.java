@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.reservation.scheduler;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -22,12 +23,13 @@ import lombok.extern.slf4j.Slf4j;
 public class ReservationUpdateScheduler {
 
 	private final ReservationRepository reservationRepository;
+	private final Clock clock;
 
 	@Transactional
 	@Scheduled(cron = "0 1 10-23 * * 1-5")
 	public void updateCompleteReservations(){
 
-		LocalDateTime now = LocalDateTime.now();
+		LocalDateTime now = LocalDateTime.now(clock);
 		LocalDate todayDate = now.toLocalDate();
 		LocalTime todayTime = now.toLocalTime();
 
@@ -37,8 +39,7 @@ public class ReservationUpdateScheduler {
 			if(reservation.getStatus() == ReservationStatus.ENTRANCE || reservation.getEndTime().isBefore(todayTime)){
 				reservation.markStatus(ReservationStatus.COMPLETED);
 			}
-			log.info("예약이 종료되었습니다.: {} (ID: {}) at {}", reservation.getUserEmail(), reservation.getId(), LocalDateTime.now());
+			log.info("예약이 종료되었습니다.: {} (ID: {}) at {}", reservation.getMember().getName(), reservation.getId(), LocalDateTime.now());
 		});
 	}
-
 }

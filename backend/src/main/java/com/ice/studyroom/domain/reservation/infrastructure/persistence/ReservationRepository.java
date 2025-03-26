@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
@@ -22,6 +23,10 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
 	List<Reservation> findByFirstScheduleId(Long firstScheduleId);
 
-	@Query("SELECT r FROM Reservation r WHERE r.userEmail = :email ORDER BY r.createdAt DESC LIMIT 1")
-	Optional<Reservation> findLatestReservationByUserEmail(@Param("email") String email);
+	// @Query("SELECT r FROM Reservation r WHERE r.userEmail = :email ORDER BY r.createdAt DESC LIMIT 1")
+	// Optional<Reservation> findLatestReservationByUserEmail(@Param("email") String email);
+	//
+
+	@Query("SELECT r FROM Reservation r WHERE r.member.email = :email ORDER BY r.createdAt DESC LIMIT 1")
+	Optional<Reservation> findLatestReservationByMemberEmail(@Param("email") Email email);
 }
