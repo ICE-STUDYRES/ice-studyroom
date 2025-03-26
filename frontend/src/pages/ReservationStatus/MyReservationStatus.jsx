@@ -197,11 +197,11 @@ const MyReservationStatus = () => {
               <p className="text-sm text-red-500">{qrError}</p>
             ) : qrCode ? (
               <>
-              <QRCodeCanvas 
-                value={qrCode} 
-                size={256} 
-                level={"H"} 
-                includeMargin={true} 
+              <img
+                src={`data:image/png;base64,${qrCode}`}
+                alt="QR 코드"
+                width={256}
+                height={256}
               />
               </>
             ) : (
