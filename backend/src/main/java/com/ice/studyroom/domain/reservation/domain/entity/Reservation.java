@@ -78,6 +78,9 @@ public class Reservation extends BaseTimeEntity {
 	@Column(name = "is_holder", nullable = false)
 	private boolean isHolder;
 
+	@Column(name = "qr_token", length = 32, unique = true)
+	private String qrToken;
+
 	public boolean isEntered() {
 		return status == ReservationStatus.ENTRANCE;
 	}
@@ -105,6 +108,10 @@ public class Reservation extends BaseTimeEntity {
 		}
 	}
 
+	public void assignQrToken(String generatedToken) {
+		this.qrToken = generatedToken;
+	}
+
 	public void markStatus(ReservationStatus status) {
 		this.status = status;
 		if(status != ReservationStatus.CANCELLED && status != ReservationStatus.NO_SHOW
@@ -118,7 +125,7 @@ public class Reservation extends BaseTimeEntity {
 		this.endTime = endTime;
 	}
 
-	public static Reservation from(List<Schedule> schedules, String email, String userName, boolean isReservationHolder, Member member) {
+	public static Reservation from(List<Schedule> schedules, boolean isReservationHolder, Member member) {
 		if (schedules == null || schedules.isEmpty()) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "Schedules List가 비어있습니다.");
 		}
