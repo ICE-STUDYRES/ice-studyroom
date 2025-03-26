@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+import java.lang.reflect.Field;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -505,7 +506,12 @@ class IndividualReservationTest {
 	void QrCode_생성() {
 		given(reservationRepository.save(any())).willAnswer(invocation -> {
 			Reservation reservation = invocation.getArgument(0);
-			reservation.setId(123L);
+
+			//setter 삭제로 인한 리플렉션으로 강제 세팅
+			Field idField = Reservation.class.getDeclaredField("id");
+			idField.setAccessible(true);
+			idField.set(reservation, 123L);
+
 			return reservation;
 		});
 

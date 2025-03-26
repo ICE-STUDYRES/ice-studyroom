@@ -47,9 +47,6 @@ class PenaltyServiceTest {
 			.password("password1")
 			.studentNum("12345")
 			.roles(List.of("ROLE_USER"))
-			.createdAt(LocalDateTime.now())
-			.updatedAt(LocalDateTime.now())
-			.isPenalty(false)
 			.build();
 
 		memberRepository.save(member);

@@ -1,14 +1,11 @@
 package com.ice.studyroom.domain.admin.domain.entity;
 
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
-import com.ice.studyroom.global.exception.BusinessException;
-import com.ice.studyroom.global.type.StatusCode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,19 +32,22 @@ public class RoomTimeSlot extends BaseTimeEntity {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "room_number", nullable = false)
+	@Column(name = "room_number", nullable = false, length = 20)
 	private String roomNumber;
 
 	@Enumerated(EnumType.STRING)
-	@Column(nullable = false)
-	private RoomType roomType;
+	@Column(name = "room_type", nullable = false)
+	@Builder.Default
+	private RoomType roomType = RoomType.GROUP;
 
 	@Column(name = "capacity", nullable = false)
-	private int capacity;
+	@Builder.Default
+	private int capacity = 4;
 
 	//최소예약인원
 	@Column(name = "min_res", nullable = false)
-	private int minRes;
+	@Builder.Default
+	private int minRes = 2;
 
 	@Column(name = "start_time", nullable = false)
 	private LocalTime startTime;
@@ -64,42 +64,8 @@ public class RoomTimeSlot extends BaseTimeEntity {
 	@Column(nullable = false)
 	private DayOfWeekStatus dayOfWeek;
 
-	@Column(name = "created_at")
-	private LocalDateTime createdAt;
-
-	@Column(name = "updated_at")
-	private LocalDateTime updatedAt;
-
-	@Builder
-	public RoomTimeSlot(String roomNumber, RoomType roomType, int capacity, int minRes, LocalTime startTime,
-		LocalTime endTime, DayOfWeekStatus dayOfWeek) {
-		this.roomNumber = roomNumber;
-		this.roomType = roomType;
-		this.capacity = capacity;
-		this.minRes = minRes;
-		this.startTime = startTime;
-		this.endTime = endTime;
-		this.dayOfWeek = dayOfWeek;
-		this.createdAt = LocalDateTime.now();
-		this.updatedAt = LocalDateTime.now();
-		validateTimeSlot();
-	}
-
 	public void updateStatus(ScheduleSlotStatus newStatus) {
 		this.status = newStatus;
 	}
 
-	public void changeRoomType(RoomType type) {
-		this.roomType = type;
-	}
-
-	private void validateTimeSlot() {
-		if (startTime.isAfter(endTime)) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "시작 시간이 종료 시간보다 늦을 수 없습니다.");
-		}
-
-		if (startTime.isBefore(LocalTime.of(9, 0)) || endTime.isAfter(LocalTime.of(22, 0))) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "운영 시간(09:00-22:00) 내에서만 설정 가능합니다.");
-		}
-	}
 }

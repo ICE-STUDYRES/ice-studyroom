@@ -16,7 +16,6 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.Index;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
@@ -28,12 +27,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(
-	name = "penalty",
-	indexes = {
-		@Index(name = "idx_penalty_member_penalty_end", columnList = "member_id, penalty_end")
-	}
-)
+@Table(name = "penalty")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -45,7 +39,7 @@ public class Penalty extends BaseTimeEntity {
 	private Long id;
 
 	@OneToOne(fetch = FetchType.LAZY)
-	@JoinColumn(name = "reservation_id", unique = true)
+	@JoinColumn(name = "reservation_id", nullable = false, unique = true)
 	private Reservation reservation;
 
 	@ManyToOne(fetch = FetchType.LAZY)
@@ -65,7 +59,7 @@ public class Penalty extends BaseTimeEntity {
 	private PenaltyStatus status = PenaltyStatus.VALID;
 
 	public boolean isExpired() {
-		if(LocalDateTime.now().isAfter(penaltyEnd)){
+		if (LocalDateTime.now().isAfter(penaltyEnd)) {
 			expirePenalty();
 			return true;
 		}

@@ -42,9 +42,6 @@ class MembershipServiceTest {
 			.password("password")
 			.studentNum("67890")
 			.roles(List.of("ROLE_USER"))
-			.createdAt(LocalDateTime.now())
-			.updatedAt(LocalDateTime.now())
-			.isPenalty(true)
 			.build();
 
 		memberRepository.save(member);
