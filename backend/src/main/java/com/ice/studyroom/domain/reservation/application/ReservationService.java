@@ -238,7 +238,13 @@ public class ReservationService {
 	@Transactional
 	public String createGroupReservation(String authorizationHeader, CreateReservationRequest request) {
 		// 예약 가능 여부 확인
-		List<Schedule> schedules = findSchedules(request.scheduleId());
+		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
+		List<Schedule> schedules = scheduleRepository.findAllByIdIn(idList);
+
+		if (schedules.size() != idList.size()) {
+			throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
+		}
+
 		validateSchedulesAvailable(schedules);
 
 		// 스케줄에서 Type을 저장해야하며, Type에 따른 RES 처리가 필요하다.
@@ -451,14 +457,6 @@ public class ReservationService {
 		}
 
 		return "Success";
-	}
-
-	private List<Schedule> findSchedules(Long[] scheduleIds) {
-		return Arrays.stream(scheduleIds)
-			.map(id -> scheduleRepository.findById(id)
-				.filter(schedule -> schedule.getStatus() == ScheduleSlotStatus.AVAILABLE) // AVAILABLE 상태 체크
-				.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않거나 사용 불가능한 스케줄입니다.")))
-			.collect(Collectors.toList());
 	}
 
 	private void validateConsecutiveSchedules(CreateReservationRequest request) {
