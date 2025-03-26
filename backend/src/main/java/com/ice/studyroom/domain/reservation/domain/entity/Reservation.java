@@ -52,12 +52,6 @@ public class Reservation extends BaseTimeEntity {
 	@Column(name = "second_schedule_id")
 	private Long secondScheduleId;
 
-	@Column(name = "user_email", nullable = false)
-	private String userEmail;
-
-	@Column(name = "user_name", nullable = false)
-	private String userName;
-
 	@Column(name = "schedule_date", nullable = false)
 	private LocalDate scheduleDate;
 
@@ -140,8 +134,6 @@ public class Reservation extends BaseTimeEntity {
 			.firstScheduleId(firstSchedule.getId())
 			.secondScheduleId(secondSchedule != null ? secondSchedule.getId() : null)
 			.member(member)
-			.userEmail(email)
-			.userName(userName)
 			.scheduleDate(firstSchedule.getScheduleDate())
 			.roomNumber(firstSchedule.getRoomNumber())
 			.startTime(firstSchedule.getStartTime())
