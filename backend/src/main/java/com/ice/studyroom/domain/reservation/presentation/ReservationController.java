@@ -77,7 +77,7 @@ public class ReservationController {
 	@ApiResponse(responseCode = "500", description = "QR 코드 조회 실패")
 	@GetMapping("/reservations/my/{resId}")
 	public ResponseEntity<ResponseDto<String>> getMyReservationQrCode(
-		@PathVariable String resId,
+		@PathVariable Long resId,
 		@RequestHeader("Authorization") String authorizationHeader
 	) {
 		return ResponseEntity

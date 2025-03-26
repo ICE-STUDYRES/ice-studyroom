@@ -4,7 +4,6 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
-import java.lang.reflect.Field;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -24,9 +23,7 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
-import com.ice.studyroom.domain.identity.domain.service.QRCodeService;
 import com.ice.studyroom.domain.identity.domain.service.TokenService;
-import com.ice.studyroom.domain.identity.infrastructure.security.QRCodeUtil;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
@@ -59,11 +56,6 @@ class IndividualReservationTest {
 	private Schedule firstSchedule;
 	@Mock
 	private Schedule secondSchedule;
-	@Mock
-	private QRCodeUtil qrCodeUtil;
-	@Mock
-	private QRCodeService qrCodeService;
-
 	private String email;
 	private String token;
 	private Long firstScheduleId;
@@ -123,7 +115,6 @@ class IndividualReservationTest {
 		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 		스케줄_인원_제한_설정(firstSchedule, 6, 0);
 		예약자_패널티_설정(false);
-		QrCode_생성();
 
 		// 이메일 발송 제거
 		doNothing().when(reservationService).sendReservationSuccessEmail(any(), any(), any(), any());
@@ -135,7 +126,6 @@ class IndividualReservationTest {
 		assertEquals("Success", result);
 		verify(scheduleRepository).saveAll(anyList());
 		verify(reservationRepository).save(any(Reservation.class));
-		verify(qrCodeService).saveQRCode(eq(email), eq(123L), eq(request.scheduleId().toString()), eq("fake-qrcode"));
 	}
 
 	/**
@@ -180,7 +170,6 @@ class IndividualReservationTest {
 		스케줄_설정(secondSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 		스케줄_인원_제한_설정(secondSchedule, 6, 0);
 		예약자_패널티_설정(false);
-		QrCode_생성();
 
 		doNothing().when(reservationService).sendReservationSuccessEmail(any(), any(), any(), any());
 
@@ -191,7 +180,6 @@ class IndividualReservationTest {
 		assertEquals("Success", result);
 		verify(scheduleRepository).saveAll(anyList());
 		verify(reservationRepository).save(any(Reservation.class));
-		verify(qrCodeService).saveQRCode(eq(email), eq(123L), eq(request.scheduleId().toString()), eq("fake-qrcode"));
 	}
 
 	/**
@@ -282,7 +270,6 @@ class IndividualReservationTest {
 		assertThat(ex.getMessage()).isEqualTo("예약이 불가능합니다.");
 
 		verify(reservationRepository, never()).save(any());
-		verify(qrCodeService, never()).saveQRCode(any(), any(), any(), any());
 	}
 
 	/**
@@ -501,21 +488,6 @@ class IndividualReservationTest {
 			.build();
 
 		given(memberRepository.findByEmail(Email.of(email))).willReturn(Optional.of(member));
-	}
-
-	void QrCode_생성() {
-		given(reservationRepository.save(any())).willAnswer(invocation -> {
-			Reservation reservation = invocation.getArgument(0);
-
-			//setter 삭제로 인한 리플렉션으로 강제 세팅
-			Field idField = Reservation.class.getDeclaredField("id");
-			idField.setAccessible(true);
-			idField.set(reservation, 123L);
-
-			return reservation;
-		});
-
-		given(qrCodeUtil.generateQRCode(eq(email), anyString())).willReturn("fake-qrcode");
 	}
 }
 
