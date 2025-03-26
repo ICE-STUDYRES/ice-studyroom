@@ -454,7 +454,7 @@ class IndividualReservationTest {
 
 		Reservation duplicatedReservation = mock(Reservation.class);
 		given(duplicatedReservation.getStatus()).willReturn(ReservationStatus.RESERVED); // 진행 중인 예약
-		given(reservationRepository.findLatestReservationByMemberEmail(email))
+		given(reservationRepository.findLatestReservationByMemberEmail(Email.of(email)))
 			.willReturn(Optional.of(duplicatedReservation));
 
 		// when & then

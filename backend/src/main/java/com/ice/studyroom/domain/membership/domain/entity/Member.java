@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 
@@ -54,6 +55,7 @@ public class Member extends BaseTimeEntity {
 		joinColumns = @JoinColumn(name = "user_id")
 	)
 	@Column(name = "role", nullable = false)
+	@JsonIgnore
 	private List<String> roles = new ArrayList<>();
 
 	@Column(name = "is_penalty", nullable = false)
