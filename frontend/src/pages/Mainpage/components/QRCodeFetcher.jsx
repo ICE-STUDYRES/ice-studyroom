@@ -43,14 +43,14 @@ const useQRCodeFetcher = (resId) => {
         throw new Error(`서버 오류: ${response.status}`);
       }
 
-      const data = await response.text();
-      setQrCode(data);
+      const json = await response.json();
+      setQrCode(json.data);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [resId, qrCode]);
+  }, [resId, qrCode])
 
   const sendQRCodeToServer = useCallback(async () => {
     if (!qrCode) {
@@ -71,7 +71,7 @@ const useQRCodeFetcher = (resId) => {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ qrCode: qrBase64 }),
+        body: JSON.stringify({ qrCode }),
       });
 
       if (response.status === 401) {
