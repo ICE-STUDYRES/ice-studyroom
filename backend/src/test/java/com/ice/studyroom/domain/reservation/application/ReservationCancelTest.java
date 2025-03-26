@@ -246,7 +246,6 @@ class ReservationCancelTest {
 		시간_고정_셋업(12, 30);
 		스케줄_정보_셋업(100L, LocalTime.of(13, 0), 101L, true);
 
-		given(memberRepository.getMemberByEmail(any())).willReturn(mock(Member.class));
 		willDoNothing().given(penaltyService).assignPenalty(any(), eq(reservationId), eq(PenaltyReasonType.CANCEL));
 		willDoNothing().given(reservation).markStatus(any());
 
@@ -296,7 +295,6 @@ class ReservationCancelTest {
 		시간_고정_셋업(12, 0);
 		스케줄_정보_셋업(100L, LocalTime.of(13, 0), 101L, true);
 
-		given(memberRepository.getMemberByEmail(any())).willReturn(mock(Member.class));
 		willDoNothing().given(penaltyService).assignPenalty(any(), eq(reservationId), eq(PenaltyReasonType.CANCEL));
 		willDoNothing().given(reservation).markStatus(any());
 
