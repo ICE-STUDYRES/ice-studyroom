@@ -296,8 +296,8 @@ public class ReservationService {
 
 		// 최소 예약 인원(minRes) 검사 (예약자 + 참여자 수 체크)
 		int totalParticipants = uniqueEmails.size(); // 예약자 + 참여자 수
-		int minRes = schedules.get(0).getMinRes(); // 모든 schedule의 minRes는 동일하다고 가정
-		int capacity = schedules.get(0).getCapacity(); // 모든 연속된 schedule의 capacity는 동일하다고 가정
+		int minRes = schedules.get(0).getMinRes(); // 모든 Group 전용 schedule의 min_res는 2로 동일
+		int capacity = schedules.get(0).getCapacity(); // 같은 방의 schedule은 capacity는 동일
 		if (totalParticipants < minRes) {
 			throw new BusinessException(StatusCode.BAD_REQUEST,
 				"최소 예약 인원 조건을 만족하지 않습니다. (필요 인원: " + minRes + ", 현재 인원: " + totalParticipants + ")");
@@ -308,7 +308,6 @@ public class ReservationService {
 
 		// 예약 리스트 생성
 		List<Reservation> reservations = new ArrayList<>();
-		Map<String, String> qrCodeMap = new HashMap<>();
 
 		// 예약 생성 및 저장
 		for (String email : uniqueEmails) {
@@ -316,7 +315,6 @@ public class ReservationService {
 			boolean isHolder = email.equals(reservationOwnerEmail);
 			reservations.add(Reservation.from(schedules, isHolder, member));
 		}
-
 		reservationRepository.saveAll(reservations);
 
 		for (Schedule schedule : schedules) {
@@ -324,7 +322,7 @@ public class ReservationService {
 			schedule.updateStatus(ScheduleSlotStatus.RESERVED);
 		}
 
-		scheduleRepository.saveAll(schedules);
+		//전 인원에게 예약 확정 메일 발송
 		sendReservationSuccessEmail(roomType, reservationOwnerEmail, uniqueEmails, schedules.get(0));
 
 		return "Success";
