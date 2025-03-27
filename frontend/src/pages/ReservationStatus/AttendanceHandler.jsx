@@ -39,7 +39,7 @@ const AttendanceHandler = () => {
               Authorization: `Bearer ${accessToken}`,
               "Content-Type": "application/json",
             },
-            body: JSON.stringify({ qrCode: qrData }),
+            body: JSON.stringify({ qrToken: qrData }),
           });
     
           // 401 에러 처리: refreshTokens 실행 후 다시 요청
@@ -53,7 +53,7 @@ const AttendanceHandler = () => {
                 Authorization: `Bearer ${accessToken}`,
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ qrCode: qrData }),
+              body: JSON.stringify({ qrToken: qrData }),
             });
           }
     
