@@ -3,6 +3,7 @@ import axios from "axios";
 import { useTokenHandler } from "./TokenHandler";
 
 const UserContext = createContext(null);
+const UserDispatchContext = createContext(null);
 
 export const UserProvider = ({ children }) => {
     const [userData, setUserData] = useState(null);
@@ -11,7 +12,7 @@ export const UserProvider = ({ children }) => {
     useEffect(() => {
         const fetchUserData = async () => {
             let accessToken = sessionStorage.getItem("accessToken");
-            if (!accessToken) return;
+            if (!accessToken || userData) return;
 
             try {
                 let response = await axios.get("/api/users", {
@@ -32,13 +33,16 @@ export const UserProvider = ({ children }) => {
         };
 
         fetchUserData();
-    }, []);
+    }, [userData]);
 
     return (
         <UserContext.Provider value={userData}>
-            {children}
+            <UserDispatchContext.Provider value={setUserData}>
+                {children}
+            </UserDispatchContext.Provider>
         </UserContext.Provider>
     );
 };
 
 export const useUser = () => useContext(UserContext);
+export const useUserDispatch = () => useContext(UserDispatchContext);
