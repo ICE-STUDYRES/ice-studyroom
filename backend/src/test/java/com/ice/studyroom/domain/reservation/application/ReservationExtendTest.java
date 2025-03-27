@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -115,6 +116,7 @@ public class ReservationExtendTest {
 	 */
 
 	@Test
+	@DisplayName("존재하지 않을 예약일 경우 예외 발생")
 	void 존재하지_않을_예약일_경우_예외() {
 		// given
 		given(reservationRepository.findById(reservationId))
@@ -152,6 +154,7 @@ public class ReservationExtendTest {
 	 *   - 메시지: "해당 예약 정보가 존재하지 않습니다."
 	 */
 	@Test
+	@DisplayName("예약 소유자가 아닌 경우 예외 발생")
 	void 예약_소유자가_아닌_경우_예외() {
 
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
@@ -189,6 +192,7 @@ public class ReservationExtendTest {
 	 *   - 메시지: "연장은 퇴실 시간 10분 전부터 가능합니다."
 	 */
 	@Test
+	@DisplayName("연장 요청이 이른 경우 예외 발생")
 	void 연장_요청이_이른_경우_예외() {
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -230,6 +234,7 @@ public class ReservationExtendTest {
 	 *   - 메시지: "연장 가능한 시간이 지났습니다."
 	 */
 	@Test
+	@DisplayName("연장 요청이 늦은 경우 예외 발생")
 	void 연장_요청이_늦은_경우_예외() {
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -271,6 +276,7 @@ public class ReservationExtendTest {
 	 *   - 메시지: "스터디룸 이용 가능 시간을 확인해주세요."
 	 */
 	@Test
+	@DisplayName("스케줄이 존재하지 않을 경우 예외 발생")
 	void 스케줄이_존재하지_않을_경우_예외() {
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -315,6 +321,7 @@ public class ReservationExtendTest {
 	 */
 
 	@Test
+	@DisplayName("다음 스케줄의 방 번호가 다를 경우 예외 발생")
 	void 다음_스케줄의_방번호가_다를_경우_예외() {
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -362,6 +369,7 @@ public class ReservationExtendTest {
 	 *   - 메시지: "다음 시간대가 이미 예약이 완료되었거나, 이용이 불가능한 상태입니다."
 	 */
 	@Test
+	@DisplayName("다음 스케줄이 예약 불가 상태(UNAVAILABLE or 이미 예약됨)일 경우 예외 발생")
 	void 다음_스케줄_예약_불가_예외1(){
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -404,6 +412,7 @@ public class ReservationExtendTest {
 	 *   - 메시지: "다음 시간대가 이미 예약이 완료되었거나, 이용이 불가능한 상태입니다."
 	 */
 	@Test
+	@DisplayName("다음 스케줄의 정원이 이미 가득 찬 경우 예외 발생")
 	void 다음_스케줄_예약_불가_예외2(){
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -447,6 +456,7 @@ public class ReservationExtendTest {
 	 *   - 메시지: "패널티가 있는 멤버로 인해 연장이 불가능합니다."
 	 */
 	@Test
+	@DisplayName("그룹 예약의 참여자 중 패널티 상태인 멤버가 1명이라도 존재할 경우 예외 발생")
 	void 그룹_예약일_때_패널티_멤버가_있을_경우_예외() {
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -500,6 +510,7 @@ public class ReservationExtendTest {
 	 *   - 메시지: "입실 처리 되어있지 않은 유저가 있어 연장이 불가능합니다."
 	 */
 	@Test
+	@DisplayName("그룹 예약에서 모든 참여자가 입실 처리되어 있지 않으면 예외 발생")
 	void 그룹_예약일_때_입실하지_않은_멤버가_있을_경우_예외() {
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -555,6 +566,7 @@ public class ReservationExtendTest {
 	 *   - 메시지: "패넡티 상태이므로, 연장이 불가능합니다."
 	 */
 	@Test
+	@DisplayName("개인 예약 사용자가 패널티 상태일 경우 예외 발생")
 	void 개인_예약일_때_패널티_사용자_예외() {
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -601,6 +613,7 @@ public class ReservationExtendTest {
 	 *   - 메시지: "예약 연장은 입실 후 가능합니다."
 	 */
 	@Test
+	@DisplayName("개인 예약 사용자가 입실을 하지 않을 예외 발생")
 	void 개인_예약일_때_입실하지_않은_경우_예외() {
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -649,6 +662,7 @@ public class ReservationExtendTest {
 	 *   - nextSchedule 상태가 RESERVED로 설정됨
 	 */
 	@Test
+	@DisplayName("그룹 예약 연장 성공")
 	void 그룹_예약_연장_성공(){
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
@@ -700,6 +714,7 @@ public class ReservationExtendTest {
 	 *   - 예약 인원이 꽉 차지 않았으면 updateStatus 호출되지 않음
 	 */
 	@Test
+	@DisplayName("개인 예약 연장 성공")
 	void 개인_예약_연장_성공(){
 
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
