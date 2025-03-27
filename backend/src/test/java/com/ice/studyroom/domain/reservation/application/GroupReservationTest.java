@@ -65,6 +65,9 @@ public class GroupReservationTest {
 	private Reservation reservation2;
 
 	@Mock
+	private Reservation reservation3;
+
+	@Mock
 	private List<Reservation> reservations;
 
 	@Mock
@@ -100,6 +103,7 @@ public class GroupReservationTest {
 		// 공통 객체 생성 (Mock 객체만 설정)
 		reservation = mock(Reservation.class);
 		reservation2 = mock(Reservation.class);
+		reservation3 = mock(Reservation.class);
 
 		firstSchedule = mock(Schedule.class);
 		secondSchedule = mock(Schedule.class);
@@ -235,6 +239,115 @@ public class GroupReservationTest {
 		assertThat(ex.getMessage()).isEqualTo("현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다.");
 	}
 
+	@Test
+	@DisplayName("참여자 중 존재하지 않는 이메일이 있을 경우 예외 발생")
+	void 참여자_목록에_존재하지_않는_이메일이_있을_경우_예외_발생(){
+		// given
+		CreateReservationRequest request = new CreateReservationRequest(
+			new Long[]{ firstScheduleId },
+			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
+		);
+
+		시간_고정_셋업(12, 30);
+		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		비패널티_예약자_존재확인();
+		예약자_미중복_예약_확인();
+
+		given(memberRepository.findByEmail(Email.of("member1@hufs.ac.kr"))).willReturn(Optional.of(member1));
+		given(memberRepository.findByEmail(Email.of("member2@hufs.ac.kr"))).willReturn(Optional.empty());
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.createGroupReservation(token, request)
+		);
+
+		assertThat(ex.getMessage()).isEqualTo("참여자 이메일이 존재하지 않습니다: member2@hufs.ac.kr");
+	}
+
+	@Test
+	@DisplayName("참여자 목록에 중복 이메일이 있을 경우 예외 발생")
+	void 참여자_목록에_중복_이메일이_있을_경우_예외_발생(){
+		// given
+		CreateReservationRequest request = new CreateReservationRequest(
+			new Long[]{ firstScheduleId },
+			new String[]{ "member1@hufs.ac.kr", "member1@hufs.ac.kr" } //중복 이메일
+		);
+
+		시간_고정_셋업(12, 30);
+		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		비패널티_예약자_존재확인();
+		예약자_미중복_예약_확인();
+
+		given(memberRepository.findByEmail(Email.of("member1@hufs.ac.kr"))).willReturn(Optional.of(member1));
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.createGroupReservation(token, request)
+		);
+
+		assertThat(ex.getMessage()).isEqualTo("중복된 참여자 이메일이 존재합니다: member1@hufs.ac.kr");
+	}
+
+	@Test
+	@DisplayName("참여자 중 패널티 상태인 경우 예외 발생")
+	void 참여자_중_패널티_상태인_경우_예외_발생(){
+		// given
+		CreateReservationRequest request = new CreateReservationRequest(
+			new Long[]{ firstScheduleId },
+			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
+		);
+
+		시간_고정_셋업(12, 30);
+		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		비패널티_예약자_존재확인();
+		예약자_미중복_예약_확인();
+		예약_인원_명단에_중복이_없음을_확인();
+
+		given(member1.isPenalty()).willReturn(false);
+		given(member2.isPenalty()).willReturn(true);
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.createGroupReservation(token, request)
+		);
+
+		assertThat(ex.getMessage()).isEqualTo("참여자 중 패널티 상태인 사용자가 있습니다. 예약이 불가능합니다. (이메일: member2@hufs.ac.kr)");
+	}
+
+	@Test
+	@DisplayName("참여자 중 현재 예약 상태가 RESERVED 또는 ENTRANCE인 경우(현재 특정 예약이 진행 중) 예외 발생")
+	void 참여자_중_특정_예약이_진행_중인_경우_예외_발생(){
+		// given
+		CreateReservationRequest request = new CreateReservationRequest(
+			new Long[]{ firstScheduleId },
+			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
+		);
+
+		시간_고정_셋업(12, 30);
+		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
+		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		비패널티_예약자_존재확인();
+		예약자_미중복_예약_확인();
+		예약_인원_명단에_중복이_없음을_확인();
+		예약_참여_인원_비패널티_확인();
+
+		given(reservationRepository.findLatestReservationByMemberEmail(Email.of("member1@hufs.ac.kr"))).willReturn(Optional.of(reservation2));
+		given(reservationRepository.findLatestReservationByMemberEmail(Email.of("member2@hufs.ac.kr"))).willReturn(Optional.of(reservation3));
+
+		given(reservation2.getStatus()).willReturn(ReservationStatus.COMPLETED);
+		given(reservation3.getStatus()).willReturn(ReservationStatus.RESERVED);
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.createGroupReservation(token, request)
+		);
+
+		assertThat(ex.getMessage()).isEqualTo("참여자 중 현재 예약이 진행 중인 사용자가 있어 예약이 불가능합니다. (이메일: member2@hufs.ac.kr)");
+	}
+
 	void 시간_고정_셋업(int hour, int minute) {
 		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, hour, minute);
 		given(clock.instant()).willReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
@@ -263,6 +376,29 @@ public class GroupReservationTest {
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(ownerEmail);
 		given(memberRepository.findByEmail(new Email(ownerEmail))).willReturn(Optional.of(reservationOwner));
 		given(reservationOwner.isPenalty()).willReturn(false);
+	}
+
+	void 예약자_미중복_예약_확인(){
+		given(reservationRepository.findLatestReservationByMemberEmail(Email.of(ownerEmail))).willReturn(Optional.of(reservation));
+		given(reservation.getStatus()).willReturn(ReservationStatus.COMPLETED);
+	}
+
+	void 예약_인원_명단에_중복이_없음을_확인(){
+		given(memberRepository.findByEmail(Email.of("member1@hufs.ac.kr"))).willReturn(Optional.of(member1));
+		given(memberRepository.findByEmail(Email.of("member2@hufs.ac.kr"))).willReturn(Optional.of(member2));
+	}
+
+	void 예약_참여_인원_비패널티_확인(){
+		given(member1.isPenalty()).willReturn(false);
+		given(member2.isPenalty()).willReturn(false);
+	}
+
+	void 예약_참여_인원_특정_예약_없음_확인(){
+		given(reservationRepository.findLatestReservationByMemberEmail(Email.of("member1@hufs.ac.kr"))).willReturn(Optional.of(reservation2));
+		given(reservationRepository.findLatestReservationByMemberEmail(Email.of("member2@hufs.ac.kr"))).willReturn(Optional.of(reservation3));
+
+		given(reservation2.getStatus()).willReturn(ReservationStatus.COMPLETED);
+		given(reservation3.getStatus()).willReturn(ReservationStatus.COMPLETED);
 	}
 
 	void 스케줄_인원_제한_설정(Schedule schedule, int capacity, int curResCnt) {
