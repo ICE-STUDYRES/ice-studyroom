@@ -552,10 +552,10 @@ const StudyRoomManage = () => {
           <button 
             onClick={() => {
               if (selectedExtension) {
-                try {
-                  extendReservation();
-                } catch (error) {
-                }
+                extendReservation();
+              }
+              else {
+                addNotification('extension', 'error');
               }
             }}
             className="
