@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useNotification } from '../../Notification/Notification';
 import { useTokenHandler } from "./TokenHandler";
+import { useUserDispatch } from "./UserContext";
 
 export const useMemberHandlers = () => {
     const navigate = useNavigate();
@@ -34,6 +35,7 @@ export const useMemberHandlers = () => {
     const [verificationTimer, setVerificationTimer] = useState(0);
     const [isTimerRunning, setIsTimerRunning] = useState(false);
     const { refreshTokens } = useTokenHandler();
+    const setUserData = useUserDispatch();
 
     const isValidPassword = (password) => {
         const passwordRegex = /^(?=.*[a-z])(?=.*\d)(?=.*[@$!%*?&])[a-z\d@$!%*?&]{8,}$/;
@@ -140,6 +142,11 @@ export const useMemberHandlers = () => {
                 const role = response.data.data.role;
     
                 sessionStorage.setItem('accessToken', accessToken);
+                
+                const userInfoResponse = await axios.get("/api/users", {
+                    headers: { Authorization: `Bearer ${accessToken}` }
+                });
+                setUserData(userInfoResponse.data.data);
     
                 if (role === 'ROLE_USER') {
                     navigate('/');
@@ -147,6 +154,7 @@ export const useMemberHandlers = () => {
             }
         } catch (error) {
             const errorMessage = error.response?.data?.message || '로그인 중 오류가 발생했습니다.';
+            console.log(error);
             setLoginError(errorMessage);
         }
     };
