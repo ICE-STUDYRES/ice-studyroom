@@ -3,7 +3,6 @@ package com.ice.studyroom.domain.reservation.application;
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
-import static org.mockito.Mockito.*;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
@@ -35,7 +35,6 @@ import com.ice.studyroom.domain.reservation.infrastructure.persistence.Reservati
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.global.exception.BusinessException;
-import com.ice.studyroom.global.type.StatusCode;
 
 @ExtendWith(MockitoExtension.class)
 public class GroupReservationTest {
@@ -55,6 +54,7 @@ public class GroupReservationTest {
 	@Mock
 	private Clock clock;
 
+	@Spy
 	@InjectMocks
 	private ReservationService reservationService;
 
@@ -68,13 +68,7 @@ public class GroupReservationTest {
 	private Reservation reservation3;
 
 	@Mock
-	private List<Reservation> reservations;
-
-	@Mock
-	private Schedule firstSchedule;
-
-	@Mock
-	private Schedule secondSchedule;
+	private Schedule schedule;
 
 	@Mock
 	private Member reservationOwner;
@@ -85,18 +79,9 @@ public class GroupReservationTest {
 	@Mock
 	private Member member2;
 
-	@Mock
-	private Email member1Email;
-
-	@Mock
-	private Email member2Email;
-
-	private Long reservationId;
 	private String token;
 	private String ownerEmail;
-	private String notOwnerEmail;
-	private String email;
-	private Long firstScheduleId;
+	private Long scheduleId;
 
 	@BeforeEach
 	void setUp() {
@@ -105,21 +90,16 @@ public class GroupReservationTest {
 		reservation2 = mock(Reservation.class);
 		reservation3 = mock(Reservation.class);
 
-		firstSchedule = mock(Schedule.class);
-		secondSchedule = mock(Schedule.class);
+		schedule = mock(Schedule.class);
 
 		reservationOwner = mock(Member.class);
 		member1 = mock(Member.class);
 		member2 = mock(Member.class);
 
-		reservations = List.of(reservation, reservation2);
-
 		// 공통 값 설정
-		reservationId = 1L;
 		token = "Bearer token";
 		ownerEmail = "owner@hufs.ac.kr";
-		notOwnerEmail = "not-owner@hufs.ac.kr";
-		firstScheduleId = 1L;
+		scheduleId = 1L;
 	}
 
 
@@ -128,13 +108,13 @@ public class GroupReservationTest {
 	void 사용_불가능한_스케줄로_예약_시도는_예외_발생1() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
-			new Long[]{ firstScheduleId },
+			new Long[]{ scheduleId },
 			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.RESERVED, RoomType.GROUP, 13, 0);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.RESERVED, RoomType.GROUP, 13, 0);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -149,13 +129,13 @@ public class GroupReservationTest {
 	void 사용_불가능한_스케줄로_예약_시도는_예외_발생2() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
-			new Long[]{ firstScheduleId },
+			new Long[]{ scheduleId },
 			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
 		);
 
 		시간_고정_셋업(13, 1);
-		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -170,15 +150,15 @@ public class GroupReservationTest {
 	void 개인전용방_예약_시도는_예외_발생() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
-			new Long[]{ firstScheduleId },
+			new Long[]{ scheduleId },
 			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
 
 		//스케줄을 개인방으로 설정
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 0);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 0);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -193,13 +173,13 @@ public class GroupReservationTest {
 	void 패널티를_받은_회원의_예약_요청은_예외_발생() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
-			new Long[]{ firstScheduleId },
+			new Long[]{ scheduleId },
 			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
 		예약자_존재확인();
 
 		//예약자 패널티 설정
@@ -218,13 +198,13 @@ public class GroupReservationTest {
 	void 예약자의_중복_예약_여부_확인_시_예외_발생() {
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
-			new Long[]{ firstScheduleId },
+			new Long[]{ scheduleId },
 			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
 		비패널티_예약자_존재확인();
 
 		given(reservationRepository.findLatestReservationByMemberEmail(Email.of(ownerEmail))).willReturn(Optional.of(reservation));
@@ -244,13 +224,13 @@ public class GroupReservationTest {
 	void 참여자_목록에_존재하지_않는_이메일이_있을_경우_예외_발생(){
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
-			new Long[]{ firstScheduleId },
+			new Long[]{ scheduleId },
 			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
 		비패널티_예약자_존재확인();
 		예약자_미중복_예약_확인();
 
@@ -270,13 +250,13 @@ public class GroupReservationTest {
 	void 참여자_목록에_중복_이메일이_있을_경우_예외_발생(){
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
-			new Long[]{ firstScheduleId },
+			new Long[]{ scheduleId },
 			new String[]{ "member1@hufs.ac.kr", "member1@hufs.ac.kr" } //중복 이메일
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
 		비패널티_예약자_존재확인();
 		예약자_미중복_예약_확인();
 
@@ -295,13 +275,13 @@ public class GroupReservationTest {
 	void 참여자_중_패널티_상태인_경우_예외_발생(){
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
-			new Long[]{ firstScheduleId },
+			new Long[]{ scheduleId },
 			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
 		비패널티_예약자_존재확인();
 		예약자_미중복_예약_확인();
 		예약_인원_명단에_중복이_없음을_확인();
@@ -322,13 +302,13 @@ public class GroupReservationTest {
 	void 참여자_중_특정_예약이_진행_중인_경우_예외_발생(){
 		// given
 		CreateReservationRequest request = new CreateReservationRequest(
-			new Long[]{ firstScheduleId },
+			new Long[]{ scheduleId },
 			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(),firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
 		비패널티_예약자_존재확인();
 		예약자_미중복_예약_확인();
 		예약_인원_명단에_중복이_없음을_확인();
@@ -346,6 +326,102 @@ public class GroupReservationTest {
 		);
 
 		assertThat(ex.getMessage()).isEqualTo("참여자 중 현재 예약이 진행 중인 사용자가 있어 예약이 불가능합니다. (이메일: member2@hufs.ac.kr)");
+	}
+
+	@Test
+	@DisplayName("최소 예약 인원 수(minRes) 미달 시 예외 발생")
+	void 최소_예약_인원_미달_시_예외_발생(){
+		// given
+		CreateReservationRequest request = new CreateReservationRequest(
+			new Long[]{ scheduleId },
+			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
+		);
+
+		시간_고정_셋업(12, 30);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		비패널티_예약자_존재확인();
+		예약자_미중복_예약_확인();
+		예약_인원_명단에_중복이_없음을_확인();
+		예약_참여_인원_비패널티_확인();
+		예약_참여_인원_진행중인_예약_없음_확인();
+
+		given(schedule.getMinRes()).willReturn(4); //현재 예약 인원은 3명
+		given(schedule.getCapacity()).willReturn(5);
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.createGroupReservation(token, request)
+		);
+
+		assertThat(ex.getMessage()).isEqualTo("최소 예약 인원 조건을 만족하지 않습니다. (필요 인원: 4, 현재 인원: 3)");
+	}
+
+	@Test
+	@DisplayName("최대 수용 인원(capacity) 초과 시 예외 발생")
+	void 최대_수용_인원_초과_시_예외_발생(){
+		// given
+		CreateReservationRequest request = new CreateReservationRequest(
+			new Long[]{ scheduleId },
+			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
+		);
+
+		시간_고정_셋업(12, 30);
+		스케줄_리스트_설정(request.scheduleId(),schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		비패널티_예약자_존재확인();
+		예약자_미중복_예약_확인();
+		예약_인원_명단에_중복이_없음을_확인();
+		예약_참여_인원_비패널티_확인();
+		예약_참여_인원_진행중인_예약_없음_확인();
+
+		given(schedule.getMinRes()).willReturn(3); //현재 예약 인원은 3명
+		given(schedule.getCapacity()).willReturn(2); //test를 위해 수용 인원 임시 설정
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			reservationService.createGroupReservation(token, request)
+		);
+
+		assertThat(ex.getMessage()).isEqualTo("방의 최대 수용 인원을 초과했습니다. (최대 수용 인원: 2, 현재 인원: 3)");
+	}
+
+	@Test
+	@DisplayName("그룹 예약 생성 성공 시, 예약 저장 및 상태 업데이트가 정상적으로 수행됨")
+	void 그룹_예약_생성_성공() {
+		// given
+		CreateReservationRequest request = new CreateReservationRequest(
+			new Long[]{ scheduleId },
+			new String[]{ "member1@hufs.ac.kr", "member2@hufs.ac.kr" }
+		);
+
+		시간_고정_셋업(12, 30);
+		스케줄_리스트_설정(request.scheduleId(), schedule);
+		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		비패널티_예약자_존재확인();
+		예약자_미중복_예약_확인();
+		예약_인원_명단에_중복이_없음을_확인();
+		예약_참여_인원_비패널티_확인();
+		예약_참여_인원_진행중인_예약_없음_확인();
+		최소_최대_인원_만족_확인();
+		given(schedule.getRoomNumber()).willReturn("309-1");
+
+		//예약 완료 메일 전송 호출을 추적하지 않음
+		doNothing().when(reservationService)
+			.sendReservationSuccessEmail(any(), any(), any(), any());
+
+		// when
+		String result = reservationService.createGroupReservation(token, request);
+
+		// then
+		assertThat(result).isEqualTo("Success");
+
+		// 예약 저장 확인
+		verify(reservationRepository).saveAll(anyList());
+
+		// 스케줄 상태 변경 확인
+		verify(schedule).updateGroupCurrentRes(3);
+		verify(schedule).updateStatus(ScheduleSlotStatus.RESERVED);
 	}
 
 	void 시간_고정_셋업(int hour, int minute) {
@@ -393,7 +469,7 @@ public class GroupReservationTest {
 		given(member2.isPenalty()).willReturn(false);
 	}
 
-	void 예약_참여_인원_특정_예약_없음_확인(){
+	void 예약_참여_인원_진행중인_예약_없음_확인(){
 		given(reservationRepository.findLatestReservationByMemberEmail(Email.of("member1@hufs.ac.kr"))).willReturn(Optional.of(reservation2));
 		given(reservationRepository.findLatestReservationByMemberEmail(Email.of("member2@hufs.ac.kr"))).willReturn(Optional.of(reservation3));
 
@@ -401,21 +477,8 @@ public class GroupReservationTest {
 		given(reservation3.getStatus()).willReturn(ReservationStatus.COMPLETED);
 	}
 
-	void 스케줄_인원_제한_설정(Schedule schedule, int capacity, int curResCnt) {
-		lenient().when(schedule.getRoomNumber()).thenReturn("305-1");
-		given(schedule.getCapacity()).willReturn(capacity);
-		given(schedule.getCurrentRes()).willReturn(curResCnt);
-	}
-
-	void 예약자_패널티_설정(boolean isPenalty) {
-		given(tokenService.extractEmailFromAccessToken(token)).willReturn(email);
-
-		Member member = Member.builder()
-			.email(Email.of(email))
-			.name("홍길동")
-			.isPenalty(isPenalty)
-			.build();
-
-		given(memberRepository.findByEmail(Email.of(email))).willReturn(Optional.of(member));
+	void 최소_최대_인원_만족_확인() {
+		given(schedule.getMinRes()).willReturn(3);
+		given(schedule.getCapacity()).willReturn(4);
 	}
 }

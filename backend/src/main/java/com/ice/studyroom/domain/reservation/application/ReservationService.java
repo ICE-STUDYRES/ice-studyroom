@@ -499,33 +499,33 @@ public class ReservationService {
 		}
 	}
 
-	protected void sendReservationSuccessEmail(RoomType type, String reserverEmail, Set<String> participantsEmail,
+	protected void sendReservationSuccessEmail(RoomType type, String reservationOwnerEmail, Set<String> participantsEmail,
 		Schedule schedule) {
 
 		String subject = "[ICE-STUDYRES] 스터디룸 예약이 완료되었습니다.";
 		List<Email> participantsEmailList = participantsEmail.stream().map(Email::new).toList();
-		String body = buildReservationSuccessEmailBody(type, schedule, reserverEmail, participantsEmailList);
+		String body = buildReservationSuccessEmailBody(type, schedule, reservationOwnerEmail, participantsEmailList);
 
-		emailService.sendEmail(new EmailRequest(reserverEmail, subject, body));
+		emailService.sendEmail(new EmailRequest(reservationOwnerEmail, subject, body));
 
 		if(type == RoomType.GROUP){
 			for (String uniqueEmail : participantsEmail) {
-				if(!uniqueEmail.equals(reserverEmail)){
+				if(!uniqueEmail.equals(reservationOwnerEmail)){
 					emailService.sendEmail(new EmailRequest(uniqueEmail, subject, body));
 				}
 			}
 		}
 	}
 
-	private String buildReservationSuccessEmailBody(RoomType type, Schedule schedule, String reserverEmail, List<Email> participantsEmail) {
+	private String buildReservationSuccessEmailBody(RoomType type, Schedule schedule, String reservationOwnerEmail, List<Email> participantsEmail) {
 		String participantsSection = "";
-		Member reserver = memberDomainService.getMemberByEmail(reserverEmail);
+		Member reservationOwner = memberDomainService.getMemberByEmail(reservationOwnerEmail);
 		List<Member> participantsMember = memberDomainService.getMembersByEmail(participantsEmail);
 		if (type == RoomType.GROUP) {
 			participantsSection = "<h3>참여자 명단</h3><ul>";
 
 			for (Member member : participantsMember) {
-				if(!member.getEmail().getValue().equals(reserverEmail)){
+				if(!member.getEmail().getValue().equals(reservationOwnerEmail)){
 					participantsSection += "<li>" + member.getName() + "(" + member.getStudentNum() + ")" + "</li>";
 				}
 			}
@@ -553,8 +553,8 @@ public class ReservationService {
 				"</ul>" +
 				"<p>감사합니다.</p>" +
 				"</body></html>",
-			reserver.getName(),
-			reserver.getStudentNum(),
+			reservationOwner.getName(),
+			reservationOwner.getStudentNum(),
 			schedule.getRoomNumber(),
 			LocalDate.now(),
 			schedule.getStartTime(),
