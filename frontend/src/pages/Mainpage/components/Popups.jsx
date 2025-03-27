@@ -18,7 +18,7 @@ export const NoticePopup = ({ showNotice, handleCloseNotice, showPenaltyPopup, s
                   className={`text-lg font-bold pb-2 ${showPenaltyPopup ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-500'}`}
                   onClick={() => setShowPenaltyPopup(true)}
                 >
-                  패널티 안내
+                  페널티 안내
                 </button>
               </div>
               <button onClick={handleCloseNotice} className="p-1 hover:bg-gray-100 rounded-full">
@@ -29,7 +29,7 @@ export const NoticePopup = ({ showNotice, handleCloseNotice, showPenaltyPopup, s
             {/* Notice Content */}
             {!showPenaltyPopup && (
               <div className="space-y-3 text-sm">
-                <p>1. 예약 시간 1시간 안에 입실하지 않을 경우 예약은 자동 취소되며, 노쇼 패널티가 부과됩니다.</p>
+                <p>1. 예약 시간 1시간 안에 입실하지 않을 경우 예약은 자동 취소되며, 노쇼 페널티가 부과됩니다.</p>
                 <p>2. 예약 인원 미준수 시 해당 학기 동안 예약이 제한됩니다.</p>
                 <p>3. 스터디룸 내 음식물 반입 및 섭취는 엄격히 금지됩니다.</p>
                 <p>4. 사용 후 정리정돈 및 쓰레기 분리수거는 필수입니다.</p>
@@ -40,14 +40,14 @@ export const NoticePopup = ({ showNotice, handleCloseNotice, showPenaltyPopup, s
             {/* Penalty Content */}
             {showPenaltyPopup && (
               <div className="space-y-3 text-sm">
-                <p style={{ fontWeight: "bold"}}>예약 시간 미준수 시 패널티가 부여되며, 해당 기간 동안 예약 기능이 제한됩니다.</p>
-                <p style={{ fontWeight: "bold"}}>패널티 기간은 패널티를 받은 다음 날부터 시작되며, 주말(토, 일)을 제외한 영업일 기준으로 계산됩니다.</p>
+                <p style={{ fontWeight: "bold"}}>예약 시간 미준수 시 페널티가 부여되며, 해당 기간 동안 예약 기능이 제한됩니다.</p>
+                <p style={{ fontWeight: "bold"}}>페널티 기간은 페널티를 받은 다음 날부터 시작되며, 주말(토, 일)을 제외한 영업일 기준으로 계산됩니다.</p>
                   <hr/>
-                <p>1. No Show 시 5일간 패널티 부여 (주말 제외, 영업일 기준)</p>
-                <p>2. 예약 입장 시간 30분 초과 입장 시 지각 처리 및 3일간 패널티 부여 (주말 제외, 영업일 기준)</p>
-                <p>3. 예약 입장 시간 1시간 전 예약 취소 시 2일간 패널티 부여 (주말 제외, 영업일 기준)</p>
-                <p>4. 패널티는 관리자 승인 후 조정 가능합니다.</p>
-                <p>5. 패널티가 부여되면 예약 기능이 제한됩니다.</p>
+                <p>1. No Show 시 5일간 페널티 부여 (주말 제외, 영업일 기준)</p>
+                <p>2. 예약 입장 시간 30분 초과 입장 시 지각 처리 및 3일간 페널티 부여 (주말 제외, 영업일 기준)</p>
+                <p>3. 예약 입장 시간 1시간 전 예약 취소 시 2일간 페널티 부여 (주말 제외, 영업일 기준)</p>
+                <p>4. 페널티는 관리자 승인 후 조정 가능합니다.</p>
+                <p>5. 페널티가 부여되면 예약 기능이 제한됩니다.</p>
               </div>
             )}
           </div>

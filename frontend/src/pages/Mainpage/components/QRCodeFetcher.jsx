@@ -2,14 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { useTokenHandler } from "../handlers/TokenHandler";
 
 const useQRCodeFetcher = (resId) => {
-  const [qrCode, setQrCode] = useState(null);
+  const [qrToken, setQrCode] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [qrStatus, setQrStatus] = useState(null);
   const { refreshTokens } = useTokenHandler();
 
   const fetchQRCode = useCallback(async (retry = true) => {
-    if (!resId || qrCode) return;
+    if (!resId || qrToken) return;
 
     setLoading(true);
     try {
@@ -43,17 +43,17 @@ const useQRCodeFetcher = (resId) => {
         throw new Error(`서버 오류: ${response.status}`);
       }
 
-      const data = await response.text();
-      setQrCode(data);
+      const json = await response.json();
+      setQrCode(json.data);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [resId, qrCode]);
+  }, [resId, qrToken])
 
   const sendQRCodeToServer = useCallback(async () => {
-    if (!qrCode) {
+    if (!qrToken) {
       return;
     }
 
@@ -71,7 +71,7 @@ const useQRCodeFetcher = (resId) => {
           Authorization: `Bearer ${accessToken}`,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ qrCode: qrBase64 }),
+        body: JSON.stringify({ qrToken }),
       });
 
       if (response.status === 401) {
@@ -100,15 +100,15 @@ const useQRCodeFetcher = (resId) => {
     } finally {
       setLoading(false);
     }
-  }, [qrCode, refreshTokens]);
+  }, [qrToken, refreshTokens]);
 
   useEffect(() => {
-    if (resId && !qrCode) {
+    if (resId && !qrToken) {
       fetchQRCode();
     }
-  }, [resId, qrCode]);
+  }, [resId, qrToken]);
 
-  return { qrCode, qrStatus, error, loading, sendQRCodeToServer };
+  return { qrToken, qrStatus, error, loading, sendQRCodeToServer };
 };
 
 export default useQRCodeFetcher;
