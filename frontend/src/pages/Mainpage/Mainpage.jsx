@@ -161,7 +161,7 @@ const MainPage = () => {
                     
                     {/* 패널티 섹션 */}
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-700 mb-2">패널티 현황</h4>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">페널티 현황</h4>
                       <table className="w-full text-left text-sm text-gray-600">
                         <tbody>
                           <tr>
@@ -192,7 +192,7 @@ const MainPage = () => {
             </>
           ) : (
             <div className="flex flex-col items-center py-8 gap-4">
-              <div className="text-sm text-gray-500">로그인 후 최근 예약 및 패널티 현황을 확인할 수 있습니다</div>
+              <div className="text-sm text-gray-500">로그인 후 최근 예약 및 페널티 현황을 확인할 수 있습니다</div>
               <button 
                 onClick={handleLoginClick}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm hover:bg-blue-600 transition-colors"
