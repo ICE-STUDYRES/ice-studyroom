@@ -485,7 +485,7 @@ public class ReservationService {
 				!schedule.isCurrentResLessThanCapacity() ||
 				!scheduleStartDateTime.isAfter(now); // 현재 시간보다 이전이면 예외 발생
 		})) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다. 스케줄이 유효하지 않거나 이미 예약이 완료되었습니다.");
 		}
 	}
 
