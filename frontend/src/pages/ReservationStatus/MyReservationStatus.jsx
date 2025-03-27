@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { ChevronLeft, LogOut, Clock, QrCode, X, Scan } from "lucide-react";
+import { ChevronLeft, LogOut, Clock, QrCode, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMainpageHandlers } from '../Mainpage/handlers/MainpageHandlers';
-import { QRCodeCanvas } from 'qrcode.react';
 import useQRCodeFetcher from '../Mainpage/components/QRCodeFetcher';
 import { useTokenHandler } from "../Mainpage/handlers/TokenHandler";
 import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
@@ -21,7 +20,7 @@ const MyReservationStatus = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const resId = myReservations.length > 0 ? myReservations[0].id : null;
-  const { qrCode, error: qrError, loading: qrLoading} = useQRCodeFetcher(resId);
+  const { qrToken, error: qrError, loading: qrLoading} = useQRCodeFetcher(resId);
 
   const {
     showQRModal,
@@ -195,10 +194,10 @@ const MyReservationStatus = () => {
               <p className="text-sm text-gray-500">QR 코드 로딩 중...</p>
             ) : qrError ? (
               <p className="text-sm text-red-500">{qrError}</p>
-            ) : qrCode ? (
+            ) : qrToken ? (
               <>
               <img
-                src={`data:image/png;base64,${qrCode}`}
+                src={`data:image/png;base64,${qrToken}`}
                 alt="QR 코드"
                 width={256}
                 height={256}
