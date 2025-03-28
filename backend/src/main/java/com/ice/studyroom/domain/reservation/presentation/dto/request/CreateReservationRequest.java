@@ -1,7 +1,5 @@
 package com.ice.studyroom.domain.reservation.presentation.dto.request;
 
-import java.time.LocalTime;
-
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 

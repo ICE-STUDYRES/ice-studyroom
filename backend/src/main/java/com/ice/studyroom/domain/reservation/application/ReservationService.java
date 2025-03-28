@@ -237,7 +237,13 @@ public class ReservationService {
 	@Transactional
 	public String createGroupReservation(String authorizationHeader, CreateReservationRequest request) {
 		// 예약 가능 여부 확인
-		List<Schedule> schedules = findSchedules(request.scheduleId());
+		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
+		List<Schedule> schedules = scheduleRepository.findAllByIdIn(idList);
+
+		if (schedules.size() != idList.size()) {
+			throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
+		}
+
 		validateSchedulesAvailable(schedules);
 
 		// 스케줄에서 Type을 저장해야하며, Type에 따른 RES 처리가 필요하다.
@@ -245,26 +251,26 @@ public class ReservationService {
 		if(roomType == RoomType.INDIVIDUAL) throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 개인예약 전용입니다.");
 
 		// JWT에서 예약자 이메일 추출
-		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// 예약자(User) 확인 및 user_name 가져오기
-		Member reserver = memberRepository.findByEmail(Email.of(reserverEmail))
-			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reserverEmail));
+		Member reservationOwner = memberRepository.findByEmail(Email.of(reservationOwnerEmail))
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reservationOwnerEmail));
 
-		if(reserver.isPenalty()) {
+		if(reservationOwner.isPenalty()) {
 			throw new BusinessException(StatusCode.FORBIDDEN, "예약자가 패널티 상태입니다. 예약이 불가능합니다.");
 		}
 
 		// 예약 중복 방지
-		checkDuplicateReservation(Email.of(reserverEmail));
+		checkDuplicateReservation(Email.of(reservationOwnerEmail));
 
 		// 중복된 이메일 검사 (예약자 포함)
 		Set<String> uniqueEmails = new HashSet<>();
-		uniqueEmails.add(reserverEmail); // 예약자 이메일 포함
+		uniqueEmails.add(reservationOwnerEmail); // 예약자 이메일 포함
 
 		// 예약자와 참여자의 이메일을 저장 (이름 포함)
 		Map<String, Member> emailToMemberMap = new HashMap<>();
-		emailToMemberMap.put(reserverEmail, reserver);
+		emailToMemberMap.put(reservationOwnerEmail, reservationOwner);
 
 		// 참여자 리스트 추가 (중복 검사 및 user_name 조회)
 		if (!ObjectUtils.isEmpty(request.participantEmail())) {
@@ -295,8 +301,8 @@ public class ReservationService {
 
 		// 최소 예약 인원(minRes) 검사 (예약자 + 참여자 수 체크)
 		int totalParticipants = uniqueEmails.size(); // 예약자 + 참여자 수
-		int minRes = schedules.get(0).getMinRes(); // 모든 schedule의 minRes는 동일하다고 가정
-		int capacity = schedules.get(0).getCapacity(); // 모든 연속된 schedule의 capacity는 동일하다고 가정
+		int minRes = schedules.get(0).getMinRes(); // 모든 Group 전용 schedule의 min_res는 2로 동일
+		int capacity = schedules.get(0).getCapacity(); // 같은 방의 schedule은 capacity는 동일
 		if (totalParticipants < minRes) {
 			throw new BusinessException(StatusCode.BAD_REQUEST,
 				"최소 예약 인원 조건을 만족하지 않습니다. (필요 인원: " + minRes + ", 현재 인원: " + totalParticipants + ")");
@@ -307,15 +313,13 @@ public class ReservationService {
 
 		// 예약 리스트 생성
 		List<Reservation> reservations = new ArrayList<>();
-		Map<String, String> qrCodeMap = new HashMap<>();
 
 		// 예약 생성 및 저장
 		for (String email : uniqueEmails) {
 			Member member = emailToMemberMap.get(email);
-			boolean isHolder = email.equals(reserverEmail);
+			boolean isHolder = email.equals(reservationOwnerEmail);
 			reservations.add(Reservation.from(schedules, isHolder, member));
 		}
-
 		reservationRepository.saveAll(reservations);
 
 		for (Schedule schedule : schedules) {
@@ -323,8 +327,8 @@ public class ReservationService {
 			schedule.updateStatus(ScheduleSlotStatus.RESERVED);
 		}
 
-		scheduleRepository.saveAll(schedules);
-		sendReservationSuccessEmail(roomType, reserverEmail, uniqueEmails, schedules.get(0));
+		//전 인원에게 예약 확정 메일 발송
+		sendReservationSuccessEmail(roomType, reservationOwnerEmail, uniqueEmails, schedules.get(0));
 
 		return "Success";
 	}
@@ -454,14 +458,6 @@ public class ReservationService {
 		return "Success";
 	}
 
-	private List<Schedule> findSchedules(Long[] scheduleIds) {
-		return Arrays.stream(scheduleIds)
-			.map(id -> scheduleRepository.findById(id)
-				.filter(schedule -> schedule.getStatus() == ScheduleSlotStatus.AVAILABLE) // AVAILABLE 상태 체크
-				.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않거나 사용 불가능한 스케줄입니다.")))
-			.collect(Collectors.toList());
-	}
-
 	private void validateConsecutiveSchedules(CreateReservationRequest request) {
 		Schedule firstSchedule = scheduleRepository.findById(request.scheduleId()[0])
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다."));
@@ -488,12 +484,12 @@ public class ReservationService {
 				!schedule.isCurrentResLessThanCapacity() ||
 				!scheduleStartDateTime.isAfter(now); // 현재 시간보다 이전이면 예외 발생
 		})) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다. 스케줄이 유효하지 않거나 이미 예약이 완료되었습니다.");
 		}
 	}
 
-	private void checkDuplicateReservation(Email reserverEmail){
-		Optional<Reservation> recentReservation = reservationRepository.findLatestReservationByMemberEmail(reserverEmail);
+	private void checkDuplicateReservation(Email reservationOwnerEmail){
+		Optional<Reservation> recentReservation = reservationRepository.findLatestReservationByMemberEmail(reservationOwnerEmail);
 		if (recentReservation.isPresent()) {
 			ReservationStatus recentStatus = recentReservation.get().getStatus();
 			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
@@ -502,33 +498,33 @@ public class ReservationService {
 		}
 	}
 
-	protected void sendReservationSuccessEmail(RoomType type, String reserverEmail, Set<String> participantsEmail,
+	protected void sendReservationSuccessEmail(RoomType type, String reservationOwnerEmail, Set<String> participantsEmail,
 		Schedule schedule) {
 
 		String subject = "[ICE-STUDYRES] 스터디룸 예약이 완료되었습니다.";
 		List<Email> participantsEmailList = participantsEmail.stream().map(Email::new).toList();
-		String body = buildReservationSuccessEmailBody(type, schedule, reserverEmail, participantsEmailList);
+		String body = buildReservationSuccessEmailBody(type, schedule, reservationOwnerEmail, participantsEmailList);
 
-		emailService.sendEmail(new EmailRequest(reserverEmail, subject, body));
+		emailService.sendEmail(new EmailRequest(reservationOwnerEmail, subject, body));
 
 		if(type == RoomType.GROUP){
 			for (String uniqueEmail : participantsEmail) {
-				if(!uniqueEmail.equals(reserverEmail)){
+				if(!uniqueEmail.equals(reservationOwnerEmail)){
 					emailService.sendEmail(new EmailRequest(uniqueEmail, subject, body));
 				}
 			}
 		}
 	}
 
-	private String buildReservationSuccessEmailBody(RoomType type, Schedule schedule, String reserverEmail, List<Email> participantsEmail) {
+	private String buildReservationSuccessEmailBody(RoomType type, Schedule schedule, String reservationOwnerEmail, List<Email> participantsEmail) {
 		String participantsSection = "";
-		Member reserver = memberDomainService.getMemberByEmail(reserverEmail);
+		Member reservationOwner = memberDomainService.getMemberByEmail(reservationOwnerEmail);
 		List<Member> participantsMember = memberDomainService.getMembersByEmail(participantsEmail);
 		if (type == RoomType.GROUP) {
 			participantsSection = "<h3>참여자 명단</h3><ul>";
 
 			for (Member member : participantsMember) {
-				if(!member.getEmail().getValue().equals(reserverEmail)){
+				if(!member.getEmail().getValue().equals(reservationOwnerEmail)){
 					participantsSection += "<li>" + member.getName() + "(" + member.getStudentNum() + ")" + "</li>";
 				}
 			}
@@ -556,8 +552,8 @@ public class ReservationService {
 				"</ul>" +
 				"<p>감사합니다.</p>" +
 				"</body></html>",
-			reserver.getName(),
-			reserver.getStudentNum(),
+			reservationOwner.getName(),
+			reservationOwner.getStudentNum(),
 			schedule.getRoomNumber(),
 			LocalDate.now(),
 			schedule.getStartTime(),
