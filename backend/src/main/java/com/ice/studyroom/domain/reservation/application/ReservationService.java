@@ -65,13 +65,24 @@ public class ReservationService {
 
 	private final Clock clock;
 
-	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
-		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+	public List<Schedule> getSchedule() {
+		LocalDate today = LocalDate.now(clock);
+		return scheduleRepository.findByScheduleDate(today);
+	}
 
-		Member member = memberRepository.findByEmail(Email.of(email))
+	public Optional<GetMostRecentReservationResponse> getMyMostRecentReservation(String authorizationHeader) {
+		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		return reservationRepository.findLatestReservationByMemberEmail(Email.of(reservationOwnerEmail))
+			.map(GetMostRecentReservationResponse::from);
+	}
+
+	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
+		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
+
+		Member reservationOwner = memberRepository.findByEmail(Email.of(reservationOwnerEmail))
 			.orElseThrow(() -> new BusinessException(StatusCode.UNAUTHORIZED, "회원 정보를 찾을 수 없습니다."));
 
-		List<Reservation> reservations = reservationRepository.findByMember(member);
+		List<Reservation> reservations = reservationRepository.findByMember(reservationOwner);
 
 		Map<String, List<ParticipantResponse>> reservationParticipantsMap = new HashMap<>();
 
@@ -107,21 +118,15 @@ public class ReservationService {
 			.collect(Collectors.toList());
 	}
 
-	public Optional<GetMostRecentReservationResponse> getMyMostRecentReservation(String authorizationHeader) {
-		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		return reservationRepository.findLatestReservationByMemberEmail(Email.of(email))
-			.map(GetMostRecentReservationResponse::from);
-	}
-
 	public String getMyReservationQrCode(Long reservationId, String authorizationHeader) {
-		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// 예약이 유효한지 확인
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다."));
 
 		// 해당 사용자의 예약인지 확인
-		if (!reservation.isOwnedBy(email)) {
+		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
 			throw new BusinessException(StatusCode.FORBIDDEN, "해당 예약에 접근할 수 없습니다.");
 		}
 
@@ -136,11 +141,6 @@ public class ReservationService {
 		qrCodeService.storeToken(token, reservation.getId());
 
 		return qrCodeUtil.generateQRCodeFromToken(token);
-	}
-
-	public List<Schedule> getSchedule() {
-		LocalDate today = LocalDate.now();
-		return scheduleRepository.findByScheduleDate(today);
 	}
 
 	@Transactional
@@ -158,7 +158,7 @@ public class ReservationService {
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"존재하지 않는 예약입니다."));
 
-		Member member = reservation.getMember();
+		Member reservationOwner = reservation.getMember();
 
 		// 예약의 상태에 따른 에러 처리
 		if(reservation.getStatus() == ReservationStatus.CANCELLED){
@@ -179,9 +179,9 @@ public class ReservationService {
 		} else if (status == ReservationStatus.NO_SHOW) {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "출석 시간이 만료되었습니다.");
 		} else if(status == ReservationStatus.LATE){
-			penaltyService.assignPenalty(member, reservationId, PenaltyReasonType.LATE);
+			penaltyService.assignPenalty(reservationOwner, reservationId, PenaltyReasonType.LATE);
 		}
-		return new QrEntranceResponse(status, member.getName(), member.getStudentNum());
+		return new QrEntranceResponse(status, reservationOwner.getName(), reservationOwner.getStudentNum());
 	}
 
 	@Transactional
@@ -198,22 +198,22 @@ public class ReservationService {
 		RoomType roomType = schedules.get(0).getRoomType();
 		if(roomType == RoomType.GROUP) throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다.");
 
-		// JWT에서 예약자 이메일 추출
-		String reserverEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		// Access Token 에서 예약자 이메일 추출
+		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// 예약자 확인
-		Member reserver = memberRepository.findByEmail(Email.of(reserverEmail))
-			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"예약자 이메일이 존재하지 않습니다: " + reserverEmail));
+		Member reservationOwner = memberRepository.findByEmail(Email.of(reservationOwnerEmail))
+			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND,"예약자 이메일이 존재하지 않습니다: " + reservationOwnerEmail));
 
 		// 패널티 상태 확인 (예약 불가)
-		if (reserver.isPenalty()) {
+		if (reservationOwner.isPenalty()) {
 			throw new BusinessException(StatusCode.FORBIDDEN, "사용정지 상태입니다.");
 		}
 
 		// 예약 중복 방지
-		checkDuplicateReservation(Email.of(reserverEmail));
+		checkDuplicateReservation(Email.of(reservationOwnerEmail));
 
-		Reservation reservation = Reservation.from(schedules, true, reserver);
+		Reservation reservation = Reservation.from(schedules, true, reservationOwner);
 		reservationRepository.save(reservation);
 
 		// 스케줄 업데이트 (currentRes 증가 및 상태 변경)
@@ -229,7 +229,7 @@ public class ReservationService {
 		}
 
 		scheduleRepository.saveAll(schedules);
-		sendReservationSuccessEmail(roomType, reserverEmail, new HashSet<>(), schedules.get(0));
+		sendReservationSuccessEmail(roomType, reservationOwnerEmail, new HashSet<>(), schedules.get(0));
 
 		return "Success";
 	}
@@ -338,12 +338,12 @@ public class ReservationService {
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다."));
 
-		Member member = reservation.getMember();
+		Member reservationOwner = reservation.getMember();
 
-		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// JWT 를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
-		if (!reservation.isOwnedBy(email)) {
+		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
 			throw new BusinessException(StatusCode.NOT_FOUND, "이전에 예약이 되지 않았습니다.");
 		}
 
@@ -361,7 +361,7 @@ public class ReservationService {
 
 		if (!now.isBefore(startTime.minusHours(1))) {
 			// 취소 패널티 부여
-			penaltyService.assignPenalty(member, reservationId, PenaltyReasonType.CANCEL);
+			penaltyService.assignPenalty(reservationOwner, reservationId, PenaltyReasonType.CANCEL);
 		}
 
 		/*
@@ -385,9 +385,9 @@ public class ReservationService {
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다."));
 
-		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		if (!reservation.isOwnedBy(email)) {
+		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
 			throw new BusinessException(StatusCode.NOT_FOUND, "해당 예약 정보가 존재하지 않습니다.");
 		}
 

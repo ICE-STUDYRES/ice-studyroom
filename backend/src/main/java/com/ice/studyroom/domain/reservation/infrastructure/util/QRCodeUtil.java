@@ -40,25 +40,4 @@ public class QRCodeUtil {
 			throw new RuntimeException("QR 코드 생성 실패", e);
 		}
 	}
-
-	// QR Base64 이미지를 디코딩하여 토큰 문자열 추출
-	public String decodeQRCodeImage(String base64QrCode) {
-		try {
-			byte[] qrCodeBytes = Base64.getDecoder().decode(base64QrCode);
-			ByteArrayInputStream inputStream = new ByteArrayInputStream(qrCodeBytes);
-			BufferedImage qrImage = ImageIO.read(inputStream);
-
-			if (qrImage == null) {
-				throw new RuntimeException("QR 이미지 디코딩 실패 (null 이미지)");
-			}
-
-			BinaryBitmap bitmap = new BinaryBitmap(
-				new HybridBinarizer(new BufferedImageLuminanceSource(qrImage)));
-			Result result = new MultiFormatReader().decode(bitmap);
-			return result.getText(); // = 토큰
-
-		} catch (Exception e) {
-			throw new RuntimeException("QR 코드 디코딩 실패", e);
-		}
-	}
 }
