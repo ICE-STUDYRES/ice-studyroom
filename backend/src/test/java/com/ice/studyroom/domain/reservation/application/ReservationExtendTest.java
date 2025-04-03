@@ -24,6 +24,7 @@ import com.ice.studyroom.domain.identity.domain.service.TokenService;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
@@ -198,10 +199,10 @@ public class ReservationExtendTest {
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 
 		// 현재 시각: 13:49
-		setFixedNow(13, 49);
+		현재_시간_고정(13, 49);
 
 		// 예약 종료 시간: 14:00
-		setReservationEndTime(14, 0);
+		예약_종료_시간_고정(14, 0);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -240,10 +241,10 @@ public class ReservationExtendTest {
 		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
 
 		// 현재 시각: 14:01
-		setFixedNow(14, 1);
+		현재_시간_고정(14, 1);
 
 		// 예약 종료 시간: 14:00
-		setReservationEndTime(14, 0);
+		예약_종료_시간_고정(14, 0);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -472,6 +473,7 @@ public class ReservationExtendTest {
 
 		// 첫 번째 멤버는 패널티가 없고, 두 번째 멤버는 패널티가 있는 경우
 		given(reservations.get(0).getMember().isPenalty()).willReturn(false);
+		given(reservations.get(0).isEntered()).willReturn(true);
 		given(reservations.get(1).getMember().isPenalty()).willReturn(true);
 
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -684,6 +686,54 @@ public class ReservationExtendTest {
 	}
 
 	/**
+	 * 📌 테스트명: 그룹_예약_연장_성공_취소된_예약자_제외
+	 *
+	 * ✅ 목적:
+	 *   - 그룹 예약 연장 시, 취소된 예약자는 연장 로직에서 제외되어야 함을 검증
+	 *
+	 * 🧪 시나리오 설명:
+	 *   1. 예약자가 그룹 예약의 연장을 요청함
+	 *   2. 다음 스케줄은 현재 방과 동일하고 예약 가능 상태임
+	 *   3. 그룹에 속한 예약자 중 일부는 `CANCELLED` 상태
+	 *   4. 해당 예약자는 연장 처리 로직에서 제외되어야 함
+	 *   5. `ENTRANCE` 상태의 예약자만 연장 처리
+	 *
+	 * 📌 관련 비즈니스 규칙:
+	 *   - 연장 시 예약 상태가 `CANCELLED`인 경우 연장 처리 대상에서 제외해야 함
+	 *
+	 * 🧩 검증 포인트:
+	 *   - `ReservationStatus.CANCELLED`인 예약자는 `extendReservation()` 호출되지 않아야 함
+	 *   - 나머지 정상 예약자는 `extendReservation()` 호출 확인
+	 *   - 전체 결과는 "Success" 반환
+	 *
+	 * ✅ 기대 결과:
+	 *   - BusinessException이 발생하지 않고 정상 처리됨
+	 *   - 연장 대상에서 `CANCELLED` 예약 제외됨
+	 *   - 연장 대상자에게만 `extendReservation()` 호출됨
+	 */
+	@Test
+	@DisplayName("그룹 예약 연장 시 취소된 예약자는 연장 처리 대상에서 제외됨")
+	void 그룹_예약_연장_성공_취소된_예약자_제외(){
+		통과된_기본_예약_검증_셋업(reservationId, token, ownerEmail);
+		통과된_스케줄_연장_시간_검증_셋업();
+		통과된_다음_스케줄_존재_여부_셋업(scheduleFirstId);
+		통과된_다음_스케줄_이용_가능_여부_셋업();
+		통과된_그룹_예약_입실_및_패널티_검증_셋업_취소된_예약자_포함();
+
+		// when
+		String result = reservationService.extendReservation(reservationId, token);
+
+		// then
+		assertEquals("Success", result);
+		verify(nextSchedule).updateStatus(ScheduleSlotStatus.RESERVED);
+
+		for (Reservation res : reservations) {
+			if(res.getStatus() == ReservationStatus.CANCELLED) continue;
+			verify(res).extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
+		}
+	}
+
+	/**
 	 * 📌 테스트명: 개인_예약_연장_성공
 	 *
 	 * ✅ 목적:
@@ -791,15 +841,31 @@ public class ReservationExtendTest {
 		given(reservations.get(1).isEntered()).willReturn(true);
 	}
 
-	private void setFixedNow(int hour, int minute) {
+	//취소하여 패널티 제재를 받은 member0 때문에 연장이 불가능해서는 안된다.
+	// 로직 상 주석처리된 메서드는 호출되지 않지만, 이해를 위해 남김
+	private void 통과된_그룹_예약_입실_및_패널티_검증_셋업_취소된_예약자_포함(){
+		given(nextSchedule.getRoomType()).willReturn(RoomType.GROUP);
+		given(reservationRepository.findByFirstScheduleId(scheduleFirstId)).willReturn(reservations);
+		//given(reservation.getMember()).willReturn(member1);
+		given(reservation2.getMember()).willReturn(member2);
+
+		given(reservations.get(0).getStatus()).willReturn(ReservationStatus.CANCELLED);
+		//given(reservations.get(0).getMember().isPenalty()).willReturn(true);
+		given(reservations.get(1).getStatus()).willReturn(ReservationStatus.ENTRANCE);
+		given(reservations.get(1).getMember().isPenalty()).willReturn(false);
+
+		//given(reservations.get(0).isEntered()).willReturn(false);
+		given(reservations.get(1).isEntered()).willReturn(true);
+	}
+
+	private void 현재_시간_고정(int hour, int minute) {
 		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, hour, minute);
 		given(clock.instant()).willReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
 		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 	}
 
-	private void setReservationEndTime(int hour, int minute) {
+	private void 예약_종료_시간_고정(int hour, int minute) {
 		given(reservation.getScheduleDate()).willReturn(LocalDate.of(2025, 3, 22));
 		given(reservation.getEndTime()).willReturn(LocalTime.of(hour, minute));
 	}
-
 }
