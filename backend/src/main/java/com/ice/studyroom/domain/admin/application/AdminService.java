@@ -25,11 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Stream;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class AdminService {
 
 	private final RoomTimeSlotRepository roomTimeSlotRepository;
@@ -38,6 +36,7 @@ public class AdminService {
 	private final MemberRepository memberRepository;
 	private final PenaltyService penaltyService;
 
+	@Transactional
 	public String adminOccupyRooms(AdminOccupyRequest request) {
 		//당일 선점일 경우, 스케줄에도 반영
 		if(request.dayOfWeek() == DayOfWeekStatus.valueOf(LocalDate.now().getDayOfWeek().name())){
@@ -69,6 +68,7 @@ public class AdminService {
 		return "관리자가 선택한 시간대를 선점했습니다.";
 	}
 
+	@Transactional
 	public String adminReleaseRooms(AdminReleaseRequest request) {
 		//당일 선점 해지일 경우, 스케줄에도 반영
 		if(request.dayOfWeek() == DayOfWeekStatus.valueOf(LocalDate.now().getDayOfWeek().name())){

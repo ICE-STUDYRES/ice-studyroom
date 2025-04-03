@@ -50,7 +50,6 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class ReservationService {
 
 	private final QRCodeUtil qrCodeUtil;
@@ -118,6 +117,7 @@ public class ReservationService {
 			.collect(Collectors.toList());
 	}
 
+	@Transactional
 	public String getMyReservationQrCode(Long reservationId, String authorizationHeader) {
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
@@ -416,17 +416,18 @@ public class ReservationService {
 		}
 
 		if (nextSchedule.getRoomType() == RoomType.GROUP) {
-			// 그룹 예약 이기에 같은 시간대의 예약 레코드를 모두 가져온다(참여자 검증 필요). memeber 1차 캐시되며 이 값을 사용할 예정
+			// 그룹 예약 이기에 같은 시간대의 예약 레코드를 모두 가져온다(참여자 검증 필요).
 			List<Reservation> reservations = reservationRepository.findByFirstScheduleId(reservation.getFirstScheduleId());
 
 			// 패널티를 부여받고 있는 참여자가 존재할 경우 예약 연장 진행 불가
 			for (Reservation res : reservations) {
+				//취소된 예약의 건에 대해서는 제외
+				if (res.getStatus() == ReservationStatus.CANCELLED) continue;
+
 				if (res.getMember().isPenalty()) {
 					throw new BusinessException(StatusCode.FORBIDDEN, "패널티가 있는 멤버로 인해 연장이 불가능합니다.");
 				}
-			}
 
-			for (Reservation res : reservations) {
 				//1명이라도 입실하지 않은 경우
 				if (!res.isEntered()){
 					//지각 입실은 앞서 패널티 체킹으로 연장 불가 처리
@@ -435,6 +436,7 @@ public class ReservationService {
 			}
 
 			for (Reservation res : reservations) {
+				if (res.getStatus() == ReservationStatus.CANCELLED) continue;
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 				nextSchedule.reserve();
 			}

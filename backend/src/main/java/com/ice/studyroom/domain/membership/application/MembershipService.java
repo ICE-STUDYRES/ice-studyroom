@@ -1,6 +1,5 @@
 package com.ice.studyroom.domain.membership.application;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,7 +30,6 @@ import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyReposi
 import lombok.RequiredArgsConstructor;
 
 @Service
-@Transactional
 @RequiredArgsConstructor
 public class MembershipService {
 	private final MemberDomainService memberDomainService;
@@ -41,11 +39,13 @@ public class MembershipService {
 	private final EmailVerificationService emailVerificationService;
 	private final PenaltyRepository penaltyRepository;
 
+	@Transactional
 	public MemberResponse createMember(MemberCreateRequest request) {
 		memberDomainService.registerMember(request);
 		return MemberResponse.of("success");
 	}
 
+	@Transactional
 	public JwtToken login(MemberLoginRequest request) {
 
 		Member member = memberDomainService.getMemberByEmailForLogin(request.email());
@@ -61,12 +61,14 @@ public class MembershipService {
 		return jwtToken;
 	}
 
+	@Transactional
 	public JwtToken refresh(String authorizationHeader, String refreshToken) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 		String accessToken = authorizationHeader.replace("Bearer ", "");
 		return tokenService.rotateToken(email, accessToken, refreshToken);
 	}
 
+	@Transactional
 	public MemberResponse logout(String authorizationHeader, String refreshToken) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
@@ -75,6 +77,7 @@ public class MembershipService {
 		return MemberResponse.of("정상적으로 로그아웃 되었습니다.");
 	}
 
+	@Transactional
 	public String updatePassword(String authorizationHeader, UpdatePasswordRequest request) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 		Member member = memberDomainService.getMemberByEmail(email);

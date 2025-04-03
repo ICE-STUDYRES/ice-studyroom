@@ -32,7 +32,6 @@ public class PenaltyUpdateScheduler {
 	private final PenaltyRepository penaltyRepository;
 	private final ReservationRepository reservationRepository;
 	private final PenaltyService penaltyService;
-	private final MemberDomainService memberDomainService;
 
 	@Transactional
 	@Scheduled(cron = "0 0 0 * * *") // 매일 00:00에 실행
