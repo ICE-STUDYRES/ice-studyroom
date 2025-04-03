@@ -225,7 +225,7 @@ class IndividualReservationTest {
 			reservationService.createIndividualReservation(token, request)
 		);
 
-		assertThat(ex.getMessage()).isEqualTo("예약이 불가능합니다.");
+		assertThat(ex.getMessage()).isEqualTo("예약이 불가능합니다. 스케줄이 유효하지 않거나 이미 예약이 완료되었습니다.");
 		verify(reservationRepository, never()).save(any());
 	}
 
@@ -267,7 +267,7 @@ class IndividualReservationTest {
 			reservationService.createIndividualReservation(token, request)
 		);
 
-		assertThat(ex.getMessage()).isEqualTo("예약이 불가능합니다.");
+		assertThat(ex.getMessage()).isEqualTo("예약이 불가능합니다. 스케줄이 유효하지 않거나 이미 예약이 완료되었습니다.");
 
 		verify(reservationRepository, never()).save(any());
 	}
