@@ -26,7 +26,7 @@ public class ReservationUpdateScheduler {
 	private final Clock clock;
 
 	@Transactional
-	@Scheduled(cron = "0 1 10-23 * * 1-5")
+	@Scheduled(cron = "0 2 10-23 * * 1-5")
 	public void updateCompleteReservations(){
 
 		LocalDateTime now = LocalDateTime.now(clock);
@@ -35,7 +35,7 @@ public class ReservationUpdateScheduler {
 
 		log.info("Processing update reservation status to complete for date: {} and time: {}", todayDate, todayTime);
 
-		reservationRepository.findByScheduleDateAndEndTime(todayDate, todayTime.minusMinutes(1)).forEach(reservation -> {
+		reservationRepository.findByScheduleDateAndEndTime(todayDate, todayTime.minusMinutes(2)).forEach(reservation -> {
 			if(reservation.getStatus() == ReservationStatus.ENTRANCE || reservation.getEndTime().isBefore(todayTime)){
 				reservation.markStatus(ReservationStatus.COMPLETED);
 			}
