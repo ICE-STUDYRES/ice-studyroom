@@ -50,7 +50,6 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional
 public class ReservationService {
 
 	private final QRCodeUtil qrCodeUtil;
@@ -118,6 +117,7 @@ public class ReservationService {
 			.collect(Collectors.toList());
 	}
 
+	@Transactional
 	public String getMyReservationQrCode(Long reservationId, String authorizationHeader) {
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
