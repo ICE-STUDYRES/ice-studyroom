@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.penalty.application;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -28,6 +29,8 @@ public class PenaltyService {
 
 	private final PenaltyRepository penaltyRepository;
 	private final ReservationRepository reservationRepository;
+
+	private final Clock clock;
 
 	@Transactional
 	public void assignPenalty(Member member, Long reservationId, PenaltyReasonType reason) {
@@ -65,7 +68,7 @@ public class PenaltyService {
 	}
 
 	private LocalDateTime calculatePenaltyEnd(int durationDays) {
-		LocalDate penaltyEndDate = LocalDate.now();
+		LocalDate penaltyEndDate = LocalDate.now(clock);
 
 		int addedDays = 0;
 		while (addedDays < durationDays) {
