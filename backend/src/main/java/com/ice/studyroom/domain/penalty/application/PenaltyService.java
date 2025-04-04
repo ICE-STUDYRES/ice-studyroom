@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.penalty.application;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -16,6 +17,8 @@ import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyReposi
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.StatusCode;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +31,8 @@ public class PenaltyService {
 
 	private final PenaltyRepository penaltyRepository;
 	private final ReservationRepository reservationRepository;
+
+	private final Clock clock;
 
 	@Transactional
 	public void assignPenalty(Member member, Long reservationId, PenaltyReasonType reason) {
@@ -59,13 +64,15 @@ public class PenaltyService {
 
 	@Transactional
 	public void adminDeletePenalty(Member member) {
-		Penalty penalty = penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID).get();
+		Penalty penalty = penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID).orElseThrow(
+			() -> new BusinessException(StatusCode.NOT_FOUND, "유효하지 않은 패널티입니다.")
+		);
 		penalty.expirePenalty();
 		member.updatePenalty(false);
 	}
 
 	private LocalDateTime calculatePenaltyEnd(int durationDays) {
-		LocalDate penaltyEndDate = LocalDate.now();
+		LocalDate penaltyEndDate = LocalDate.now(clock);
 
 		int addedDays = 0;
 		while (addedDays < durationDays) {
