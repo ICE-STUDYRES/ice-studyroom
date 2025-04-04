@@ -1,6 +1,7 @@
 package com.ice.studyroom.domain.penalty.application;
 
 import static org.assertj.core.api.AssertionsForClassTypes.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import java.time.Clock;
@@ -20,9 +21,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
+import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
+import com.ice.studyroom.global.exception.BusinessException;
 
 @ExtendWith(MockitoExtension.class)
 class PenaltyServiceTest {
@@ -45,13 +48,19 @@ class PenaltyServiceTest {
 	@Mock
 	private Reservation reservation;
 
+	@Mock
+	private Penalty penalty;
+
 	private Long reservationId;
+	private Long memberId;
 
 	@BeforeEach
 	void setUp() {
 		reservation = mock(Reservation.class);
 		member = mock(Member.class);
 		reservationId = 1L;
+		memberId = 1L;
+		penalty = mock(Penalty.class);
 	}
 
 	@Test
@@ -102,6 +111,54 @@ class PenaltyServiceTest {
 		// expected: 4/3(목) 기준, 5일 후 평일 => 4/13(목), NO_SHOW 일 경우 무조건 주말이 포함된다.
 		LocalDateTime expectedEnd = LocalDateTime.of(2025, 4, 10, 23, 59, 59);
 		assertThat(savedPenalty.getPenaltyEnd()).isEqualTo(expectedEnd);
+	}
+
+	@Test
+	@DisplayName("ADMIN 권한으로 패널티가 부여할 경우, ADMIN 이 입력한 날짜까지 패널티가 부여된다.")
+	void ADMIN_권한으로_패널티_부여시_종료일_확인(){
+		ArgumentCaptor<Penalty> captor = ArgumentCaptor.forClass(Penalty.class);
+
+		// when
+		LocalDateTime expectedEnd = LocalDateTime.of(2025, 4, 3, 14, 30);
+		penaltyService.adminAssignPenalty(member, expectedEnd);
+
+		//then
+		verify(penaltyRepository).save(captor.capture());
+		Penalty savedPenalty = captor.getValue();
+		assertThat(savedPenalty.getPenaltyEnd()).isEqualTo(expectedEnd);
+	}
+
+	@Test
+	@DisplayName("ADMIN 권한으로 패널티를 삭제할 경우, 해당 패널티는 무효화된다.")
+	void ADMIN_권한으로_패널티_삭제시_패널티_무효_확인(){
+		given(member.getId()).willReturn(memberId);
+		given(penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID)).willReturn(
+			Optional.of(penalty));
+
+		// when
+		penaltyService.adminDeletePenalty(member);
+
+		// then
+		verify(penalty).expirePenalty();
+		verify(member).updatePenalty(false);
+	}
+
+	@Test
+	@DisplayName("ADMIN 권한으로 삭제하려는 패널티가 유효한 패널티가 아닐 경우 예외 발생")
+	void ADMIN_권한으로_삭제할_패널티가_유효한_패널티가_아닐_경우(){
+		given(member.getId()).willReturn(memberId);
+		given(penaltyRepository.findByMemberIdAndStatus(memberId, PenaltyStatus.VALID))
+			.willReturn(Optional.empty());
+
+		// when & then
+		BusinessException ex = assertThrows(BusinessException.class, () ->
+			penaltyService.adminDeletePenalty(member)
+		);
+
+		assertEquals("유효하지 않은 패널티입니다.", ex.getMessage());
+
+		// then (호출되지 않아야 함)
+		verify(member, never()).updatePenalty(anyBoolean());
 	}
 
 	private Penalty 이유별_예약_부여_셋업(int month, int dayOfMonth, PenaltyReasonType reason) {
