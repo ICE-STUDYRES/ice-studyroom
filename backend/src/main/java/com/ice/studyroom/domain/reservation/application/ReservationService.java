@@ -75,6 +75,7 @@ public class ReservationService {
 			.map(GetMostRecentReservationResponse::from);
 	}
 
+	@Transactional(readOnly = true)
 	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
