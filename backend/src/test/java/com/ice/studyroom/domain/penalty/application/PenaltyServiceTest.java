@@ -88,7 +88,7 @@ class PenaltyServiceTest {
 	void LATE_사유로_패널티_부여시_종료일_확인_주말_미포함(){
 		Penalty savedPenalty = 이유별_예약_부여_셋업(4, 1, PenaltyReasonType.LATE);
 
-		// expected: 4/1(화) 기준, 3일 후 평일 => 4/4(금)
+		// expected: 4/1(화) 기준, 영업일 기준 3일 후 => 4/4(금)
 		LocalDateTime expectedEnd = LocalDateTime.of(2025, 4, 4, 23, 59, 59);
 		assertThat(savedPenalty.getPenaltyEnd()).isEqualTo(expectedEnd);
 	}
@@ -98,7 +98,7 @@ class PenaltyServiceTest {
 	void LATE_사유로_패널티_부여시_종료일_확인_주말_포함(){
 		Penalty savedPenalty = 이유별_예약_부여_셋업(4, 3, PenaltyReasonType.LATE);
 
-		// expected: 4/3(목) 기준, 3일 후 평일 => 4/8(화)
+		// expected: 4/3(목) 기준, 영업일 기준 3일 후 => 4/8(화)
 		LocalDateTime expectedEnd = LocalDateTime.of(2025, 4, 8, 23, 59, 59);
 		assertThat(savedPenalty.getPenaltyEnd()).isEqualTo(expectedEnd);
 	}
@@ -108,7 +108,7 @@ class PenaltyServiceTest {
 	void NO_SHOW_사유로_패널티_부여시_종료일_확인(){
 		Penalty savedPenalty = 이유별_예약_부여_셋업(4, 3, PenaltyReasonType.NO_SHOW);
 
-		// expected: 4/3(목) 기준, 5일 후 평일 => 4/13(목), NO_SHOW 일 경우 무조건 주말이 포함된다.
+		// expected: 4/3(목) 기준, 영업일 기준 5일 후 => 4/13(목), NO_SHOW 일 경우 무조건 주말이 포함된다.
 		LocalDateTime expectedEnd = LocalDateTime.of(2025, 4, 10, 23, 59, 59);
 		assertThat(savedPenalty.getPenaltyEnd()).isEqualTo(expectedEnd);
 	}
@@ -124,6 +124,7 @@ class PenaltyServiceTest {
 
 		//then
 		verify(penaltyRepository).save(captor.capture());
+		verify(member).updatePenalty(true);
 		Penalty savedPenalty = captor.getValue();
 		assertThat(savedPenalty.getPenaltyEnd()).isEqualTo(expectedEnd);
 	}
@@ -172,6 +173,7 @@ class PenaltyServiceTest {
 
 		// then
 		verify(penaltyRepository).save(captor.capture());
+		verify(member).updatePenalty(true);
 		return captor.getValue();
 	}
 
