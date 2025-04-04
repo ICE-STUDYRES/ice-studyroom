@@ -94,22 +94,27 @@ public class Reservation extends BaseTimeEntity {
 		LocalDateTime startDateTime = LocalDateTime.of(scheduleDate, startTime);
 		LocalDateTime endDateTime = LocalDateTime.of(scheduleDate, endTime);
 
-		long minutesDifference = Duration.between(startDateTime, now).toMinutes();
-		long minutesDurationOfReservation = Duration.between(startDateTime, endDateTime).toMinutes();
-
 		if (now.isBefore(startDateTime)) {
 			return ReservationStatus.RESERVED;
-		} else if (minutesDifference <= 30) {
-			return ReservationStatus.ENTRANCE;
-		} else if (minutesDifference <= minutesDurationOfReservation) {
-			return ReservationStatus.LATE;
-		} else {
-			return ReservationStatus.NO_SHOW;
 		}
+
+		if (now.isAfter(startDateTime.plusMinutes(30))) {
+			if (now.isBefore(endDateTime)) {
+				return ReservationStatus.LATE;
+			} else {
+				return ReservationStatus.NO_SHOW;
+			}
+		}
+
+		return ReservationStatus.ENTRANCE;
 	}
 
 	public void assignQrToken(String generatedToken) {
 		this.qrToken = generatedToken;
+	}
+
+	public void updateEnterTime(LocalDateTime now) {
+		this.enterTime = now;
 	}
 
 	public void markStatus(ReservationStatus status) {
