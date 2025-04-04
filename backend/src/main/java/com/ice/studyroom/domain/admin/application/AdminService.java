@@ -117,6 +117,7 @@ public class AdminService {
 		return occupyRoomTimeSlots.stream().map(AdminGetReservedResponse::from).toList();
 	}
 
+	@Transactional(readOnly = true)
 	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords() {
 		List<Penalty> penaltyList = penaltyRepository.findAll();
 

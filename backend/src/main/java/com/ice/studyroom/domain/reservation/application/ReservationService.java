@@ -75,6 +75,7 @@ public class ReservationService {
 			.map(GetMostRecentReservationResponse::from);
 	}
 
+	@Transactional(readOnly = true)
 	public List<GetReservationsResponse> getReservations(String authorizationHeader) {
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
@@ -169,6 +170,8 @@ public class ReservationService {
 
 		LocalDateTime now = LocalDateTime.now(clock);
 		ReservationStatus status = reservation.checkAttendanceStatus(now);
+
+		reservation.updateEnterTime(now);
 		reservation.markStatus(status);
 
 		// qr 무효화
