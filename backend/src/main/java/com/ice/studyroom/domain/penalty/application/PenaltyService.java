@@ -17,6 +17,8 @@ import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyReposi
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.StatusCode;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -62,7 +64,9 @@ public class PenaltyService {
 
 	@Transactional
 	public void adminDeletePenalty(Member member) {
-		Penalty penalty = penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID).get();
+		Penalty penalty = penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID).orElseThrow(
+			() -> new BusinessException(StatusCode.NOT_FOUND, "유효하지 않은 패널티입니다.")
+		);
 		penalty.expirePenalty();
 		member.updatePenalty(false);
 	}
