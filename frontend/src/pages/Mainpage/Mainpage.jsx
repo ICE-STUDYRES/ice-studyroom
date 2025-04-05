@@ -157,7 +157,10 @@ const MainPage = () => {
                             <td className="font-medium w-20">스터디룸:</td>
                             <td>{recentReservation.roomNumber ? `${recentReservation.roomNumber}호` : "정보 없음"}</td>
                           </tr>
-
+                          <tr>
+                            <td className="font-medium w-20">시간:</td>
+                            <td>{recentReservation.startTime?.slice(0, 5)} ~ {recentReservation.endTime?.slice(0, 5)}</td>
+                          </tr>
                         </tbody>
                       </table>
                     </div>
