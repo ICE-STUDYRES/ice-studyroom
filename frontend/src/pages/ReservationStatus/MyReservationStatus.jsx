@@ -121,15 +121,23 @@ const MyReservationStatus = () => {
 
       {/* QR Code Section */}
       <div className="bg-white border-b p-4">
-        <div className="flex flex-col items-center justify-center gap-3">
-          <button
-          onClick={handleQRClick} // 함수 호출로 수정
+        <div className="flex flex-col items-center justify-center">
+        <button
+          onClick={handleQRClick}
           className="p-4 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <QrCode className="w-32 h-32" />
-          </button>
-          <div className="flex items-center gap-2">
-            <p className="text-sm text-gray-500">스터디룸 입실 시 QR코드를 스캔해주세요</p>
+        >
+          {qrToken ? (
+            <img
+              src={`data:image/png;base64,${qrToken}`}
+              alt="QR 코드 미리보기"
+              className="w-36 h-36 object-contain"
+            />
+          ) : (
+            <QrCode className="w-24 h-24" />
+          )}
+        </button>
+          <div className="flex flex-col items-center gap-1">
+            <p className="text-sm text-gray-500">QR 이미지를 눌러 확대해 주세요</p>
           </div>
         </div>
       </div>
@@ -186,7 +194,7 @@ const MyReservationStatus = () => {
         onClick={handleCloseQRModal}
         >
           <div 
-          className="relative bg-white p-6 rounded-lg w-[80vw] h-[80vh] flex flex-col items-center justify-center" 
+          className="relative bg-white w-full h-full flex flex-col items-center justify-start pt-36"
           onClick={e => e.stopPropagation()}
           >
             {/* ✅ QRCodeFetcher에서 가져온 QR 코드 표시 */}
@@ -195,14 +203,12 @@ const MyReservationStatus = () => {
             ) : qrError ? (
               <p className="text-sm text-red-500">{qrError}</p>
             ) : qrToken ? (
-              <>
               <img
                 src={`data:image/png;base64,${qrToken}`}
                 alt="QR 코드"
-                width={256}
-                height={256}
+                width={300}
+                height={300}
               />
-              </>
             ) : (
               <p className="text-sm text-gray-500">QR 코드 데이터를 불러올 수 없습니다.</p>
             )}
