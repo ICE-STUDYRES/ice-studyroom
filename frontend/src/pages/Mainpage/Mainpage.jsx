@@ -76,7 +76,9 @@ const MainPage = () => {
                 if (response.ok && result.data) {
                     setRecentReservation({
                         date: result.data.scheduleDate,
-                        roomNumber: result.data.roomNumber
+                        roomNumber : result.data.roomNumber,
+                        startTime : result.data.startTime,
+                        endTime : result.data.endTime,
                     });
                 } else {
                     setRecentReservation({ date: null, roomNumber: null });
@@ -105,7 +107,7 @@ const MainPage = () => {
         {accessToken ? (
           <div className="flex items-center gap-2">
             <ProfileDropdown
-              userName={loginForm.email} // 실제 사용자 이름으로 교체 필요
+              userName={loginForm.email}
               userEmail={loginForm.email}
               onLogout={handleLogout}
               onPasswordChange={handlePasswordChangeClick}
@@ -155,6 +157,7 @@ const MainPage = () => {
                             <td className="font-medium w-20">스터디룸:</td>
                             <td>{recentReservation.roomNumber ? `${recentReservation.roomNumber}호` : "정보 없음"}</td>
                           </tr>
+
                         </tbody>
                       </table>
                     </div>
