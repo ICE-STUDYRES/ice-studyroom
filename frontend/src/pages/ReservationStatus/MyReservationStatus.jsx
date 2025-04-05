@@ -194,7 +194,7 @@ const MyReservationStatus = () => {
         onClick={handleCloseQRModal}
         >
           <div 
-          className="relative bg-white w-full h-full flex flex-col items-center justify-start pt-36"
+          className="relative bg-white w-full h-full flex flex-col items-center justify-start pt-32"
           onClick={e => e.stopPropagation()}
           >
             {/* ✅ QRCodeFetcher에서 가져온 QR 코드 표시 */}
