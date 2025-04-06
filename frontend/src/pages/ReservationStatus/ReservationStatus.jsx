@@ -21,6 +21,8 @@ const ReservationStatus = () => {
     try {
       let accessToken = sessionStorage.getItem('accessToken')
       if (!accessToken) {
+        addNotification('member', 'error');
+        navigate("/");
         return;
       }
       const response = await fetch('/api/schedules', {

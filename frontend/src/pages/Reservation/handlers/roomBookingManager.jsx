@@ -122,6 +122,8 @@ export const roomBookingManager = () => {
     try {
       let accessToken = sessionStorage.getItem("accessToken");
       if (!accessToken) {
+        addNotification('member', 'error');
+        navigate("/");
         return;
       }
 
