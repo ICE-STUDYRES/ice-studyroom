@@ -150,6 +150,9 @@ export const useMemberHandlers = () => {
     
                 if (role === 'ROLE_USER') {
                     navigate('/');
+                } else {
+                    const errorMessage = '로그인 중 오류가 발생했습니다.';
+                    setLoginError(errorMessage);
                 }
             }
         } catch (error) {
@@ -179,6 +182,9 @@ export const useMemberHandlers = () => {
                     navigate('/adminpage');
                 } else if (role == 'ROLE_ATTENDANT') {
                     navigate('/attendance')
+                } else {
+                    const errorMessage = '로그인 중 오류가 발생했습니다.';
+                    setLoginError(errorMessage);
                 }
             }
         } catch (error) {
