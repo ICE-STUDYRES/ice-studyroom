@@ -5,15 +5,12 @@ import { useMainpageHandlers } from '../Mainpage/handlers/MainpageHandlers';
 import useQRCodeFetcher from '../Mainpage/components/QRCodeFetcher';
 import { useTokenHandler } from "../Mainpage/handlers/TokenHandler";
 import { useMemberHandlers } from '../Mainpage/handlers/MemberHandlers';
+import { useNotification } from '../Notification/Notification';
 
 const MyReservationStatus = () => {
-  const {
-    refreshTokens,
-  } = useTokenHandler();
-
-  const {
-    handleLogout
-  } =useMemberHandlers();
+  const { refreshTokens } = useTokenHandler();
+  const { handleLogout } =useMemberHandlers();
+  const { addNotification } = useNotification();
 
   const navigate = useNavigate();
   const [myReservations, setMyReservations] = useState([]);
@@ -38,7 +35,9 @@ const MyReservationStatus = () => {
     try {
         let accessToken = sessionStorage.getItem('accessToken');
         if (!accessToken) {
-            throw new Error('로그인이 필요합니다');
+          addNotification('member', 'error');
+          navigate("/");
+          return;
         }
 
         const response = await fetch('/api/reservations/my', {
