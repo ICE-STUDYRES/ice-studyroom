@@ -137,6 +137,10 @@ public class AdminService {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 패널티가 부여된 회원입니다. 패널티 해제 후 다시 시도해주세요.");
 		}
 
+		if(member.getRoles().contains("ROLE_ADMIN")){
+			throw new BusinessException(StatusCode.BAD_REQUEST, "ADMIN 계정에는 패널티 설정을 할 수 없습니다.");
+		}
+
 		penaltyService.adminAssignPenalty(member, request.penaltyEndAt());
 		return "패널티 부여가 완료되었습니다.";
 	}
