@@ -20,6 +20,8 @@ import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -119,7 +121,7 @@ public class AdminService {
 
 	@Transactional(readOnly = true)
 	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords() {
-		List<Penalty> penaltyList = penaltyRepository.findAll();
+		List<Penalty> penaltyList = penaltyRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
 
 		return penaltyList.stream()
 			.map(penalty -> AdminPenaltyRecordResponse.of(penalty.getMember().getName(),
@@ -128,6 +130,7 @@ public class AdminService {
 			.toList();
 	}
 
+	@Transactional
 	public String adminSetPenalty(AdminSetPenaltyRequest request) {
 		Member member = memberRepository.findByStudentNum(request.studentNum())
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 학번을 가진 회원은 존재하지 않습니다."));
@@ -136,10 +139,15 @@ public class AdminService {
 			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 패널티가 부여된 회원입니다. 패널티 해제 후 다시 시도해주세요.");
 		}
 
+		if(member.getRoles().contains("ROLE_ADMIN")){
+			throw new BusinessException(StatusCode.BAD_REQUEST, "ADMIN 계정에는 패널티 설정을 할 수 없습니다.");
+		}
+
 		penaltyService.adminAssignPenalty(member, request.penaltyEndAt());
 		return "패널티 부여가 완료되었습니다.";
 	}
 
+	@Transactional
 	public String adminDelPenalty(AdminDelPenaltyRequest request) {
 		Member member = memberRepository.findByStudentNum(request.studentNum())
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 학번을 가진 회원을 찾을 수 없습니다."));
