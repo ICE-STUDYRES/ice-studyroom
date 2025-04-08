@@ -20,6 +20,8 @@ import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -119,7 +121,7 @@ public class AdminService {
 
 	@Transactional(readOnly = true)
 	public List<AdminPenaltyRecordResponse> adminGetPenaltyRecords() {
-		List<Penalty> penaltyList = penaltyRepository.findAll();
+		List<Penalty> penaltyList = penaltyRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
 
 		return penaltyList.stream()
 			.map(penalty -> AdminPenaltyRecordResponse.of(penalty.getMember().getName(),
