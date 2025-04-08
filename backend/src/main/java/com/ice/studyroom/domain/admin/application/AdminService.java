@@ -128,6 +128,7 @@ public class AdminService {
 			.toList();
 	}
 
+	@Transactional
 	public String adminSetPenalty(AdminSetPenaltyRequest request) {
 		Member member = memberRepository.findByStudentNum(request.studentNum())
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 학번을 가진 회원은 존재하지 않습니다."));
@@ -140,6 +141,7 @@ public class AdminService {
 		return "패널티 부여가 완료되었습니다.";
 	}
 
+	@Transactional
 	public String adminDelPenalty(AdminDelPenaltyRequest request) {
 		Member member = memberRepository.findByStudentNum(request.studentNum())
 			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 학번을 가진 회원을 찾을 수 없습니다."));

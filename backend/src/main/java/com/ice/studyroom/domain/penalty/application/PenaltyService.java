@@ -48,7 +48,6 @@ public class PenaltyService {
 		penaltyRepository.save(penalty);
 	}
 
-	@Transactional
 	public void adminAssignPenalty(Member member, LocalDateTime penaltyEndAt) {
 
 		Penalty penalty = Penalty.builder()
@@ -62,7 +61,6 @@ public class PenaltyService {
 		penaltyRepository.save(penalty);
 	}
 
-	@Transactional
 	public void adminDeletePenalty(Member member) {
 		Penalty penalty = penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID).orElseThrow(
 			() -> new BusinessException(StatusCode.NOT_FOUND, "유효하지 않은 패널티입니다.")
