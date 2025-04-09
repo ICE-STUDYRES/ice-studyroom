@@ -93,7 +93,7 @@ public class JwtTokenProvider {
 	}
 
 	// 토큰 정보를 검증하는 메서드
-	public void validateToken(String token) {
+	public void validateToken(String token, boolean isRefreshTokenRequest) {
 		try {
 			Jwts.parserBuilder()
 				.setSigningKey(key)
@@ -103,7 +103,10 @@ public class JwtTokenProvider {
 			log.info("Invalid JWT Token", e);
 			throw new JwtAuthenticationException(StatusCode.UNAUTHORIZED, "Invalid JWT token");
 		} catch (ExpiredJwtException e) {
-			throw e;
+			if (!isRefreshTokenRequest) {
+				// 일반 요청에서만 예외 발생시킴
+				throw new JwtAuthenticationException(StatusCode.UNAUTHORIZED, "Access token has expired");
+			}
 		} catch (IllegalArgumentException e) {
 			throw new JwtAuthenticationException(StatusCode.UNAUTHORIZED, "JWT claims string is empty");
 		}
@@ -121,7 +124,7 @@ public class JwtTokenProvider {
 		return parseClaims(token).get("auth", String.class);
 	}
 
-	// accessToken
+	// 유효성 검증하지 않을 예정, 여기서는 validateToken에서 검증하기에 예외가 발생하더라도 정상작동
 	private Claims parseClaims(String accessToken) {
 		try {
 			return Jwts.parserBuilder()
@@ -130,7 +133,6 @@ public class JwtTokenProvider {
 				.parseClaimsJws(accessToken)
 				.getBody();
 		} catch (ExpiredJwtException e) {
-			log.info("Expired JWT Token", e);
 			return e.getClaims();
 		}
 	}
