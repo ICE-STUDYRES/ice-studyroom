@@ -15,7 +15,9 @@ import com.ice.studyroom.global.service.CacheService;
 import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TokenService {
@@ -69,6 +71,8 @@ public class TokenService {
 			userDetails, "", userDetails.getAuthorities());
 
 		JwtToken newToken = jwtTokenProvider.generateToken(authentication);
+
+		log.info("Refresh Token 재발급 - 사용자 이메일: {}", email);
 
 		// 3. 새로운 Refresh Token을 Redis에 저장
 		saveRefreshToken(email, newToken.getRefreshToken());
