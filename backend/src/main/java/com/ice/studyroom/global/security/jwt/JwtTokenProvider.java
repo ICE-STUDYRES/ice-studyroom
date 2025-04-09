@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.identity.infrastructure.security;
+package com.ice.studyroom.global.security.jwt;
 
 import java.security.Key;
 import java.util.Arrays;
@@ -15,8 +15,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import com.ice.studyroom.domain.identity.domain.JwtToken;
-import com.ice.studyroom.domain.identity.exception.InvalidJwtException;
+import com.ice.studyroom.global.exception.jwt.JwtAuthenticationException;
+import com.ice.studyroom.global.type.StatusCode;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -26,6 +26,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -98,18 +99,13 @@ public class JwtTokenProvider {
 				.setSigningKey(key)
 				.build()
 				.parseClaimsJws(token);
-		} catch (SecurityException | MalformedJwtException e) {
+		} catch (SecurityException | MalformedJwtException | UnsupportedJwtException | SignatureException e) {
 			log.info("Invalid JWT Token", e);
-			throw new InvalidJwtException("Invalid JWT token", e);
+			throw new JwtAuthenticationException(StatusCode.UNAUTHORIZED, "Invalid JWT token");
 		} catch (ExpiredJwtException e) {
-			log.info("Expired JWT Token", e);
 			throw e;
-		} catch (UnsupportedJwtException e) {
-			log.info("Unsupported JWT Token", e);
-			throw new InvalidJwtException("Unsupported JWT token", e);
 		} catch (IllegalArgumentException e) {
-			log.info("JWT claims string is empty.", e);
-			throw new InvalidJwtException("JWT claims string is empty", e);
+			throw new JwtAuthenticationException(StatusCode.UNAUTHORIZED, "JWT claims string is empty");
 		}
 	}
 
