@@ -1,24 +1,37 @@
 package com.ice.studyroom.domain.reservation.scheduler;
 
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @Component
 @EnableScheduling
+@RequiredArgsConstructor
 public class ScheduleTask {
 
 	private final JdbcTemplate jdbcTemplate;
-
-	public ScheduleTask(JdbcTemplate jdbcTemplate) {
-		this.jdbcTemplate = jdbcTemplate;
-	}
+	private final Clock clock;
 
 	@Transactional
 	@Scheduled(cron = "${schedule.insert.cron}")
 	public void insertScheduleData() {
+		LocalDateTime now = LocalDateTime.now(clock);
+		LocalDate todayDate = now.toLocalDate();
+		LocalTime todayTime = now.toLocalTime();
+
+		log.info("Processing create Today Schedule date: {} and time: {}", todayDate, todayTime);
+
 		String sql = """
 				INSERT INTO schedule (
 					schedule_date,
