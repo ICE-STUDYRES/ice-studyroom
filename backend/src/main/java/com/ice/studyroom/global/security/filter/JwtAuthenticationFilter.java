@@ -45,7 +45,7 @@ public class JwtAuthenticationFilter extends GenericFilterBean {
 		// 2. validateToken으로 토큰 유효성 검사
 		if (token != null) {
 			try {
-				jwtTokenProvider.validateToken(token); // 유효성 검사에서 예외 발생 시 catch로 이동
+				jwtTokenProvider.validateToken(token, isRefreshTokenRequest); // 유효성 검사에서 예외 발생 시 catch로 이동
 
 				Authentication authentication = jwtTokenProvider.getAuthentication(token);
 				SecurityContextHolder.getContext().setAuthentication(authentication);
