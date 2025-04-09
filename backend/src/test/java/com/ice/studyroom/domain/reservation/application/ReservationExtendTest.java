@@ -20,7 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
-import com.ice.studyroom.domain.identity.domain.service.TokenService;
+import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;

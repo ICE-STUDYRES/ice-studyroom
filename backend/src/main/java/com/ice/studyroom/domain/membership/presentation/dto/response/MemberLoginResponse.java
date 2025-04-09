@@ -1,6 +1,6 @@
 package com.ice.studyroom.domain.membership.presentation.dto.response;
 
-import com.ice.studyroom.domain.identity.domain.JwtToken;
+import com.ice.studyroom.global.security.jwt.JwtToken;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;

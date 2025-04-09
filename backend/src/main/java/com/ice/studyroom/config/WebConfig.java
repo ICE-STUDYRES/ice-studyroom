@@ -5,7 +5,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-import com.ice.studyroom.domain.identity.domain.service.TokenService;
+import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.penalty.interceptor.PenaltyCheckInterceptor;
 

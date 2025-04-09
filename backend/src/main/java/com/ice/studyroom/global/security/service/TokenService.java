@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.identity.domain.service;
+package com.ice.studyroom.global.security.service;
 
 import java.time.Duration;
 
@@ -8,8 +8,8 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
-import com.ice.studyroom.domain.identity.domain.JwtToken;
-import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvider;
+import com.ice.studyroom.global.security.jwt.JwtToken;
+import com.ice.studyroom.global.security.jwt.JwtTokenProvider;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.CacheService;
 import com.ice.studyroom.global.type.StatusCode;
