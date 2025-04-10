@@ -4,8 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
-import com.ice.studyroom.domain.identity.domain.service.TokenService;
-import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;

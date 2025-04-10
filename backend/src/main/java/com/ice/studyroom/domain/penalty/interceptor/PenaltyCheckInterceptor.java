@@ -4,7 +4,7 @@ import java.io.IOException;
 
 import org.springframework.web.servlet.HandlerInterceptor;
 
-import com.ice.studyroom.domain.identity.domain.service.TokenService;
+import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;

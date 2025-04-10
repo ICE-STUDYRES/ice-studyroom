@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.identity.infrastructure.security;
+package com.ice.studyroom.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -14,6 +14,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import com.ice.studyroom.global.security.filter.JwtAuthenticationFilter;
+import com.ice.studyroom.global.security.jwt.JwtTokenProvider;
+import com.ice.studyroom.global.security.handler.JwtAccessDeniedHandler;
+import com.ice.studyroom.global.security.handler.JwtAuthenticationEntryPoint;
+
 import lombok.RequiredArgsConstructor;
 
 @Configuration
@@ -21,6 +26,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 	private final JwtTokenProvider jwtTokenProvider;
+	private final JwtAuthenticationEntryPoint authenticationEntryPoint;
+	private final JwtAccessDeniedHandler accessDeniedHandler;
 
 	@Bean
 	public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -34,11 +41,15 @@ public class SecurityConfig {
 			.csrf(AbstractHttpConfigurer::disable)
 			.sessionManagement(sessionManagement ->
 				sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+			.exceptionHandling(exceptionHandling -> exceptionHandling
+				.authenticationEntryPoint(authenticationEntryPoint) // 401 에러 핸들러
+				.accessDeniedHandler(accessDeniedHandler)           // 403 에러 핸들러
+			)
 			.authorizeHttpRequests(authorize -> authorize
 
 				// ADMIN 역할만 접근 가능
 				.requestMatchers("/api/admin/**").hasRole("ADMIN")
-                             
+
 				// ATTENDANT 역할만 접근 가능
 				.requestMatchers("/api/qr/recognize").hasRole("ATTENDANT")
 
@@ -65,9 +76,13 @@ public class SecurityConfig {
 					"/v3/api-docs/**"
 				).permitAll()
 			)
-			.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider),
-				UsernamePasswordAuthenticationFilter.class)
+			.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
 			.build();
+	}
+
+	@Bean
+	public JwtAuthenticationFilter jwtAuthenticationFilter() {
+		return new JwtAuthenticationFilter(jwtTokenProvider, authenticationEntryPoint);
 	}
 
 	@Bean

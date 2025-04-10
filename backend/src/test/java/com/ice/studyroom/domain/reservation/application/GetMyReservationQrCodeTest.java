@@ -1,6 +1,6 @@
 package com.ice.studyroom.domain.reservation.application;
 
-import com.ice.studyroom.domain.identity.domain.service.TokenService;
+import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.redis.QRCodeService;

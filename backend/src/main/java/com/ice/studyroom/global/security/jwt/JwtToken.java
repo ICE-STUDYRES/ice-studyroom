@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.identity.domain;
+package com.ice.studyroom.global.security.jwt;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

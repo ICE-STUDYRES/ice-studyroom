@@ -8,10 +8,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ice.studyroom.domain.identity.domain.JwtToken;
+import com.ice.studyroom.global.security.jwt.JwtToken;
 import com.ice.studyroom.domain.identity.domain.application.EmailVerificationService;
-import com.ice.studyroom.domain.identity.domain.service.TokenService;
-import com.ice.studyroom.domain.identity.infrastructure.security.JwtTokenProvider;
+import com.ice.studyroom.global.security.service.TokenService;
+import com.ice.studyroom.global.security.jwt.JwtTokenProvider;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;

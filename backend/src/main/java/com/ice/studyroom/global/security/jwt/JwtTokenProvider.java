@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.identity.infrastructure.security;
+package com.ice.studyroom.global.security.jwt;
 
 import java.security.Key;
 import java.util.Arrays;
@@ -15,8 +15,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
-import com.ice.studyroom.domain.identity.domain.JwtToken;
-import com.ice.studyroom.domain.identity.exception.InvalidJwtException;
+import com.ice.studyroom.global.exception.jwt.JwtAuthenticationException;
+import com.ice.studyroom.global.type.StatusCode;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
@@ -26,6 +26,7 @@ import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import io.jsonwebtoken.security.SignatureException;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
@@ -92,24 +93,22 @@ public class JwtTokenProvider {
 	}
 
 	// 토큰 정보를 검증하는 메서드
-	public void validateToken(String token) {
+	public void validateToken(String token, boolean isRefreshTokenRequest) {
 		try {
 			Jwts.parserBuilder()
 				.setSigningKey(key)
 				.build()
 				.parseClaimsJws(token);
-		} catch (SecurityException | MalformedJwtException e) {
+		} catch (SecurityException | MalformedJwtException | UnsupportedJwtException | SignatureException e) {
 			log.info("Invalid JWT Token", e);
-			throw new InvalidJwtException("Invalid JWT token", e);
+			throw new JwtAuthenticationException(StatusCode.UNAUTHORIZED, "Invalid JWT token");
 		} catch (ExpiredJwtException e) {
-			log.info("Expired JWT Token", e);
-			throw e;
-		} catch (UnsupportedJwtException e) {
-			log.info("Unsupported JWT Token", e);
-			throw new InvalidJwtException("Unsupported JWT token", e);
+			if (!isRefreshTokenRequest) {
+				// 일반 요청에서만 예외 발생시킴
+				throw new JwtAuthenticationException(StatusCode.UNAUTHORIZED, "Access token has expired");
+			}
 		} catch (IllegalArgumentException e) {
-			log.info("JWT claims string is empty.", e);
-			throw new InvalidJwtException("JWT claims string is empty", e);
+			throw new JwtAuthenticationException(StatusCode.UNAUTHORIZED, "JWT claims string is empty");
 		}
 	}
 
@@ -125,7 +124,7 @@ public class JwtTokenProvider {
 		return parseClaims(token).get("auth", String.class);
 	}
 
-	// accessToken
+	// 유효성 검증하지 않을 예정, 여기서는 validateToken에서 검증하기에 예외가 발생하더라도 정상작동
 	private Claims parseClaims(String accessToken) {
 		try {
 			return Jwts.parserBuilder()
@@ -134,7 +133,6 @@ public class JwtTokenProvider {
 				.parseClaimsJws(accessToken)
 				.getBody();
 		} catch (ExpiredJwtException e) {
-			log.info("Expired JWT Token", e);
 			return e.getClaims();
 		}
 	}
