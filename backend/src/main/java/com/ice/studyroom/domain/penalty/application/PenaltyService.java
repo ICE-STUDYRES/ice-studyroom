@@ -38,7 +38,6 @@ public class PenaltyService {
 			orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "예약 정보를 찾을 수 없습니다."));
 
 		Penalty penalty = penaltyDomainService.createPenalty(member, reservation, reason, null);
-		member.updatePenalty(true);
 		penaltyRepository.save(penalty);
 	}
 

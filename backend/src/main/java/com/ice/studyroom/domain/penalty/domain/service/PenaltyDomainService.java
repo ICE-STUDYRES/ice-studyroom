@@ -32,7 +32,7 @@ public class PenaltyDomainService {
 	public Penalty createPenalty(Member member, Reservation reservation, PenaltyReasonType reason,
 		LocalDateTime penaltyEndAt) {
 		LocalDateTime end = (reason == PenaltyReasonType.ADMIN)? penaltyEndAt : calculatePenaltyEnd(reason.getDurationDays());
-//		member.updatePenalty(true);
+		member.updatePenalty(true);
 
 		return Penalty.builder()
 			.member(member)
