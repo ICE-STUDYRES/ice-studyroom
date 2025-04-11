@@ -66,7 +66,6 @@ class PenaltyDomainServiceTest {
 
 		// then
 		assertThat(result.getPenaltyEnd()).isEqualTo(LocalDateTime.of(2025, 4, 8, 23, 59, 59));
-		verify(member).updatePenalty(true);
 	}
 
 	/**
@@ -101,7 +100,6 @@ class PenaltyDomainServiceTest {
 
 		// then
 		assertThat(result.getPenaltyEnd()).isEqualTo(LocalDateTime.of(2025, 4, 7, 23, 59, 59));
-		verify(member).updatePenalty(true);
 	}
 
 	/**
@@ -136,7 +134,6 @@ class PenaltyDomainServiceTest {
 
 		// then
 		assertThat(result.getPenaltyEnd()).isEqualTo(LocalDateTime.of(2025, 4, 10, 23, 59, 59));
-		verify(member).updatePenalty(true);
 	}
 
 	/**
@@ -171,7 +168,6 @@ class PenaltyDomainServiceTest {
 
 		// then
 		assertThat(result.getPenaltyEnd()).isEqualTo(penaltyEnd);
-		verify(member).updatePenalty(true);
 	}
 
 	void 현재_날짜_고정(int month, int dayOfMonth) {

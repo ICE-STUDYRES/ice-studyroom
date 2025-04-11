@@ -1,10 +1,6 @@
 package com.ice.studyroom.domain.penalty.application;
 
-import java.time.Clock;
-import java.time.DayOfWeek;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 
 import org.springframework.stereotype.Service;
 
@@ -12,7 +8,6 @@ import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.penalty.domain.service.PenaltyDomainService;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
-import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
@@ -38,11 +33,13 @@ public class PenaltyService {
 			orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "예약 정보를 찾을 수 없습니다."));
 
 		Penalty penalty = penaltyDomainService.createPenalty(member, reservation, reason, null);
+		member.updatePenalty(true);
 		penaltyRepository.save(penalty);
 	}
 
 	public void adminAssignPenalty(Member member, LocalDateTime penaltyEndAt) {
 		Penalty penalty = penaltyDomainService.createPenalty(member, null, PenaltyReasonType.ADMIN, penaltyEndAt);
+		member.updatePenalty(true);
 		penaltyRepository.save(penalty);
 	}
 
