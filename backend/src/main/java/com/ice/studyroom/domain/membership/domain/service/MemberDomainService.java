@@ -28,7 +28,7 @@ public class MemberDomainService {
 		validateEmailUniqueness(Email.of(request.email()));
 		checkVerification(request.isAuthenticated());
 		validateVerificationCode(request.email(), request.authenticationCode());
-		validateStudentNumberUniqueness(request.studentNum());
+		//validateStudentNumberUniqueness(request.studentNum());
 
 		Member member = Member.create(
 			Email.of(request.email()),
@@ -47,11 +47,11 @@ public class MemberDomainService {
 		}
 	}
 
-	private void validateStudentNumberUniqueness(String studentNum) {
-		if (memberRepository.existsByStudentNum(studentNum)) {
-			throw new BusinessException(StatusCode.CONFLICT, "이미 사용 중인 학번입니다.");
-		}
-	}
+	// private void validateStudentNumberUniqueness(String studentNum) {
+	// 	if (memberRepository.existsByStudentNum(studentNum)) {
+	// 		throw new BusinessException(StatusCode.CONFLICT, "이미 사용 중인 학번입니다.");
+	// 	}
+	// }
 
 	public Member getMemberByEmail(String email) {
 		return Optional.ofNullable(memberRepository.getMemberByEmail(Email.of(email)))
