@@ -7,6 +7,8 @@ import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
+import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.StatusCode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -67,6 +69,9 @@ public class Penalty extends BaseTimeEntity {
 	}
 
 	public void expirePenalty() {
+		if (this.status != PenaltyStatus.VALID) {
+			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 만료된 패널티입니다.");
+		}
 		this.status = PenaltyStatus.EXPIRED;
 	}
 }
