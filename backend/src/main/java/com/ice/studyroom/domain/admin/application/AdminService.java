@@ -20,6 +20,7 @@ import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminService {
 
 	private final RoomTimeSlotRepository roomTimeSlotRepository;
@@ -40,17 +42,20 @@ public class AdminService {
 
 	@Transactional
 	public String adminOccupyRooms(AdminOccupyRequest request) {
+		log.info("관리자 선점 요청 - roomTimeSlotIds: {}, 요일: {}", request.roomTimeSlotId(), request.dayOfWeek());
 		//당일 선점일 경우, 스케줄에도 반영
 		if(request.dayOfWeek() == DayOfWeekStatus.valueOf(LocalDate.now().getDayOfWeek().name())){
 			List<Schedule> todaySchedules = scheduleRepository.findByScheduleDateAndRoomTimeSlotIdIn(LocalDate.now(),
 				request.roomTimeSlotId());
 
 			if(todaySchedules.isEmpty()){
+				log.warn("선점 실패 - 당일 일치 스케줄 없음 - roomTimeSlotIds: {}, date: {}", request.roomTimeSlotId(), LocalDate.now());
 				throw new BusinessException(StatusCode.NOT_FOUND, "해당 RoomTimeSlot ID에 일치하는 Schedule이 존재하지 않습니다.");
 			}
 
 			for (Schedule schedule : todaySchedules) {
 				if(schedule.getStatus() == ScheduleSlotStatus.RESERVED){
+					log.warn("선점 실패 - 예약된 스케줄 존재 - scheduleId: {}", schedule.getId());
 					throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 이루어진 스케줄에 대해서는 선점이 불가능합니다.");
 				}
 				schedule.updateStatus(ScheduleSlotStatus.UNAVAILABLE);
@@ -60,29 +65,33 @@ public class AdminService {
 		List<RoomTimeSlot> roomTimeSlots = roomTimeSlotRepository.findAllById(request.roomTimeSlotId());
 
 		if (roomTimeSlots.isEmpty()) {
+			log.warn("선점 실패 - 유효하지 않은 roomTimeSlot ID - 요청 ID 목록: {}", request.roomTimeSlotId());
 			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 존재하지 않습니다.");
 		}
 
 		for (RoomTimeSlot roomTimeSlot : roomTimeSlots) {
 			roomTimeSlot.updateStatus(ScheduleSlotStatus.UNAVAILABLE);
 		}
-
+		log.info("관리자 선점 완료 - 선점된 roomTimeSlot 수: {}", roomTimeSlots.size());
 		return "관리자가 선택한 시간대를 선점했습니다.";
 	}
 
 	@Transactional
 	public String adminReleaseRooms(AdminReleaseRequest request) {
+		log.info("관리자 선점 해제 요청 - roomTimeSlotIds: {}, 요일: {}", request.roomTimeSlotId(), request.dayOfWeek());
 		//당일 선점 해지일 경우, 스케줄에도 반영
 		if(request.dayOfWeek() == DayOfWeekStatus.valueOf(LocalDate.now().getDayOfWeek().name())){
 			List<Schedule> todaySchedules = scheduleRepository.findByScheduleDateAndRoomTimeSlotIdIn(LocalDate.now(),
 				request.roomTimeSlotId());
 
 			if(todaySchedules.isEmpty()){
+				log.warn("선점 해제 실패 - 당일 일치 스케줄 없음 - roomTimeSlotIds: {}, date: {}", request.roomTimeSlotId(), LocalDate.now());
 				throw new BusinessException(StatusCode.NOT_FOUND, "해당 RoomTimeSlot ID에 일치하는 Schedule이 존재하지 않습니다.");
 			}
 
 			for (Schedule schedule : todaySchedules) {
 				if(schedule.getStatus() == ScheduleSlotStatus.RESERVED){
+					log.warn("선점 해제 실패 - 예약된 스케줄 존재 - scheduleId: {}", schedule.getId());
 					throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 이루어진 스케줄에 대해서는 선점 해지가 불가능합니다.");
 				}
 				schedule.updateStatus(ScheduleSlotStatus.AVAILABLE);
@@ -92,13 +101,14 @@ public class AdminService {
 		List<RoomTimeSlot> roomTimeSlots = roomTimeSlotRepository.findAllById(request.roomTimeSlotId());
 
 		if (roomTimeSlots.isEmpty()) {
+			log.warn("선점 해제 실패 - 유효하지 않은 roomTimeSlot ID - 요청 ID 목록: {}", request.roomTimeSlotId());
 			throw new BusinessException(StatusCode.NOT_FOUND, "해당 ID에 일치하는 RoomTimeSlot이 존재하지 않습니다.");
 		}
 
 		for (RoomTimeSlot roomTimeSlot : roomTimeSlots) {
 			roomTimeSlot.updateStatus(ScheduleSlotStatus.AVAILABLE);
 		}
-
+		log.info("관리자 선점 해제 완료 - 해제된 roomTimeSlot 수: {}", roomTimeSlots.size());
 		return "관리자가 선택한 시간대의 선점을 해제했습니다.";
 	}
 
@@ -132,31 +142,44 @@ public class AdminService {
 
 	@Transactional
 	public String adminSetPenalty(AdminSetPenaltyRequest request) {
+		log.info("관리자 패널티 부여 요청 - 학번: {}, 종료일시: {}", request.studentNum(), request.penaltyEndAt());
 		Member member = memberRepository.findByStudentNum(request.studentNum())
-			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 학번을 가진 회원은 존재하지 않습니다."));
+			.orElseThrow(() -> {
+				log.warn("패널티 부여 실패 - 존재하지 않는 학번 - 학번: {}", request.studentNum());
+				return new BusinessException(StatusCode.NOT_FOUND, "해당 학번을 가진 회원은 존재하지 않습니다.");
+			});
 
 		if (member.isPenalty()) {
+			log.warn("패널티 부여 실패 - 이미 패널티 상태 - 학번: {}", request.studentNum());
 			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 패널티가 부여된 회원입니다. 패널티 해제 후 다시 시도해주세요.");
 		}
 
 		if(member.getRoles().contains("ROLE_ADMIN")){
+			log.warn("패널티 부여 실패 - 대상이 ADMIN 계정 - 학번: {}", request.studentNum());
 			throw new BusinessException(StatusCode.BAD_REQUEST, "ADMIN 계정에는 패널티 설정을 할 수 없습니다.");
 		}
 
 		penaltyService.adminAssignPenalty(member, request.penaltyEndAt());
+		log.info("관리자 패널티 부여 완료 - 학번: {}", request.studentNum());
 		return "패널티 부여가 완료되었습니다.";
 	}
 
 	@Transactional
 	public String adminDelPenalty(AdminDelPenaltyRequest request) {
+		log.info("관리자 패널티 해제 요청 - 학번: {}", request.studentNum());
 		Member member = memberRepository.findByStudentNum(request.studentNum())
-			.orElseThrow(() -> new BusinessException(StatusCode.NOT_FOUND, "해당 학번을 가진 회원을 찾을 수 없습니다."));
+			.orElseThrow(() -> {
+				log.warn("패널티 부여 실패 - 존재하지 않는 학번 - 학번: {}", request.studentNum());
+				return new BusinessException(StatusCode.NOT_FOUND, "해당 학번을 가진 회원은 존재하지 않습니다.");
+			});
 
 		if (!member.isPenalty()) {
+			log.warn("패널티 해제 실패 - 제재 상태 아님 - 학번: {}", request.studentNum());
 			throw new BusinessException(StatusCode.BAD_REQUEST, "패널티가 부여되지 않은 회원입니다.");
 		}
 
 		penaltyService.adminDeletePenalty(member);
+		log.info("관리자 패널티 해제 완료 - 학번: {}", request.studentNum());
 		return "패널티 해제가 완료되었습니다.";
 	}
 }
