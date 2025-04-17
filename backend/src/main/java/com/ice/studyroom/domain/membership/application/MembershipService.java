@@ -28,7 +28,9 @@ import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MembershipService {
@@ -41,12 +43,14 @@ public class MembershipService {
 
 	@Transactional
 	public MemberResponse createMember(MemberCreateRequest request) {
+		log.info("회원가입 요청 수신 - email: {}", request.email());
 		memberDomainService.registerMember(request);
 		return MemberResponse.of("success");
 	}
 
 	@Transactional
 	public JwtToken login(MemberLoginRequest request) {
+		log.info("로그인 요청 수신 - email: {}", request.email());
 
 		Member member = memberDomainService.getMemberByEmailForLogin(request.email());
 		memberDomainService.validatePasswordMatch(member, request.password());
@@ -58,11 +62,13 @@ public class MembershipService {
 		JwtToken jwtToken = jwtTokenProvider.generateToken(authentication);
 		tokenService.saveRefreshToken(request.email(), jwtToken.getRefreshToken());
 
+		log.info("로그인 성공 - email: {}", request.email());
 		return jwtToken;
 	}
 
 	@Transactional
 	public JwtToken refresh(String authorizationHeader, String refreshToken) {
+		log.info("토큰 리프레시 요청 수신");
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 		String accessToken = authorizationHeader.replace("Bearer ", "");
 		return tokenService.rotateToken(email, accessToken, refreshToken);
@@ -71,6 +77,7 @@ public class MembershipService {
 	@Transactional
 	public MemberResponse logout(String authorizationHeader, String refreshToken) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		log.info("로그아웃 요청 수신 - email: {}", email);
 
 		tokenService.deleteToken(email, refreshToken);
 
@@ -80,6 +87,7 @@ public class MembershipService {
 	@Transactional
 	public String updatePassword(String authorizationHeader, UpdatePasswordRequest request) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		log.info("비밀번호 변경 요청 수신 - email: {}", email);
 		Member member = memberDomainService.getMemberByEmail(email);
 		memberDomainService.updateMemberPassword(member, request.currentPassword(), request.updatedPassword(),
 			request.updatedPasswordForCheck());
@@ -89,6 +97,7 @@ public class MembershipService {
 
 	public MemberLookupResponse lookUpMember(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		log.info("회원 정보 조회 요청 수신 - email: {}", email);
 		String userName = memberDomainService.getUserNameByEmail(Email.of(email));
 		Member member = memberDomainService.getMemberByEmail(email);
 
@@ -99,12 +108,14 @@ public class MembershipService {
 	}
 
 	public MemberEmailResponse sendMail(EmailVerificationRequest request) {
+		log.info("이메일 인증 요청 - email: {}", request.email());
 		memberDomainService.validateEmailUniqueness(Email.of(request.email()));
 		emailVerificationService.sendCodeToEmail(request.email());
 		return MemberEmailResponse.of("인증 메일이 전송되었습니다.");
 	}
 
 	public MemberEmailResponse checkEmailVerification(MemberEmailVerificationRequest request) {
+		log.info("이메일 인증 확인 요청 - email: {}", request.email());
 		emailVerificationService.verifiedCode(request.email(), request.code());
 		return MemberEmailResponse.of("인증이 완료되었습니다.");
 	}

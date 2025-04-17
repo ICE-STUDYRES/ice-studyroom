@@ -22,6 +22,7 @@ public class EmailVerificationService {
 
 	public void sendCodeToEmail(String email) {
 		if (verificationCodeService.existsVerificationCode(email)) {
+			log.warn("이메일 인증 중복 요청 차단 - email: {}", email);
 			throw new BusinessException(StatusCode.DUPLICATE_REQUEST, "인증 메일이 이미 발송되었습니다.");
 		}
 
@@ -31,6 +32,7 @@ public class EmailVerificationService {
 		try {
 			resetTTL(email, authCode);
 			emailService.sendEmail(new EmailRequest(email, title, body));
+			log.info("이메일 인증 코드 전송 성공 - email: {}", email);  // 추가
 		} catch (Exception e) {
 			log.error("인증 메일 전송 실패 {}: {}", email, e.getMessage());
 			throw new BusinessException(StatusCode.INTERNAL_ERROR, "인증 메일 전송 중 오류가 발생했습니다.");
@@ -61,8 +63,10 @@ public class EmailVerificationService {
 	public void verifiedCode(String email, String authCode) {
 		if (!verificationCodeService.existsVerificationCode(email) ||
 			!verificationCodeService.getVerificationCode(email).equals(authCode)) {
+			log.warn("이메일 인증 실패 - 잘못된 인증 코드 - email: {}", email);
 			throw new BusinessException(StatusCode.INVALID_VERIFICATION_CODE, "유효하지 않은 인증코드입니다.");
 		}
+		log.info("이메일 인증 성공 - email: {}", email);
 		resetTTL(email, authCode);
 	}
 

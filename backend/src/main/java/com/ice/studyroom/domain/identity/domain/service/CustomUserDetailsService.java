@@ -11,7 +11,9 @@ import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
@@ -20,7 +22,10 @@ public class CustomUserDetailsService implements UserDetailsService {
 	@Override
 	public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
 		Member user = memberRepository.findByEmail(Email.of(username))
-			.orElseThrow(() -> new UsernameNotFoundException("사용자를 찾을 수 없습니다."));
+			.orElseThrow(() -> {
+				log.warn("사용자를 찾을 수 없습니다. - email: {}", username);
+				return new UsernameNotFoundException("사용자를 찾을 수 없습니다.");
+			});
 		return new SecurityUser(user);
 	}
 }

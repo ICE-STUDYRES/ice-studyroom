@@ -1,6 +1,5 @@
 package com.ice.studyroom.domain.reservation.domain.entity;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;

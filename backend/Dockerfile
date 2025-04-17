@@ -7,6 +7,7 @@ RUN ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # 3. 작업 디렉토리 설정
 WORKDIR /app
+RUN mkdir -p logs
 
 # 4. CI/CD에서 빌드된 JAR 파일을 컨테이너 내부로 복사
 COPY build/libs/*.jar app.jar

@@ -36,31 +36,30 @@ public class PenaltyUpdateScheduler {
 	@Transactional
 	@Scheduled(cron = "0 0 0 * * *") // 매일 00:00에 실행
 	public void updateMemberPenalty() {
-		log.info("Processing update member penalty at {} ", LocalDateTime.now());
+		log.info("패널티 갱신 스케줄 시작 - 실행 시각: {}", LocalDateTime.now());
 
 		penaltyRepository.findByStatus(PenaltyStatus.VALID).forEach(penalty -> {
 			if(penalty.isExpired()){
 				Member member = penalty.getMember();
 				member.updatePenalty(false);
 
-				log.info("해당 유저의 패널티가 해제되었습니다.: {} (ID: {}) at {}", member.getName(),
-					member.getStudentNum(), LocalDateTime.now());
+				log.info("패널티 해제 처리 - userId: {}, name: {}, studentNum: {}, penaltyId: {}",
+					member.getId(), member.getName(), member.getStudentNum(), penalty.getId());
 			}
 		});
 
-		log.info("Member Penalty updated successfully at {}", LocalDateTime.now());
+		log.info("패널티 갱신 스케줄 종료 - 완료 시각: {}", LocalDateTime.now());
 	}
 
 	@Transactional
 	@Scheduled(cron = "0 1 10-23 * * 1-5") // 평일 10:01 ~ 23:01
 	public void processNoShowPenalties() {
-		log.info("Processing no-show penalties at {}", LocalDateTime.now());
 
 		LocalDateTime now = LocalDateTime.now();
-		LocalDate todayDate = now.toLocalDate();  //오늘 날짜
-		LocalTime todayTime = now.toLocalTime(); //현재 시간
+		LocalDate todayDate = now.toLocalDate();
+		LocalTime todayTime = now.toLocalTime();
 
-		log.info("Processing no-show penalties for date: {} and time: {}", todayDate, todayTime);
+		log.info("노쇼 패널티 부여 스케줄 시작 - 실행 시각: {}", LocalDateTime.now());
 
 		List<Reservation> expiredReservations = reservationRepository
 			.findByScheduleDateAndEndTime(todayDate, todayTime.minusMinutes(1));
@@ -71,9 +70,12 @@ public class PenaltyUpdateScheduler {
 				reservation.markStatus(ReservationStatus.NO_SHOW);
 				Member member = reservation.getMember();
 				penaltyService.assignPenalty(member, reservation.getId(), PenaltyReasonType.NO_SHOW);
-				log.info("해당 유저가 노쇼로 인해 7일 패널티가 부여되었습니다. 이름 : {} 학번 : {}", member.getName(), member.getStudentNum());
+				log.info("노쇼 패널티 부여 - userId: {}, name: {}, studentNum: {}, reservationId: {}",
+					member.getId(), member.getName(), member.getStudentNum(), reservation.getId());
 			}
-			log.info("Processed no-show for reservation: {}", reservation.getId());
+			log.info("노쇼 처리 완료 - reservationId: {}", reservation.getId());
 		});
+
+		log.info("노쇼 패널티 부여 스케줄 종료 - 완료 시각: {}", LocalDateTime.now());
 	}
 }

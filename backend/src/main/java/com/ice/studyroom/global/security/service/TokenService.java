@@ -53,6 +53,7 @@ public class TokenService {
 
 	public JwtToken rotateToken(String email, String accessToken, String refreshToken) {
 		if (!validateRefreshToken(email, refreshToken)) {
+			log.warn("Refresh Token 검증 실패 - email: {}", email);
 			throw new BusinessException(StatusCode.UNAUTHORIZED, "유효하지 않은 Refresh Token 입니다.");
 		}
 

@@ -30,7 +30,7 @@ public class ScheduleTask {
 		LocalDate todayDate = now.toLocalDate();
 		LocalTime todayTime = now.toLocalTime();
 
-		log.info("Processing create Today Schedule date: {} and time: {}", todayDate, todayTime);
+		log.info("스케줄 생성 스케줄러 실행 - 날짜: {}, 시간: {}", todayDate, todayTime);
 
 		String sql = """
 				INSERT INTO schedule (
@@ -64,6 +64,6 @@ public class ScheduleTask {
 				WHERE r.day_of_week = DAYNAME(CONVERT_TZ(CURRENT_DATE, 'UTC', 'Asia/Seoul'));
 			""";
 		jdbcTemplate.update(sql);
-		System.out.println("Schedule inserted successfully at " + java.time.LocalDateTime.now());
+		log.info("스케줄 생성 완료 - 실행 완료 시각: {}", LocalDateTime.now());
 	}
 }
