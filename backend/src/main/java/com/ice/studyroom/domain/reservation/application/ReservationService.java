@@ -136,6 +136,11 @@ public class ReservationService {
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
 
+		if(reservation.getStatus() != ReservationStatus.RESERVED){
+			log.warn("QR코드 요청 실패 - 예약 상태 불일치 - reservationId: {}, status: {}", reservationId, reservation.getStatus());
+			throw new BusinessException(StatusCode.BAD_REQUEST, "예약 상태가 아닙니다.");
+		}
+
 		// 해당 사용자의 예약인지 확인
 		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
 			log.warn("QR코드 요청 실패 - 예약 접근 권한 없음 - userEmail: {}, reservationId: {}", reservationOwnerEmail, reservationId);
@@ -152,7 +157,6 @@ public class ReservationService {
 		} else {
 			log.info("QR 토큰 재사용 - reservationId: {}, token: {}", reservationId, token);
 		}
-
 
 		qrCodeService.storeToken(token, reservation.getId());
 		log.info("QR 토큰 저장 완료 - reservationId: {}", reservationId);
