@@ -33,6 +33,12 @@ public class PenaltyDomainService {
 		LocalDateTime penaltyEndAt) {
 		LocalDateTime end = (reason == PenaltyReasonType.ADMIN)? penaltyEndAt : calculatePenaltyEnd(reason.getDurationDays());
 
+		log.info("패널티 생성 - userId: {}, reservationId: {}, reason: {}, 종료일시: {}",
+			member.getId(),
+			reservation.getId(),
+			reason,
+			end);
+
 		return Penalty.builder()
 			.member(member)
 			.reservation(reservation)
@@ -43,7 +49,10 @@ public class PenaltyDomainService {
 
 	public Penalty findPenaltyByMemberIdAndStatus(Member member){
 		return penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID).orElseThrow(
-			() -> new BusinessException(StatusCode.NOT_FOUND, "유효하지 않은 패널티입니다.")
+			() -> {
+				log.warn("패널티 조회 실패 - 유효한 패널티 없음 - userId: {}", member.getId());
+				return new BusinessException(StatusCode.NOT_FOUND, "유효하지 않은 패널티입니다.");
+			}
 		);
 	}
 
