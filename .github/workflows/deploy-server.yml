@@ -134,7 +134,7 @@ jobs:
             fi
 
             sudo docker pull $IMAGE_NAME
-            sudo docker run -d --name $CONTAINER_NAME -p 8080:8080 --restart always --env-file /home/ubuntu/backend/.env -e TZ=Asia/Seoul $IMAGE_NAME
+            sudo docker run -d --name $CONTAINER_NAME -p 8080:8080 --restart always --env-file /home/ubuntu/backend/.env -e TZ=Asia/Seoul -v /home/ubuntu/backend/logs:/app/logs $IMAGE_NAME 
 
       - name: Clean Up Unused Docker Images
         uses: appleboy/ssh-action@master
