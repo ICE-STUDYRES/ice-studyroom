@@ -84,7 +84,7 @@ public class ReservationService {
 
 		Member reservationOwner = memberRepository.findByEmail(Email.of(reservationOwnerEmail))
 			.orElseThrow(() -> {
-				log.warn("내 예약 정보 조회 요청 - 존재하지 않는 회원 이메일: {}", reservationOwnerEmail);
+				ReservationLogUtil.logWarn("내 예약 정보 조회 실패 - 존재하지 않는 회원", "email: " + reservationOwnerEmail);
 				return new BusinessException(StatusCode.UNAUTHORIZED, "회원 정보를 찾을 수 없습니다.");
 			});
 
@@ -128,23 +128,23 @@ public class ReservationService {
 	public String getMyReservationQrCode(Long reservationId, String authorizationHeader) {
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		log.info("QR코드 요청 수신 - userEmail: {}, reservationId: {}", reservationOwnerEmail, reservationId);
+		ReservationLogUtil.log("QR코드 요청 수신", "예약 ID: " + reservationId);
 
 		// 예약이 유효한지 확인
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> {
-				log.warn("QR코드 요청 실패 - 존재하지 않는 예약 - reservationId: {}", reservationId);
+				ReservationLogUtil.logWarn("QR코드 요청 실패 - 존재하지 않는 예약","예약 ID: " + reservationId);
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
 
 		if(reservation.getStatus() != ReservationStatus.RESERVED){
-			log.warn("QR코드 요청 실패 - 예약 상태 불일치 - reservationId: {}, status: {}", reservationId, reservation.getStatus());
+			ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 상태 아님", "예약 ID: " + reservationId);
 			throw new BusinessException(StatusCode.BAD_REQUEST, "예약 상태가 아닙니다.");
 		}
 
 		// 해당 사용자의 예약인지 확인
 		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
-			log.warn("QR코드 요청 실패 - 예약 접근 권한 없음 - userEmail: {}, reservationId: {}", reservationOwnerEmail, reservationId);
+			ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 접근 권한 없음", "예약 ID: " + reservationId);
 			throw new BusinessException(StatusCode.FORBIDDEN, "해당 예약에 접근할 수 없습니다.");
 		}
 
@@ -154,16 +154,14 @@ public class ReservationService {
 			token = SecureTokenUtil.generate(10);
 			reservation.assignQrToken(token);
 			reservationRepository.save(reservation);
-			log.info("QR 토큰 생성 및 저장 - reservationId: {}, token: {}", reservationId, token);
+			ReservationLogUtil.log("QR코드 생성 완료", "예약 ID: " + reservationId);
 		} else {
-			log.info("QR 토큰 재사용 - reservationId: {}, token: {}", reservationId, token);
+			ReservationLogUtil.log("QR코드 재사용", "예약 ID: " + reservationId);
 		}
 
 		qrCodeService.storeToken(token, reservation.getId());
-		log.info("QR 토큰 저장 완료 - reservationId: {}", reservationId);
-
 		String qrCode = qrCodeUtil.generateQRCodeFromToken(token);
-		log.info("QR 코드 생성 완료 - reservationId: {}", reservationId);
+		ReservationLogUtil.log("QR 토큰 저장 및 생성 완료", "예약 ID: " + reservationId);
 		return qrCode;
 	}
 
@@ -171,59 +169,56 @@ public class ReservationService {
 	public QrEntranceResponse qrEntrance(QrEntranceRequest request) {
 		// 클라이언트로부터 전달된 토큰 저장
 		String token = request.qrToken();
-		log.info("QR 입장 요청 수신 - token: {}", token);
 
 		// 토큰으로 예약 ID 조회
 		Long reservationId = qrCodeService.getReservationIdByToken(token);
 		if (reservationId == null) {
-			log.warn("유효하지 않은 QR 토큰 - token: {}", token);
+			ReservationLogUtil.logWarn("QR 입장 실패 - 유효하지 않은 QR 토큰", token);
 			throw new BusinessException(StatusCode.BAD_REQUEST, "만료되었거나 유효하지 않은 QR 코드입니다.");
 		}
+
+		ReservationLogUtil.log("QR 입장 요청 수신", "예약 ID: " + reservationId);
 
 		// RDB에 존재하지않는 예약의 경우
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> {
-				log.warn("QR 입장 실패 - 존재하지 않는 예약 - reservationId: {}", reservationId);
+				ReservationLogUtil.logWarn("QR 입장 실패 - 존재하지 않는 예약", "예약 ID: " + reservationId);
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
-
-		log.info("예약 조회 성공 - reservationId: {}", reservationId);
 
 		Member reservationOwner = reservation.getMember();
 
 		// 예약의 상태에 따른 에러 처리
 		if(reservation.getStatus() == ReservationStatus.CANCELLED){
-			log.warn("입장 실패 - 취소된 예약 - reservationId: {}", reservationId);
+			ReservationLogUtil.logWarn("QR 입장 실패 - 취소된 예약", "예약 ID: " + reservationId);
 			throw new BusinessException(StatusCode.BAD_REQUEST, "취소된 예약입니다.");
 		} else if(reservation.getStatus() == ReservationStatus.ENTRANCE || reservation.getStatus() == ReservationStatus.LATE){
-			log.warn("입장 실패 - 이미 입장 처리된 예약 - reservationId: {}", reservationId);
+			ReservationLogUtil.logWarn("QR 입장 실패 - 이미 입장 처리된 예약", "예약 ID: " + reservationId);
 			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 입실처리 된 예약입니다.");
 		}
 
 		LocalDateTime now = LocalDateTime.now(clock);
 		ReservationStatus status = reservation.checkAttendanceStatus(now);
 
-		log.info("입장 상태 판단 - reservationId: {}, 상태: {}, 시간: {}", reservationId, status, now);
-
 		reservation.updateEnterTime(now);
 		reservation.markStatus(status);
 
 		// qr 무효화
 		qrCodeService.invalidateToken(token);
-		log.info("QR 토큰 무효화 완료 - token: {}", token);
 
 		if (status == ReservationStatus.RESERVED) {
-			log.warn("입장 실패 - 출석 시간 아님 - reservationId: {}", reservationId);
+			ReservationLogUtil.logWarn("QR 입장 실패 - 출석 시간 아님", "예약 ID: " + reservationId);
 			throw new BusinessException(StatusCode.BAD_REQUEST, "출석 시간이 아닙니다.");
 		} else if (status == ReservationStatus.NO_SHOW) {
-			log.warn("입장 실패 - 출석 시간 만료 - reservationId: {}", reservationId);
+			ReservationLogUtil.logWarn("QR 입장 실패 - 출석 시간 만료", "예약 ID: " + reservationId);
 			throw new BusinessException(StatusCode.BAD_REQUEST, "출석 시간이 만료되었습니다.");
 		} else if(status == ReservationStatus.LATE){
-			log.warn("지각 입장 - 패널티 부여 - reservationId: {}, userId: {}", reservationId, reservationOwner.getId());
+			ReservationLogUtil.logWarn("지각 입장 - 패널티 부여", "예약 ID: " + reservationId,
+				"userId: " + reservationOwner.getEmail().getValue());
 			penaltyService.assignPenalty(reservationOwner, reservationId, PenaltyReasonType.LATE);
 		}
 
-		log.info("입장 처리 완료 - reservationId: {}, 최종 상태: {}", reservationId, status);
+		ReservationLogUtil.log("QR 입장 처리 완료", "예약 ID: " + reservationId);
 		return new QrEntranceResponse(status, reservationOwner.getName(), reservationOwner.getStudentNum());
 	}
 
@@ -231,12 +226,12 @@ public class ReservationService {
 	public String createIndividualReservation(String authorizationHeader, CreateReservationRequest request) {
 		// Access Token 에서 예약자 이메일 추출
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		ReservationLogUtil.logReservationRequest(RoomType.INDIVIDUAL, request.scheduleId(), request.participantEmail());
+		ReservationLogUtil.log("개인 예약 생성 요청", "스케줄 ID: " + Arrays.toString(request.scheduleId()), "참여자 이메일: " + Arrays.toString(request.participantEmail()));
 
 		// 예약자 확인
 		Member reservationOwner = memberRepository.findByEmail(Email.of(reservationOwnerEmail))
 			.orElseThrow(() -> {
-				ReservationLogUtil.logReservationFailure(RoomType.INDIVIDUAL, "존재하지 않는 예약자", reservationOwnerEmail);
+				ReservationLogUtil.logWarn("개인 예약 실패 - 존재하지 않는 예약자", "예약자 이메일: " + reservationOwnerEmail);
 				return new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reservationOwnerEmail);
 			});
 
@@ -245,7 +240,7 @@ public class ReservationService {
 		List<Schedule> schedules = scheduleRepository.findAllByIdIn(idList);
 
 		if (schedules.size() != idList.size()) {
-			ReservationLogUtil.logReservationFailure(RoomType.INDIVIDUAL, "존재하지 않는 스케줄 포함됨 ", idList);
+			ReservationLogUtil.logWarn("개인 예약 실패 - 존재하지 않는 스케줄 포함됨", "스케줄 ID: " + idList);
 			throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
 		}
 
@@ -253,13 +248,13 @@ public class ReservationService {
 
 		RoomType roomType = schedules.get(0).getRoomType();
 		if(roomType == RoomType.GROUP) {
-			ReservationLogUtil.logReservationFailure(RoomType.INDIVIDUAL, "그룹 전용 방 예약 시도", schedules.get(0).getRoomNumber());
+			ReservationLogUtil.logWarn("개인 예약 실패 - 그룹 전용 방 예약 시도","방 번호: " + schedules.get(0).getRoomNumber());
 			throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다.");
 		}
 
 		// 패널티 상태 확인 (예약 불가)
 		if (reservationOwner.isPenalty()) {
-			ReservationLogUtil.logReservationFailure(RoomType.INDIVIDUAL, "패널티 상태의 사용자", reservationOwnerEmail);
+			ReservationLogUtil.logWarn("개인 예약 실패 - 패널티 상태의 사용자", "예약자 이메일: " + reservationOwnerEmail);
 			throw new BusinessException(StatusCode.FORBIDDEN, "사용정지 상태입니다.");
 		}
 
@@ -272,7 +267,7 @@ public class ReservationService {
 		// 스케줄 업데이트 (currentRes 증가 및 상태 변경)
 		for (Schedule schedule : schedules) {
 			if (!schedule.isCurrentResLessThanCapacity()) {
-				ReservationLogUtil.logReservationFailure(RoomType.INDIVIDUAL, "수용 인원 초과", schedule.getId());
+					ReservationLogUtil.logWarn("개인 예약 실패 - 수용 인원 초과", "스케줄 ID: " + schedule.getId());
 				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 가능한 자리가 없습니다.");
 			}
 
@@ -283,7 +278,7 @@ public class ReservationService {
 		}
 
 		scheduleRepository.saveAll(schedules);
-		ReservationLogUtil.logReservationSuccess(RoomType.INDIVIDUAL, reservation.getId());
+		ReservationLogUtil.log("개인 예약 생성 성공", "예약자: " + reservationOwnerEmail, "예약 ID: " + reservation.getId());
 		sendReservationSuccessEmail(roomType, reservationOwnerEmail, new HashSet<>(), schedules.get(0));
 
 		return "Success";
@@ -293,12 +288,12 @@ public class ReservationService {
 	public String createGroupReservation(String authorizationHeader, CreateReservationRequest request) {
 		// JWT에서 예약자 이메일 추출
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		ReservationLogUtil.logReservationRequest(RoomType.GROUP, request.scheduleId(), request.participantEmail());
+		ReservationLogUtil.log("단체 예약 생성 요청", "스케줄 ID: " + Arrays.toString(request.scheduleId()), "참여자 이메일: " + Arrays.toString(request.participantEmail()));
 
 		// 예약자(User) 확인 및 user_name 가져오기
 		Member reservationOwner = memberRepository.findByEmail(Email.of(reservationOwnerEmail))
 			.orElseThrow(() -> {
-				ReservationLogUtil.logReservationFailure(RoomType.GROUP, "존재하지 않는 예약자", reservationOwnerEmail);
+				ReservationLogUtil.logWarn("단체 예약 실패 - 존재하지 않는 예약자", "예약자 이메일: " + reservationOwnerEmail);
 				return new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reservationOwnerEmail);
 			});
 
@@ -307,7 +302,7 @@ public class ReservationService {
 		List<Schedule> schedules = scheduleRepository.findAllByIdIn(idList);
 
 		if (schedules.size() != idList.size()) {
-			ReservationLogUtil.logReservationFailure(RoomType.GROUP, "존재하지 않는 스케줄 포함됨", idList);
+			ReservationLogUtil.logWarn("단체 예약 실패 - 존재하지 않는 스케줄 포함됨", "스케줄 ID: " + idList);
 			throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
 		}
 
@@ -316,12 +311,12 @@ public class ReservationService {
 		// 스케줄에서 Type을 저장해야하며, Type에 따른 RES 처리가 필요하다.
 		RoomType roomType = schedules.get(0).getRoomType();
 		if(roomType == RoomType.INDIVIDUAL) {
-			ReservationLogUtil.logReservationFailure(RoomType.GROUP, "개인 전용 방 예약 시도", schedules.get(0).getRoomNumber());
+			ReservationLogUtil.logWarn("단체 예약 실패 - 개인 전용 방 예약 시도", "방 번호: " + schedules.get(0).getRoomNumber());
 			throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 개인예약 전용입니다.");
 		}
 
 		if(reservationOwner.isPenalty()) {
-			ReservationLogUtil.logReservationFailure(RoomType.GROUP, "예약자가 패널티 상태", reservationOwnerEmail);
+			ReservationLogUtil.logWarn("단체 예약 실패 - 예약자가 패널티 상태", "예약자 이메일: " + reservationOwnerEmail);
 			throw new BusinessException(StatusCode.FORBIDDEN, "예약자가 패널티 상태입니다. 예약이 불가능합니다.");
 		}
 
@@ -340,18 +335,18 @@ public class ReservationService {
 		if (!ObjectUtils.isEmpty(request.participantEmail())) {
 			for (String email : request.participantEmail()) {
 				if (!uniqueEmails.add(email)) {
-					ReservationLogUtil.logReservationFailure(RoomType.GROUP, "중복된 참여자 이메일", email);
+						ReservationLogUtil.logWarn("단체 예약 실패 - 중복된 참여자 이메일", "이메일: " + email);
 					throw new BusinessException(StatusCode.BAD_REQUEST, "중복된 참여자 이메일이 존재합니다: " + email);
 				}
 				Member participant = memberRepository.findByEmail(Email.of(email))
 					.orElseThrow(() -> {
-						ReservationLogUtil.logReservationFailure(RoomType.GROUP, "존재하지 않는 참여자 이메일", email);
+						ReservationLogUtil.logWarn("단체 예약 실패 - 존재하지 않는 참여자 이메일", "이메일: " + email);
 						return new BusinessException(StatusCode.NOT_FOUND, "참여자 이메일이 존재하지 않습니다: " + email);
 					});
 
 				//참여자 패널티 상태 확인
 				if (participant.isPenalty()) {
-					ReservationLogUtil.logReservationFailure(RoomType.GROUP, "패널티 상태 참여자 존재", email);
+					ReservationLogUtil.logWarn("단체 예약 실패 - 패널티 상태 참여자 존재", "이메일: " + email);
 					throw new BusinessException(StatusCode.FORBIDDEN, "참여자 중 패널티 상태인 사용자가 있습니다. 예약이 불가능합니다. (이메일: " + email + ")");
 				}
 
@@ -360,7 +355,7 @@ public class ReservationService {
 				if(recentReservationOpt.isPresent()) {
 					ReservationStatus recentStatus = recentReservationOpt.get().getStatus();
 					if(recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
-						ReservationLogUtil.logReservationFailure(RoomType.GROUP, "참여자가 이미 예약 중", email);
+						ReservationLogUtil.logWarn("단체 예약 실패 - 참여자가 이미 예약 중", "이메일: " + email);
 						throw new BusinessException(StatusCode.CONFLICT, "참여자 중 현재 예약이 진행 중인 사용자가 있어 예약이 불가능합니다. (이메일: " + email + ")");
 					}
 				}
@@ -374,11 +369,11 @@ public class ReservationService {
 		int minRes = schedules.get(0).getMinRes(); // 모든 Group 전용 schedule의 min_res는 2로 동일
 		int capacity = schedules.get(0).getCapacity(); // 같은 방의 schedule은 capacity는 동일
 		if (totalParticipants < minRes) {
-			ReservationLogUtil.logReservationFailure(RoomType.GROUP, "최소 인원 미달", "최소 인원: ", minRes);
+			ReservationLogUtil.logWarn("단체 예약 실패 - 최소 인원 미달", "최소 인원: " + minRes, "현재 인원: " + totalParticipants);
 			throw new BusinessException(StatusCode.BAD_REQUEST,
 				"최소 예약 인원 조건을 만족하지 않습니다. (필요 인원: " + minRes + ", 현재 인원: " + totalParticipants + ")");
 		}else if (totalParticipants > capacity) {
-			ReservationLogUtil.logReservationFailure(RoomType.GROUP, "최대 수용 인원 초과", "최대 인원: ", capacity);
+			ReservationLogUtil.logWarn("단체 예약 실패 - 최대 인원 초과", "최대 수용 인원: " + capacity, "현재 인원: " + totalParticipants);
 			throw new BusinessException(StatusCode.BAD_REQUEST,
 				"방의 최대 수용 인원을 초과했습니다. (최대 수용 인원: " + capacity + ", 현재 인원: " + totalParticipants + ")");
 		}
@@ -398,7 +393,7 @@ public class ReservationService {
 			schedule.updateGroupCurrentRes(totalParticipants); // 현재 사용 인원을 예약자 + 참여자 숫자로 지정
 			schedule.updateStatus(ScheduleSlotStatus.RESERVED);
 		}
-		ReservationLogUtil.logReservationSuccess(RoomType.GROUP, reservations.get(0).getId());
+		ReservationLogUtil.log("단체 예약 생성 성공", "예약자: " + reservationOwnerEmail, "참여자 수: " + (uniqueEmails.size()-1), "예약 ID: " + reservations.get(0).getId());
 
 		//전 인원에게 예약 확정 메일 발송
 		sendReservationSuccessEmail(roomType, reservationOwnerEmail, uniqueEmails, schedules.get(0));
@@ -409,11 +404,11 @@ public class ReservationService {
 	@Transactional
 	public CancelReservationResponse cancelReservation(Long reservationId, String authorizationHeader) {
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		log.info("예약 취소 요청 수신 - userEmail: {}, reservationId: {}", reservationOwnerEmail, reservationId);
+		ReservationLogUtil.log("예약 취소 요청 수신", "예약 ID: " + reservationId);
 
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> {
-				log.warn("예약 취소 실패 - 존재하지 않는 예약 - reservationId: {}", reservationId);
+				ReservationLogUtil.logWarn("예약 취소 실패 - 존재하지 않는 예약", "예약 ID: " + reservationId);
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
 
@@ -421,7 +416,7 @@ public class ReservationService {
 
 		// JWT 를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
 		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
-			log.warn("예약 취소 실패 - 사용자 예약 아님 - userEmail: {}, reservationId: {}", reservationOwnerEmail, reservationId);
+			ReservationLogUtil.logWarn("예약 취소 실패 - 사용자 예약 아님","예약 ID: " + reservationId, "예약자 이메일: " + reservationOwnerEmail);
 			throw new BusinessException(StatusCode.NOT_FOUND, "이전에 예약이 되지 않았습니다.");
 		}
 
@@ -429,22 +424,21 @@ public class ReservationService {
 
 		Schedule firstSchedule = scheduleRepository.findById(reservation.getFirstScheduleId())
 			.orElseThrow(() -> {
-				log.warn("예약 취소 실패 - 예약에 연결된 스케줄 없음 - scheduleId: {}", reservation.getFirstScheduleId());
+				ReservationLogUtil.logWarn("예약 취소 실패 - 예약에 연결된 스케줄 없음", "예약 ID: " + reservationId);
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다.");
 			});
 
 		LocalDateTime startTime = LocalDateTime.of(now.toLocalDate(), firstSchedule.getStartTime());
 
-		// 입실 1 시간 전 일 경우 패널티
 		if (now.isAfter(startTime)) {
-			log.warn("예약 취소 실패 - 입실 시간 초과 - reservationId: {}, now: {}, startTime: {}", reservationId, now, startTime);
+			ReservationLogUtil.logWarn("예약 취소 실패 - 입실 시간 초과", "예약 ID: " + reservationId, "입실 시간: " + startTime);
 			throw new BusinessException(StatusCode.BAD_REQUEST, "입실 시간이 초과하였기에 취소할 수 없습니다.");
 		}
 
 		if (!now.isBefore(startTime.minusHours(1))) {
 			// 취소 패널티 부여
+			ReservationLogUtil.log("예약 취소 - 패널티 부여", "예약 ID: " + reservationId, "예약자 이메일: " + reservationOwnerEmail);
 			penaltyService.assignPenalty(reservationOwner, reservationId, PenaltyReasonType.CANCEL);
-			log.warn("예약 취소 패널티 부여 - userEmail: {}, reservationId: {}", reservationOwnerEmail, reservationId);
 		}
 
 		/*
@@ -454,35 +448,33 @@ public class ReservationService {
 		 */
 
 		firstSchedule.cancel();
-		log.info("예약 취소 - 첫 스케줄 상태 변경 완료 - scheduleId: {}", firstSchedule.getId());
 
 		Optional.ofNullable(reservation.getSecondScheduleId())
 			.flatMap(scheduleRepository::findById)
 			.ifPresent(schedule -> {
 				schedule.cancel();
-				log.info("예약 취소 - 두 번째 스케줄 상태 변경 완료 - scheduleId: {}", schedule.getId());
 			});
 
 		reservation.markStatus(ReservationStatus.CANCELLED);
-		log.info("예약 상태 CANCELLED 처리 완료 - reservationId: {}", reservationId);
+		ReservationLogUtil.log("예약 상태 CANCELLED 처리 완료", "예약 ID: " + reservationId);
 
 		return new CancelReservationResponse(reservationId);
 	}
 
 	@Transactional
 	public String extendReservation(Long reservationId, String authorizationHeader) {
-		log.info("예약 연장 요청 수신 - reservationId: {}", reservationId);
+		ReservationLogUtil.log("예약 연장 요청 수신", "예약 ID: " + reservationId);
 
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> {
-				log.warn("예약 연장 실패 - 존재하지 않는 예약 - reservationId: {}", reservationId);
+				ReservationLogUtil.logWarn("예약 연장 실패 - 존재하지 않는 예약", "예약 ID: " + reservationId);
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
 
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
-			log.warn("예약 연장 실패 - 예약자 불일치 - userEmail: {}, reservationId: {}", reservationOwnerEmail, reservationId);
+			ReservationLogUtil.logWarn("예약 연장 실패 - 예약자 불일치", "예약 ID: " + reservationId, "예약자 이메일: " + reservationOwnerEmail);
 			throw new BusinessException(StatusCode.NOT_FOUND, "해당 예약 정보가 존재하지 않습니다.");
 		}
 
@@ -490,10 +482,10 @@ public class ReservationService {
 		LocalDateTime now = LocalDateTime.now(clock);
 		LocalDateTime endTime = LocalDateTime.of(reservation.getScheduleDate(), reservation.getEndTime());
 		if (now.isAfter(endTime)) {
-			log.warn("예약 연장 실패 - 퇴실 시간 이후 요청 - reservationId: {}, now: {}, endTime: {}", reservationId, now, endTime);
+			ReservationLogUtil.logWarn("예약 연장 실패 - 퇴실 시간 이후 요청", "예약 ID: " + reservationId);
 			throw new BusinessException(StatusCode.BAD_REQUEST, "연장 가능한 시간이 지났습니다.");
 		} else if (now.isBefore(endTime.minusMinutes(10))) {
-			log.warn("예약 연장 실패 - 연장 가능 시간 아님 - reservationId: {}, now: {}, 연장 가능 시점: {}", reservationId, now, endTime.minusMinutes(10));
+			ReservationLogUtil.logWarn("예약 연장 실패 - 연장 가능 시간 아님", "예약 ID: " + reservationId);
 			throw new BusinessException(StatusCode.BAD_REQUEST, "연장은 퇴실 시간 10분 전부터 가능합니다.");
 		}
 
@@ -503,22 +495,22 @@ public class ReservationService {
 		//예약의 마지막 스케줄 ID를 통해 다음 스케줄을 찾는다.
 		Schedule nextSchedule = scheduleRepository.findById(lastScheduleId + 1)
 			.orElseThrow(() -> {
-				log.warn("예약 연장 실패 - 다음 스케줄 없음 - 요청 스케줄ID: {}", lastScheduleId + 1);
+				ReservationLogUtil.logWarn("예약 연장 실패 - 다음 스케줄 없음", "예약 ID: " + reservationId);
 				return new BusinessException(StatusCode.NOT_FOUND, "스터디룸 이용 가능 시간을 확인해주세요.");
 			});
 
 		if (!nextSchedule.getRoomNumber().equals(reservation.getRoomNumber())){
-			log.warn("예약 연장 실패 - 다른 방 스케줄 연결 시도 - 예약방: {}, 다음스케줄 방: {}", reservation.getRoomNumber(), nextSchedule.getRoomNumber());
+			ReservationLogUtil.logWarn("예약 연장 실패 - 다른 방 스케줄 연결 시도", "예약방: " + reservation.getRoomNumber(), "다음스케줄 방: " + nextSchedule.getRoomNumber());
 			throw new BusinessException(StatusCode.BAD_REQUEST, "스터디룸 이용 가능 시간을 확인해주세요.");
 		}
 
 		if (!nextSchedule.isCurrentResLessThanCapacity() || !nextSchedule.isAvailable()) {
-			log.warn("예약 연장 실패 - 다음 시간대 이용 불가 또는 인원 초과 - scheduleId: {}", nextSchedule.getId());
+			ReservationLogUtil.logWarn("예약 연장 실패 - 다음 시간대 이용 불가 또는 인원 초과", "다음 스케줄 ID: " + nextSchedule.getId());
 			throw new BusinessException(StatusCode.BAD_REQUEST, "다음 시간대가 이미 예약이 완료되었거나, 이용이 불가능한 상태입니다.");
 		}
 
 		if (nextSchedule.getRoomType() == RoomType.GROUP) {
-			log.info("그룹 예약 연장 검증 시작 - reservationId: {}", reservationId);
+			ReservationLogUtil.log("그룹 예약 연장 검증 시작", "예약 ID: " + reservationId);
 			// 그룹 예약 이기에 같은 시간대의 예약 레코드를 모두 가져온다(참여자 검증 필요).
 			List<Reservation> reservations = reservationRepository.findByFirstScheduleId(reservation.getFirstScheduleId());
 
@@ -528,14 +520,16 @@ public class ReservationService {
 				if (res.getStatus() == ReservationStatus.CANCELLED) continue;
 
 				if (res.getMember().isPenalty()) {
-					log.warn("그룹 예약 연장 실패 - 패널티 상태 참여자 존재 - userEmail: {}", res.getMember().getEmail().getValue());
+					ReservationLogUtil.logWarn("그룹 예약 연장 실패 - 패널티 상태 참여자 존재",
+						"이메일: " + res.getMember().getEmail().getValue());
 					throw new BusinessException(StatusCode.FORBIDDEN, "패널티가 있는 멤버로 인해 연장이 불가능합니다.");
 				}
 
 				//1명이라도 입실하지 않은 경우
 				if (!res.isEntered()){
 					//지각 입실은 앞서 패널티 체킹으로 연장 불가 처리
-					log.warn("그룹 예약 연장 실패 - 입실하지 않은 참여자 존재 - userEmail: {}", res.getMember().getEmail().getValue());
+					ReservationLogUtil.logWarn("그룹 예약 연장 실패 - 입실하지 않은 참여자 존재",
+						"이메일: " + res.getMember().getEmail().getValue());
 					throw new BusinessException(StatusCode.BAD_REQUEST, "입실 처리 되어있지 않은 유저가 있어 연장이 불가능합니다.");
 				}
 			}
@@ -544,30 +538,31 @@ public class ReservationService {
 				if (res.getStatus() == ReservationStatus.CANCELLED) continue;
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 				nextSchedule.reserve();
-				log.info("그룹 예약 연장 완료 - userEmail: {}, reservationId: {}", res.getMember().getEmail().getValue(), res.getId());
+				ReservationLogUtil.log("그룹 예약 연장 완료", "참여자 이메일: " + res.getMember().getEmail().getValue(), "예약 ID: " + res.getId());
+
 			}
 			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 
 		} else {
 			if(reservation.getMember().isPenalty()){
-				log.warn("개인 예약 연장 실패 - 패널티 상태 사용자 - userEmail: {}", reservationOwnerEmail);
+				ReservationLogUtil.logWarn("개인 예약 연장 실패 - 패널티 상태 사용자", "예약자 이메일: " + reservationOwnerEmail);
 				throw new BusinessException(StatusCode.BAD_REQUEST, "패넡티 상태이므로, 연장이 불가능합니다.");
 			}
 
 			if(!reservation.isEntered()){
-				log.warn("개인 예약 연장 실패 - 입실하지 않은 사용자 - reservationId: {}", reservationId);
+				ReservationLogUtil.logWarn("개인 예약 연장 실패 - 입실하지 않은 사용자", "예약자 이메일: " + reservationOwnerEmail);
 				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 연장은 입실 후 가능합니다.");
 			}
 			reservation.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 			nextSchedule.reserve();
-			log.info("개인 예약 연장 완료 - reservationId: {}, scheduleId: {}", reservationId, nextSchedule.getId());
+			ReservationLogUtil.log("개인 예약 연장 완료", "예약자 이메일: " + reservationOwnerEmail, "예약 ID: " + reservation.getId());
 
 			if (!nextSchedule.isCurrentResLessThanCapacity()){
 				nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			}
 		}
 
-		log.info("예약 연장 최종 완료 - reservationId: {}, nextScheduleId: {}", reservationId, nextSchedule.getId());
+		ReservationLogUtil.log("예약 연장 최종 완료", "예약자 이메일: " + reservationOwnerEmail);
 		return "Success";
 	}
 
@@ -597,18 +592,21 @@ public class ReservationService {
 				!schedule.isCurrentResLessThanCapacity() ||
 				!scheduleStartDateTime.isAfter(now); // 현재 시간보다 이전이면 예외 발생
 		})) {
-			log.warn("스케줄 유효성 검증 실패 - 현재 시간: {}, scheduleIds: {}", now,
-				schedules.stream().map(Schedule::getId).toList());
+			ReservationLogUtil.logWarn("스케줄 유효성 검증 실패",
+				"현재 시간: " + now,
+				"대상 스케줄 ID 목록: " + schedules.stream().map(Schedule::getId).toList());
 			throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다. 스케줄이 유효하지 않거나 이미 예약이 완료되었습니다.");
 		}
 	}
 
-	private void checkDuplicateReservation(Email reservationOwnerEmail){
-		Optional<Reservation> recentReservation = reservationRepository.findLatestReservationByMemberEmail(reservationOwnerEmail);
+	private void checkDuplicateReservation(Email reservationOwnerEmail) {
+		Optional<Reservation> recentReservation = reservationRepository.findLatestReservationByMemberEmail(
+			reservationOwnerEmail);
 		if (recentReservation.isPresent()) {
 			ReservationStatus recentStatus = recentReservation.get().getStatus();
 			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
-				log.warn("중복 예약 시도 - userEmail: {}, 현재 상태: {}", reservationOwnerEmail.getValue(), recentStatus);
+				ReservationLogUtil.logWarn("중복 예약 시도",
+					"userEmail: " + reservationOwnerEmail.getValue() + "현재 상태: " + recentStatus);
 				throw new BusinessException(StatusCode.CONFLICT, "현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다.");
 			}
 		}
