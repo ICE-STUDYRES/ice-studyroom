@@ -12,6 +12,7 @@ import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.penalty.domain.entity.Penalty;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyStatus;
+import com.ice.studyroom.domain.penalty.domain.util.PenaltyLogUtil;
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.global.exception.BusinessException;
@@ -33,12 +34,6 @@ public class PenaltyDomainService {
 		LocalDateTime penaltyEndAt) {
 		LocalDateTime end = (reason == PenaltyReasonType.ADMIN)? penaltyEndAt : calculatePenaltyEnd(reason.getDurationDays());
 
-		log.info("패널티 생성 - userId: {}, reservationId: {}, reason: {}, 종료일시: {}",
-			member.getId(),
-			reservation.getId(),
-			reason,
-			end);
-
 		return Penalty.builder()
 			.member(member)
 			.reservation(reservation)
@@ -50,7 +45,7 @@ public class PenaltyDomainService {
 	public Penalty findPenaltyByMemberIdAndStatus(Member member){
 		return penaltyRepository.findByMemberIdAndStatus(member.getId(), PenaltyStatus.VALID).orElseThrow(
 			() -> {
-				log.warn("패널티 조회 실패 - 유효한 패널티 없음 - userId: {}", member.getId());
+				PenaltyLogUtil.logWarn("패널티 조회 실패 - 유효한 패널티 없음", "학번: " + member.getStudentNum());
 				return new BusinessException(StatusCode.NOT_FOUND, "유효하지 않은 패널티입니다.");
 			}
 		);
