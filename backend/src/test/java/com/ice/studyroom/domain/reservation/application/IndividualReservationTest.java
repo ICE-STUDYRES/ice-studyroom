@@ -219,6 +219,7 @@ class IndividualReservationTest {
 		시간_고정_셋업(13, 0);
 		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
 		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 0);
+		예약자_패널티_설정(false);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -261,6 +262,7 @@ class IndividualReservationTest {
 		시간_고정_셋업(12, 30);
 		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
 		스케줄_설정(firstSchedule, ScheduleSlotStatus.RESERVED, RoomType.INDIVIDUAL, 13, 0);
+		예약자_패널티_설정(false);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -304,6 +306,7 @@ class IndividualReservationTest {
 		시간_고정_셋업(12, 30);
 		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
 		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 30);
+		예약자_패널티_설정(false);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -343,9 +346,9 @@ class IndividualReservationTest {
 			new String[]{}
 		);
 
-		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
+		// 시간_고정_셋업(12, 30);
+		// 스케줄_리스트_설정(request.scheduleId(), firstSchedule);
+		// 스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(email);
 		given(memberRepository.findByEmail(Email.of(email))).willReturn(Optional.empty());
