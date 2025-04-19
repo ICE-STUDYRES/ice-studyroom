@@ -119,4 +119,14 @@ public class MemberDomainService {
 		member.changePassword(passwordEncoder.encode(newPassword));
 		memberRepository.save(member);
 	}
+
+	public boolean isMemberPenalty(String email) {
+		Member member = getMemberByEmail(email);
+		return member.isPenalty();
+	}
+
+	public List<Member> getMembersByEmail(List<Email> emails){
+		return memberRepository.findByEmailIn(emails);
+	}
+
 }

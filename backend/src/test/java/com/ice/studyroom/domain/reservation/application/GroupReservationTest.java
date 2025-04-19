@@ -136,6 +136,7 @@ public class GroupReservationTest {
 		시간_고정_셋업(12, 30);
 		스케줄_리스트_설정(request.scheduleId(),schedule);
 		스케줄_설정(schedule, ScheduleSlotStatus.RESERVED, RoomType.GROUP, 13, 0);
+		예약자_존재확인();
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -179,6 +180,7 @@ public class GroupReservationTest {
 		시간_고정_셋업(13, 1);
 		스케줄_리스트_설정(request.scheduleId(),schedule);
 		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 0);
+		예약자_존재확인();
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -221,6 +223,7 @@ public class GroupReservationTest {
 
 		시간_고정_셋업(12, 30);
 		스케줄_리스트_설정(request.scheduleId(),schedule);
+		예약자_존재확인();
 
 		//스케줄을 개인방으로 설정
 		스케줄_설정(schedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 0);
@@ -709,7 +712,8 @@ public class GroupReservationTest {
 		given(clock.getZone()).willReturn(ZoneId.systemDefault());
 	}
 
-	void 스케줄_리스트_설정(Long[] ids, Schedule... schedules) {
+	void
+	스케줄_리스트_설정(Long[] ids, Schedule... schedules) {
 		given(scheduleRepository.findAllByIdIn(Arrays.stream(ids).toList()))
 			.willReturn(List.of(schedules));
 	}

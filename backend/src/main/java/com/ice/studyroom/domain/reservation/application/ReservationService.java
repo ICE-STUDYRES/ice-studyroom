@@ -137,10 +137,10 @@ public class ReservationService {
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
 
-		if(reservation.getStatus() != ReservationStatus.RESERVED){
-			ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 상태 아님", "예약 ID: " + reservationId);
-			throw new BusinessException(StatusCode.BAD_REQUEST, "예약 상태가 아닙니다.");
-		}
+		// if(reservation.getStatus() != ReservationStatus.RESERVED){
+		// 	ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 상태 아님", "예약 ID: " + reservationId);
+		// 	throw new BusinessException(StatusCode.BAD_REQUEST, "예약 상태가 아닙니다.");
+		// }
 
 		// 해당 사용자의 예약인지 확인
 		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
@@ -521,7 +521,7 @@ public class ReservationService {
 
 				if (res.getMember().isPenalty()) {
 					ReservationLogUtil.logWarn("그룹 예약 연장 실패 - 패널티 상태 참여자 존재",
-						"이메일: " + res.getMember().getEmail().getValue());
+						"이메일: " + res.getMember().getEmail());
 					throw new BusinessException(StatusCode.FORBIDDEN, "패널티가 있는 멤버로 인해 연장이 불가능합니다.");
 				}
 
@@ -529,7 +529,7 @@ public class ReservationService {
 				if (!res.isEntered()){
 					//지각 입실은 앞서 패널티 체킹으로 연장 불가 처리
 					ReservationLogUtil.logWarn("그룹 예약 연장 실패 - 입실하지 않은 참여자 존재",
-						"이메일: " + res.getMember().getEmail().getValue());
+						"이메일: " + res.getMember().getEmail());
 					throw new BusinessException(StatusCode.BAD_REQUEST, "입실 처리 되어있지 않은 유저가 있어 연장이 불가능합니다.");
 				}
 			}
@@ -538,8 +538,7 @@ public class ReservationService {
 				if (res.getStatus() == ReservationStatus.CANCELLED) continue;
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 				nextSchedule.reserve();
-				ReservationLogUtil.log("그룹 예약 연장 완료", "참여자 이메일: " + res.getMember().getEmail().getValue(), "예약 ID: " + res.getId());
-
+				ReservationLogUtil.log("그룹 예약 연장 완료", "참여자 이메일: " + res.getMember().getEmail(), "예약 ID: " + res.getId());
 			}
 			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 
