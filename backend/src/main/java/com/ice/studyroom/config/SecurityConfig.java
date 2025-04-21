@@ -75,6 +75,12 @@ public class SecurityConfig {
 					"/swagger-ui/**",
 					"/v3/api-docs/**"
 				).permitAll()
+
+				// prometheus 관련 경로 허용
+				.requestMatchers(
+					"/actuator/prometheus",
+					"/actuator/**"
+				).permitAll()
 			)
 			.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
 			.build();
