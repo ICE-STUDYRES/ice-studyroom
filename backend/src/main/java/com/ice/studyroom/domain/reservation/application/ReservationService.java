@@ -615,7 +615,7 @@ public class ReservationService {
 		Schedule schedule) {
 
 		String subject = "[ICE-STUDYRES] 스터디룸 예약이 완료되었습니다.";
-		List<Email> participantsEmailList = participantsEmail.stream().map(Email::new).toList();
+		List<Email> participantsEmailList = participantsEmail.stream().map(Email::of).toList();
 		String body = buildReservationSuccessEmailBody(type, schedule, reservationOwnerEmail, participantsEmailList);
 
 		emailService.sendEmail(new EmailRequest(reservationOwnerEmail, subject, body));
