@@ -3,6 +3,9 @@ package com.ice.studyroom.domain.membership.domain.entity;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ice.studyroom.domain.membership.domain.service.encrypt.PasswordEncryptor;
+import com.ice.studyroom.domain.membership.domain.vo.EncodedPassword;
+import com.ice.studyroom.domain.membership.domain.vo.RawPassword;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -40,8 +43,8 @@ public class Member extends BaseTimeEntity {
 	@Embedded
 	private Email email;
 
-	@Column(name = "password", nullable = false)
-	private String password;
+	@Embedded
+	private EncodedPassword password;
 
 	@Column(name = "name", nullable = false)
 	private String name;
@@ -66,22 +69,17 @@ public class Member extends BaseTimeEntity {
 		this.isPenalty = isPenalty;
 	}
 
-	public static Member create(Email email, String name, String rawPassword, String studentNum,
-		PasswordEncoder passwordEncoder) {
+	public static Member create(Email email, EncodedPassword encodedPassword, String name, String studentNum) {
 		return Member.builder()
 			.email(email)
+			.password(encodedPassword)
 			.name(name)
-			.password(passwordEncoder.encode(rawPassword)) // 비밀번호 해싱
 			.studentNum(studentNum)
 			.roles(List.of("ROLE_USER"))
 			.build();
 	}
 
-	public void changePassword(String encodedPassword) {
-		this.password = encodedPassword;
-	}
-
-	public boolean isPasswordValid(String rawPassword, PasswordEncoder passwordEncoder) {
-		return passwordEncoder.matches(rawPassword, this.password);
+	public void changePassword(EncodedPassword newPassword) {
+		this.password = newPassword;
 	}
 }
