@@ -2,6 +2,12 @@ package com.ice.studyroom.domain.membership.application;
 
 import java.util.Optional;
 
+import com.ice.studyroom.domain.membership.domain.service.encrypt.PasswordEncryptor;
+import com.ice.studyroom.domain.membership.domain.service.manage.MemberEmailService;
+import com.ice.studyroom.domain.membership.domain.service.manage.MemberPasswordService;
+import com.ice.studyroom.domain.membership.domain.vo.EncodedPassword;
+import com.ice.studyroom.domain.membership.domain.vo.RawPassword;
+import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -36,6 +42,10 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class MembershipService {
 	private final MemberDomainService memberDomainService;
+	private final MemberEmailService memberEmailService;
+	private final MemberPasswordService memberPasswordService;
+	private final PasswordEncryptor passwordEncryptor;
+	private final MemberRepository memberRepository;
 	private final JwtTokenProvider jwtTokenProvider;
 	private final TokenService tokenService;
 	private final AuthenticationManager authenticationManager;
@@ -45,7 +55,18 @@ public class MembershipService {
 	@Transactional
 	public MemberResponse createMember(MemberCreateRequest request) {
 		MembershipLogUtil.log("회원가입 요청", "email: " + request.email());
-		memberDomainService.registerMember(request);
+		MembershipLogUtil.log("회원 등록 도메인 로직 진입", "email: " + request.email());
+
+		// 이메일, 비밀번호 유효성 검사 및 VO 생성
+		Email email = Email.of(request.email());
+		RawPassword rawPassword = RawPassword.of(request.password());
+		EncodedPassword encodedPassword = passwordEncryptor.encrypt(rawPassword);
+
+		// 인증된 이메일인지 확인하는 도메인 로직 호출
+		memberEmailService.verifyEmailForRegistration(email, request.isAuthenticated(), request.authenticationCode());
+		Member member = Member.create(email, encodedPassword, request.name(), request.studentNum());
+		memberRepository.save(member);
+
 		MembershipLogUtil.log("회원가입 성공", "email: " + request.email());
 		return MemberResponse.of("success");
 	}
@@ -55,7 +76,7 @@ public class MembershipService {
 		MembershipLogUtil.log("로그인 요청", "email: " + request.email());
 
 		Member member = memberDomainService.getMemberByEmailForLogin(request.email());
-		memberDomainService.validatePasswordMatch(member, request.password());
+		memberPasswordService.assertPasswordMatches(member, request.password());
 
 		Authentication authentication = authenticationManager.authenticate(
 			new UsernamePasswordAuthenticationToken(request.email(), request.password())
@@ -94,8 +115,14 @@ public class MembershipService {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 		MembershipLogUtil.log("비밀번호 변경 요청", "email: " + email);
 
+		// 비밀번호 유효성 검사 및 VO 생성
+		RawPassword current = RawPassword.of(request.currentPassword());
+		RawPassword newPass = RawPassword.of(request.updatedPassword());
+		RawPassword confirm = RawPassword.of(request.updatedPasswordForCheck());
+
+		// 비밀번호 변경 비즈니스 로직 수행
 		Member member = memberDomainService.getMemberByEmail(email);
-		memberDomainService.updateMemberPassword(member, request.currentPassword(), request.updatedPassword(), request.updatedPasswordForCheck());
+		memberPasswordService.updateMemberPassword(member, current, newPass, confirm);
 
 		MembershipLogUtil.log("비밀번호 변경 성공", "email: " + email);
 		return "비밀번호가 성공적으로 변경되었습니다.";
@@ -118,7 +145,7 @@ public class MembershipService {
 	public MemberEmailResponse sendMail(EmailVerificationRequest request) {
 		MembershipLogUtil.log("이메일 인증 요청", "email: " + request.email());
 
-		memberDomainService.validateEmailUniqueness(Email.of(request.email()));
+		memberEmailService.ensureEmailIsUnique(Email.of(request.email()));
 		emailVerificationService.sendCodeToEmail(request.email());
 
 		MembershipLogUtil.log("이메일 인증 코드 전송 완료", "email: " + request.email());

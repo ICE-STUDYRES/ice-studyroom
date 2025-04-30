@@ -728,12 +728,12 @@ public class GroupReservationTest {
 
 	void 예약자_존재확인(){
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(ownerEmail);
-		given(memberRepository.findByEmail(new Email(ownerEmail))).willReturn(Optional.of(reservationOwner));
+		given(memberRepository.findByEmail(Email.of(ownerEmail))).willReturn(Optional.of(reservationOwner));
 	}
 
 	void 비패널티_예약자_존재확인(){
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(ownerEmail);
-		given(memberRepository.findByEmail(new Email(ownerEmail))).willReturn(Optional.of(reservationOwner));
+		given(memberRepository.findByEmail(Email.of(ownerEmail))).willReturn(Optional.of(reservationOwner));
 		given(reservationOwner.isPenalty()).willReturn(false);
 	}
 
