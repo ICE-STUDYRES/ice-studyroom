@@ -3,12 +3,8 @@ package com.ice.studyroom.domain.membership.domain.entity;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.ice.studyroom.domain.membership.domain.service.encrypt.PasswordEncryptor;
-import com.ice.studyroom.domain.membership.domain.vo.EncodedPassword;
-import com.ice.studyroom.domain.membership.domain.vo.RawPassword;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ice.studyroom.domain.membership.domain.vo.EncodedPassword;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 

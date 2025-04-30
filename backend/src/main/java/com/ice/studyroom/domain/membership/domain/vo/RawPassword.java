@@ -3,13 +3,11 @@ package com.ice.studyroom.domain.membership.domain.vo;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 import java.util.Objects;
 
-@Embeddable
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class RawPassword {
 
