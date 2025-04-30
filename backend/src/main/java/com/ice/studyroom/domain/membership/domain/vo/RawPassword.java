@@ -41,10 +41,6 @@ public class RawPassword {
 		}
 	}
 
-	public boolean isSamePassword(String otherPassword) {
-		return this.value.equals(otherPassword);
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (o == null || getClass() != o.getClass()) return false;
