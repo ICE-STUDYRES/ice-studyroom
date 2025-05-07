@@ -1,21 +1,14 @@
 package com.ice.studyroom.domain.membership.domain.service;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
-import com.ice.studyroom.domain.membership.domain.service.encrypt.PasswordEncryptor;
-import com.ice.studyroom.domain.membership.domain.vo.EncodedPassword;
-import com.ice.studyroom.domain.membership.domain.vo.RawPassword;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import com.ice.studyroom.domain.identity.domain.service.VerificationCodeCacheService;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.util.MembershipLogUtil;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
-import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 

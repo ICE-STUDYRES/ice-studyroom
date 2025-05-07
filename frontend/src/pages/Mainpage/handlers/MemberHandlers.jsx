@@ -188,7 +188,9 @@ export const useMemberHandlers = () => {
                 }
             }
         } catch (error) {
-            const errorMessage = error.response?.data?.message || '로그인 중 오류가 발생했습니다.';
+            //todo: 에러 메시지 처리
+            //const errorMessage = error.response?.data?.message || '로그인 중 오류가 발생했습니다.';
+            const errorMessage = '아이디 혹은 비밀번호가 일치하지 않습니다.';
             setLoginError(errorMessage);
         }
     };
