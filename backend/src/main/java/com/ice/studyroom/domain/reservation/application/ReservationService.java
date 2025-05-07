@@ -279,7 +279,7 @@ public class ReservationService {
 
 		scheduleRepository.saveAll(schedules);
 		ReservationLogUtil.log("개인 예약 생성 성공", "예약자: " + reservationOwnerEmail, "예약 ID: " + reservation.getId());
-		sendReservationSuccessEmail(roomType, reservationOwnerEmail, new HashSet<>(), schedules.get(0));
+		sendReservationSuccessEmail(roomType, reservationOwnerEmail, new HashSet<>(), schedules);
 
 		return "Success";
 	}
@@ -396,7 +396,7 @@ public class ReservationService {
 		ReservationLogUtil.log("단체 예약 생성 성공", "예약자: " + reservationOwnerEmail, "참여자 수: " + (uniqueEmails.size()-1), "예약 ID: " + reservations.get(0).getId());
 
 		//전 인원에게 예약 확정 메일 발송
-		sendReservationSuccessEmail(roomType, reservationOwnerEmail, uniqueEmails, schedules.get(0));
+		sendReservationSuccessEmail(roomType, reservationOwnerEmail, uniqueEmails, schedules);
 
 		return "Success";
 	}
@@ -612,11 +612,11 @@ public class ReservationService {
 	}
 
 	protected void sendReservationSuccessEmail(RoomType type, String reservationOwnerEmail, Set<String> participantsEmail,
-		Schedule schedule) {
+		List<Schedule> schedules) {
 
 		String subject = "[ICE-STUDYRES] 스터디룸 예약이 완료되었습니다.";
 		List<Email> participantsEmailList = participantsEmail.stream().map(Email::of).toList();
-		String body = buildReservationSuccessEmailBody(type, schedule, reservationOwnerEmail, participantsEmailList);
+		String body = buildReservationSuccessEmailBody(type, schedules, reservationOwnerEmail, participantsEmailList);
 
 		emailService.sendEmail(new EmailRequest(reservationOwnerEmail, subject, body));
 
@@ -629,7 +629,7 @@ public class ReservationService {
 		}
 	}
 
-	private String buildReservationSuccessEmailBody(RoomType type, Schedule schedule, String reservationOwnerEmail, List<Email> participantsEmail) {
+	private String buildReservationSuccessEmailBody(RoomType type, List<Schedule> schedules, String reservationOwnerEmail, List<Email> participantsEmail) {
 		String participantsSection = "";
 		Member reservationOwner = memberDomainService.getMemberByEmail(reservationOwnerEmail);
 		List<Member> participantsMember = memberDomainService.getMembersByEmail(participantsEmail);
@@ -667,10 +667,10 @@ public class ReservationService {
 				"</body></html>",
 			reservationOwner.getName(),
 			reservationOwner.getStudentNum(),
-			schedule.getRoomNumber(),
+			schedules.get(0).getRoomNumber(),
 			LocalDate.now(),
-			schedule.getStartTime(),
-			schedule.getEndTime(),
+			schedules.get(0).getStartTime(),
+			schedules.size() > 1 ? schedules.get(1).getEndTime() : schedules.get(0).getEndTime(),
 			participantsSection
 		);
 	}
