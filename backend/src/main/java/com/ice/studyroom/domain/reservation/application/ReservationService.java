@@ -137,10 +137,10 @@ public class ReservationService {
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
 
-		// if(reservation.getStatus() != ReservationStatus.RESERVED){
-		// 	ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 상태 아님", "예약 ID: " + reservationId);
-		// 	throw new BusinessException(StatusCode.BAD_REQUEST, "예약 상태가 아닙니다.");
-		// }
+		if(reservation.getStatus() != ReservationStatus.RESERVED){
+			ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 상태 아님", "예약 ID: " + reservationId);
+			throw new BusinessException(StatusCode.BAD_REQUEST, "예약 상태가 아닙니다.");
+		}
 
 		// 해당 사용자의 예약인지 확인
 		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
