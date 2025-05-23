@@ -23,4 +23,17 @@ public interface RoomTimeSlotRepository extends JpaRepository<RoomTimeSlot, Long
     FROM RoomTimeSlot r
 """)
 	List<RoomInfoResponse> findDistinctRoomInfo();
+
+	@Modifying(clearAutomatically = true)
+	@Query("""
+    UPDATE RoomTimeSlot r
+    SET r.roomType = :roomType,
+        r.minRes = :minRes
+    WHERE r.roomNumber = :roomNumber
+""")
+	int updateRoomTypeAndMinRes(
+		@Param("roomNumber") String roomNumber,
+		@Param("roomType") RoomType roomType,
+		@Param("minRes") int minRes
+	);
  }
