@@ -1,11 +1,9 @@
 package com.ice.studyroom.domain.admin.application;
 
+import com.ice.studyroom.domain.admin.domain.service.manage.RoomModificationService;
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.admin.domain.util.AdminLogUtil;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminDelPenaltyRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminOccupyRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminReleaseRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminSetPenaltyRequest;
+import com.ice.studyroom.domain.admin.presentation.dto.request.*;
 import com.ice.studyroom.domain.admin.presentation.dto.response.*;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
@@ -36,6 +34,7 @@ import java.util.List;
 public class AdminService {
 
 	private final RoomTimeSlotRepository roomTimeSlotRepository;
+	private final RoomModificationService roomModificationService;
 	private final PenaltyRepository penaltyRepository;
 	private final ScheduleRepository scheduleRepository;
 	private final MemberRepository memberRepository;
@@ -182,5 +181,9 @@ public class AdminService {
 		penaltyService.adminDeletePenalty(member);
 		AdminLogUtil.log("패널티 해제 완료", "학번: " + request.studentNum());
 		return "패널티 해제가 완료되었습니다.";
+	}
+
+	public List<RoomInfoResponse> adminGetRoomInfo() {
+		return roomTimeSlotRepository.findDistinctRoomInfo();
 	}
 }
