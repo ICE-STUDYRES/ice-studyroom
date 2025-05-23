@@ -4,7 +4,7 @@ import com.ice.studyroom.domain.admin.domain.service.policy.RoomPolicyService;
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.domain.admin.domain.util.AdminLogUtil;
 import com.ice.studyroom.domain.admin.infrastructure.persistence.RoomTimeSlotRepository;
-import com.ice.studyroom.global.exception.jwt.RoomNotFoundException;
+import com.ice.studyroom.global.exception.RoomNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

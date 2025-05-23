@@ -1,6 +1,5 @@
-package com.ice.studyroom.global.exception.jwt;
+package com.ice.studyroom.global.exception;
 
-import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 
 public class RoomNotFoundException extends BusinessException {
