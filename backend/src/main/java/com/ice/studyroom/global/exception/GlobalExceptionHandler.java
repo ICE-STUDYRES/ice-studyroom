@@ -13,6 +13,7 @@ import com.ice.studyroom.global.dto.response.ResponseDto;
 import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 @Slf4j
@@ -71,6 +72,17 @@ public class GlobalExceptionHandler {
 		return ResponseEntity
 			.status(ex.getStatusCode().getStatus())
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	// 메세지 컨버팅 실패 예외 처리
+	@ExceptionHandler(MethodArgumentTypeMismatchException.class)
+	protected ResponseEntity<ResponseDto<Object>> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+		log.warn("TypeMismatchException caught: {}", ex.getMessage());
+		StatusCode status = StatusCode.BAD_REQUEST;
+		String message = String.format("DTO 파라미터 값 '%s'는 허용되지 않는 값입니다.", ex.getValue());
+		return ResponseEntity
+			.status(status.getStatus())
+			.body(ResponseDto.error(status, message));
 	}
 
 	// 일반 예외 처리
