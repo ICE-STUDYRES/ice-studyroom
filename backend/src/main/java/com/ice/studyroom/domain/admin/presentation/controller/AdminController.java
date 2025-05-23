@@ -148,7 +148,7 @@ public class AdminController {
 	@PatchMapping("/room-time-slots/room-number/{roomNumber}")
 	public ResponseEntity<ResponseDto<String>> adminModifyRoomType(
 		@PathVariable String roomNumber,
-		@Valid @RequestBody AdminModRoomType request
+		@Valid @RequestBody AdminModRoomTypeRequest request
 	) {
 		return ResponseEntity
 			.status(HttpStatus.OK)
