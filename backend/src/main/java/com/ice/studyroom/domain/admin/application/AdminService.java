@@ -186,4 +186,11 @@ public class AdminService {
 	public List<RoomInfoResponse> adminGetRoomInfo() {
 		return roomTimeSlotRepository.findDistinctRoomInfo();
 	}
+
+	@Transactional
+	public String adminModRoomType(String roomNumber, AdminModRoomTypeRequest request) {
+		roomModificationService.changeRoomType(roomNumber, request.roomType());
+		AdminLogUtil.log("방 상태 변경", "방 번호: " + roomNumber);
+		return "방 상태 반환 성공";
+	}
 }
