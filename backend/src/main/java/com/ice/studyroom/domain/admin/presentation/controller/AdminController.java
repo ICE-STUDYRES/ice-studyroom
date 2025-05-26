@@ -3,10 +3,7 @@ package com.ice.studyroom.domain.admin.presentation.controller;
 
 import com.ice.studyroom.domain.admin.application.AdminService;
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminDelPenaltyRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminOccupyRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminReleaseRequest;
-import com.ice.studyroom.domain.admin.presentation.dto.request.AdminSetPenaltyRequest;
+import com.ice.studyroom.domain.admin.presentation.dto.request.*;
 import com.ice.studyroom.domain.admin.presentation.dto.response.*;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 
@@ -126,5 +123,35 @@ public class AdminController {
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(adminService.adminDelPenalty(request)));
+	}
+
+	@Operation(
+		summary = "방의 RoomNumber, RoomType, capacity 정보 조회",
+		description = "방의 RoomNumber, RoomType, capacity 정보 조회를 할 수 있습니다." +
+			"모든 요일의 방을 정보를 전달해주는 것이 아닌 방 번호 기준으로 전달됩니다."
+	)
+	@ApiResponse(responseCode = "200", description = "요일 구분없이 방에 대한 정보 조회 성공")
+	@ApiResponse(responseCode = "500", description = "요일 구분없이 방에 대한 정보 조회 성공")
+	@GetMapping("/rooms")
+	public ResponseEntity<ResponseDto<List<RoomInfoResponse>>> getRoomInfo() {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(adminService.adminGetRoomInfo()));
+	}
+
+	@Operation(
+		summary = "방의 RoomType(예약 단위) 변경",
+		description = "방의 RoomType(예약 단위)를 변경할 수 있습니다. ex) 개인 -> 단체, 단체 -> 개인"
+	)
+	@ApiResponse(responseCode = "200", description = "방 예약 단위 변경 성공")
+	@ApiResponse(responseCode = "500", description = "방 예약 단위 변경 실패")
+	@PatchMapping("/room-time-slots/room-number/{roomNumber}")
+	public ResponseEntity<ResponseDto<String>> adminModifyRoomType(
+		@PathVariable String roomNumber,
+		@Valid @RequestBody AdminModRoomTypeRequest request
+	) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(adminService.adminModRoomType(roomNumber, request)));
 	}
 }
