@@ -44,7 +44,7 @@ const PenaltyManagement = () => {
     <div>
       {/* 🔹 검색창과 버튼 정렬 */}
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-semibold text-gray-900">패널티 관리</h2>
+        <h2 className="text-xl font-semibold text-gray-900">페널티 관리</h2>
         <div className="flex gap-2">
           <button
             onClick={() => {
@@ -59,7 +59,7 @@ const PenaltyManagement = () => {
             onClick={handleNewPenalty}
             className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
           >
-            새 패널티 부여
+            새 페널티 부여
           </button>
         </div>
       </div>
@@ -83,13 +83,13 @@ const PenaltyManagement = () => {
         </select>
       </div>
 
-      {/* 패널티 목록 테이블 */}
+      {/* 페널티 목록 테이블 */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="w-full">
           <thead className="bg-gray-50 text-sm font-medium text-gray-600">
             <tr>
               <th className="text-left p-4">학생 정보</th>
-              <th className="text-left p-4">패널티 종류</th>
+              <th className="text-left p-4">페널티 종류</th>
               <th className="text-left p-4">부여 날짜</th>
               <th className="text-left p-4">만료일</th>
               <th className="text-left p-4">상태</th>
@@ -136,7 +136,7 @@ const PenaltyManagement = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white rounded-xl shadow-lg w-[500px]">
             <div className="flex justify-between items-center p-6 border-b border-gray-200">
-              <h3 className="text-lg font-semibold text-gray-900">새 패널티 부여</h3>
+              <h3 className="text-lg font-semibold text-gray-900">새 페널티 부여</h3>
               <button
                 onClick={() => setIsModalOpen(false)}
                 className="text-gray-400 hover:text-gray-600"
