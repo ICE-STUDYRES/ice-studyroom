@@ -57,47 +57,88 @@ const ReservationStatus = () => {
     }
   };
   
-  const mapSchedulesToRooms = (scheduleData) => {
-    const roomsMap = {};
-    
-    scheduleData.forEach((schedule) => {
-      const roomId = schedule.roomNumber;
-      let location = schedule.location;
-      if (!location) {
-        if (roomId.startsWith("3")) {
-          location = "3층";
-        } else if (roomId.startsWith("4")) {
-          location = "4층";
-        } else {
-          location = "알 수 없음";
-        }
-      }
-      
-      if (!roomsMap[roomId]) {
-        roomsMap[roomId] = {
-          id: roomId,
-          name: roomId,
-          location: location,
-          facilities: schedule.facilities || [],
-          capacity: schedule.capacity || 0,
-          reservations: [],
-        };
-      }
-      
-      if (schedule.currentRes >= 1) {
-        roomsMap[roomId].reservations.push({
-          time: `${schedule.startTime.slice(0, 5)}-${schedule.endTime.slice(0, 5)}`,
-          reserver: schedule.reserverEmail,
-          participants: schedule.currentRes,
-          status: schedule.status,
-          available: schedule.available,
-        });
-      }
-    });
+const mapSchedulesToRooms = (scheduleData) => {
+  const roomsMap = {};
+  const groupMergeMap = {};
 
-    const mappedRooms = Object.values(roomsMap);
-    setSchedules(mappedRooms);
-  };
+  scheduleData.forEach((schedule) => {
+    const roomId = schedule.roomNumber;
+    const isModified = schedule.createdAt !== schedule.updatedAt;
+
+    if (isModified) {
+      if (!groupMergeMap[roomId]) groupMergeMap[roomId] = {};
+      if (!groupMergeMap[roomId][schedule.updatedAt]) {
+        groupMergeMap[roomId][schedule.updatedAt] = [];
+      }
+      groupMergeMap[roomId][schedule.updatedAt].push(schedule);
+      return;
+    }
+
+    if (!roomsMap[roomId]) {
+      roomsMap[roomId] = {
+        id: roomId,
+        name: roomId,
+        location: getRoomLocation(roomId),
+        facilities: schedule.facilities || [],
+        capacity: schedule.capacity || 0,
+        reservations: [],
+      };
+    }
+
+    if (schedule.currentRes >= 1) {
+      roomsMap[roomId].reservations.push({
+        time: `${schedule.startTime.slice(0, 5)}-${schedule.endTime.slice(0, 5)}`,
+        reserver: schedule.reserverEmail,
+        participants: `${schedule.currentRes}`,
+        status: schedule.status,
+        available: schedule.available,
+      });
+    }
+  });
+
+  // 병합된 group 예약 처리
+  Object.entries(groupMergeMap).forEach(([roomId, updatedGroups]) => {
+    if (!roomsMap[roomId]) {
+      roomsMap[roomId] = {
+        id: roomId,
+        name: roomId,
+        location: getRoomLocation(roomId),
+        facilities: [],
+        capacity: 0,
+        reservations: [],
+      };
+    }
+
+    Object.values(updatedGroups).forEach((groupSchedules) => {
+      const sorted = groupSchedules.sort((a, b) => a.startTime.localeCompare(b.startTime));
+      const mergedTime = `${sorted[0].startTime.slice(0, 5)}-${sorted[sorted.length - 1].endTime.slice(0, 5)}`;
+      const mergedReserver = [...new Set(sorted.map(s => s.reserverEmail))].join(', ');
+      const status = sorted[0].status;
+      const available = sorted[0].available;
+
+      // **참여 인원은 첫 예약 기준만 사용**
+      const representativeParticipants = `${sorted[0].currentRes}`;
+
+      roomsMap[roomId].reservations.push({
+        time: mergedTime,
+        reserver: mergedReserver,
+        participants: representativeParticipants,
+        status: status,
+        available: available,
+      });
+    });
+  });
+
+  setSchedules(Object.values(roomsMap));
+};
+
+
+const getRoomLocation = (roomId) => {
+  if (roomId.startsWith("3")) return "3층";
+  if (roomId.startsWith("4")) return "4층";
+  return "알 수 없음";
+};
+
 
   const formatDate = (date) => {
     const days = ['일', '월', '화', '수', '목', '금', '토'];
@@ -186,8 +227,8 @@ const ReservationStatus = () => {
                   {room.reservations && room.reservations.length > 0 ? (
                     <>
                       {(expandedRooms[room.id]
-                        ? room.reservations // 확장된 경우 전체 예약 표시
-                        : room.reservations.slice(0, MAX_VISIBLE_RESERVATIONS) // 기본은 최대 2개만 표시
+                        ? room.reservations
+                        : room.reservations.slice(0, MAX_VISIBLE_RESERVATIONS)
                       ).map((res, index) => (
                         <div
                           key={index}
