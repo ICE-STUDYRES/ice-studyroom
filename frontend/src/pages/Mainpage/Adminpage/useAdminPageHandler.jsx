@@ -246,6 +246,7 @@ const handleOccupy = async () => {
     dayOfWeek,
     setDayOfWeek,
     rooms: roomsState,
+    setRooms: setRoomsState,
     timeSlots,
     availableRoomsCount,
     
