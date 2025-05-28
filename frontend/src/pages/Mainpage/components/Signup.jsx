@@ -162,9 +162,15 @@ const SignUpPage = () => {
                                 type="checkbox"
                                 id="terms"
                                 checked={isTermsAccepted}
-                                onChange={(e) => setIsTermsAccepted(e.target.checked)}
-                                disabled={!isTermsAccepted}
-                                className="w-4 h-4 border rounded"
+                                readOnly // 🔹 상태는 수동으로만 변경
+                                onClick={() => {
+                                    if (!isTermsAccepted) {
+                                        setIsTermsModalOpen(true); // 체크 안 돼 있을 때만 모달 오픈
+                                    } else {
+                                        setIsTermsAccepted(false); // 이미 체크된 경우엔 해제만 가능
+                                    }
+                                }}
+                                className="w-4 h-4 border rounded cursor-pointer"
                             />
                             <label htmlFor="terms" className="text-sm text-gray-600">
                                 <button 
@@ -176,6 +182,8 @@ const SignUpPage = () => {
                                 </button> 및 개인정보 처리방침에 동의합니다.
                             </label>
                         </div>
+
+
 
                         {signupError && (
                             <p className="text-red-500 text-sm">{signupError}</p>
