@@ -3,6 +3,7 @@ import { Home, LogOut } from 'lucide-react';
 import useAdminPageHandler from './useAdminPageHandler';
 import PenaltyManagement from './PenaltyManagement';
 import BookingManagement from './BookingManagement';
+import RoomTypeManagement from './RoomTypeManagement';
 import { useMemberHandlers } from '../handlers/MemberHandlers';
 
 const AdminPage = () => {
@@ -54,19 +55,21 @@ const AdminPage = () => {
 
       <nav className="w-full bg-white border-b border-gray-200">
         <div className="w-[1024px] mx-auto flex gap-10 h-14">
-          {['booking', 'penalty', 'management'].map((tab) => (
-            <button 
-              key={tab}
-              className={`px-2 font-medium text-sm tracking-wide transition-colors ${
-                activeTab === tab 
-                  ? 'text-gray-900 border-b-2 border-gray-900' 
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              onClick={() => handleTabChange(tab)}>
-              {tab === 'booking' ? '관리자 선점하기' :
-               tab === 'penalty' ? '패널티 관리' : '예약 관리'}
-            </button>
-          ))}
+        {['booking', 'penalty', 'management', 'roomtype'].map((tab) => (
+          <button 
+            key={tab}
+            className={`px-2 font-medium text-sm tracking-wide transition-colors ${
+              activeTab === tab 
+                ? 'text-gray-900 border-b-2 border-gray-900' 
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+            onClick={() => handleTabChange(tab)}>
+            {tab === 'booking' ? '관리자 선점하기' :
+            tab === 'penalty' ? '패널티 관리' :
+            tab === 'management' ? '예약 관리' :
+            '스터디룸 유형 관리'}
+          </button>
+        ))}
         </div>
       </nav>
 
@@ -76,6 +79,8 @@ const AdminPage = () => {
             <PenaltyManagement penaltyData={penaltyData} />
           ) : activeTab === 'management' ? (
             <BookingManagement rooms={rooms} timeSlots={timeSlots} />
+          ) : activeTab === 'roomtype' ? (
+            <RoomTypeManagement />
           ) : (
             <div className="flex gap-8">
               <div className="flex-1">
