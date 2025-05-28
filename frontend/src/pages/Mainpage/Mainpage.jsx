@@ -159,7 +159,7 @@ const MainPage = () => {
                           </tr>
                           <tr>
                             <td className="font-medium w-20">시간:</td>
-                            <td>{recentReservation.startTime?.slice(0, 5)} ~ {recentReservation.endTime?.slice(0, 5)}</td>
+                            <td>{recentReservation.startTime && recentReservation.endTime ? `${recentReservation.startTime.slice(0, 5)} ~ ${recentReservation.endTime.slice(0, 5)}` : "정보 없음"}</td>
                           </tr>
                         </tbody>
                       </table>
