@@ -37,13 +37,11 @@ import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReser
 import com.ice.studyroom.global.security.jwt.JwtTokenProvider;
 import com.ice.studyroom.global.security.service.TokenService;
 
-import jakarta.persistence.EntityManager;
-
 @SpringBootTest
 @ActiveProfiles("test")
 @TestMethodOrder(OrderAnnotation.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
-public class IndividualReservationOverBookingTest {
+public class GroupReservationOverBookingTest {
 
 	@Autowired
 	private ReservationService reservationService;
@@ -64,7 +62,7 @@ public class IndividualReservationOverBookingTest {
 	private JwtTokenProvider jwtTokenProvider;
 
 	@Test
-	void 개인_예약_오버부킹_시나리오() throws InterruptedException {
+	void 단체_예약_오버부킹_시나리오() throws InterruptedException {
 		Schedule schedule = createTestSchedule();
 		scheduleRepository.save(schedule);
 
@@ -85,15 +83,16 @@ public class IndividualReservationOverBookingTest {
 
 		// When: 10명이 동시에 용량 1인 스케줄 예약 시도
 		for (int i = 0; i < threadCount; i++) {
-			final int userIndex = i;
+			final int groupIndex = i;
 			executorService.submit(() -> {
 				try {
 					startLatch.await(); // 모든 스레드가 동시에 시작
 
-					CreateReservationRequest request = createTestRequest(schedule.getId());
-					String authHeader = "Bearer test-token-" + userIndex;
+					CreateReservationRequest request = createGroupTestRequest(
+						schedule.getId(), groupIndex, testMembers);
+					String authHeader = "Bearer test-token-" + (groupIndex * 3);
 
-					String result = reservationService.createIndividualReservation(authHeader, request);
+					String result = reservationService.createGroupReservation(authHeader, request);
 					successResults.add(result);
 				} catch (Exception e) {
 					exceptions.add(e);
@@ -115,14 +114,14 @@ public class IndividualReservationOverBookingTest {
 
 	private Schedule createTestSchedule() {
 		return Schedule.builder()
-			.roomType(RoomType.INDIVIDUAL)
+			.roomType(RoomType.GROUP)
 			.scheduleDate(LocalDate.now().plusDays(1))
-			.roomNumber("101")
+			.roomNumber("201")
 			.roomTimeSlotId(1L)
 			.startTime(LocalTime.of(9, 0))
 			.endTime(LocalTime.of(10, 0))
-			.currentRes(0) // 초기값 0으로 설정
-			.capacity(1)   // 용량 1로 설정하여 오버부킹 쉽게 재현
+			.currentRes(0)
+			.capacity(4)
 			.minRes(1)
 			.status(ScheduleSlotStatus.AVAILABLE)
 			.dayOfWeek(DayOfWeekStatus.MONDAY)
@@ -131,7 +130,7 @@ public class IndividualReservationOverBookingTest {
 
 	private List<Member> createTestMembers() {
 		List<Member> members = new ArrayList<>();
-		for (int i = 0; i < 10; i++) {
+		for (int i = 0; i < 30; i++) {
 			Member member = Member.create(Email.of("test" + i + "@hufs.ac.kr"), EncodedPassword.of("encoded-test-password"),
 				"테스트사용자" + i, "2024000" + (i + 1));
 			members.add(member);
@@ -150,9 +149,18 @@ public class IndividualReservationOverBookingTest {
 		}
 	}
 
-	private CreateReservationRequest createTestRequest(Long scheduleId) {
-		//schedule, 빈 배열의 참여자
-		return new CreateReservationRequest(new Long[]{scheduleId}, new String[]{});
+	private CreateReservationRequest createGroupTestRequest(Long scheduleId, int groupIndex, List<Member> allMembers) {
+		// 각 그룹당 3명씩 구성 (리더 + 참여자 2명)
+		int startIndex = groupIndex * 3;
+		String[] participantEmails = {
+			allMembers.get(startIndex + 1).getEmail().getValue(),  // 참여자 1
+			allMembers.get(startIndex + 2).getEmail().getValue()   // 참여자 2
+		};
+
+		return new CreateReservationRequest(
+			new Long[]{scheduleId},
+			participantEmails
+		);
 	}
 
 	private void printDetailedTestResults(List<String> successResults, List<Exception> exceptions,
@@ -176,23 +184,26 @@ public class IndividualReservationOverBookingTest {
 		System.out.println("  - 생성된 예약 record 개수: " + reservationList.size());
 
 		System.out.println("  - 예약 ID 목록:");
+		int holderCount = 0;
 		for (int i = 0; i < reservationList.size(); i++) {
 			Reservation reservation = reservationList.get(i);
 			System.out.println("    " + (i+1) + ". 예약ID: " + reservation.getId() +
 				", 상태: " + reservation.getStatus() +
 				", 방번호: " + reservation.getRoomNumber() +
 				", isHolder: " + reservation.isHolder());
+			if (reservation.isHolder()) {
+				holderCount++;
+			}
 		}
 
+		System.out.println("\n- isHolder = true인 예약 개수(스레드 수와 같아야한다.): " + holderCount);
 		System.out.println("\n 동시성 문제 분석:");
 
 		boolean isOverbooking = reservationList.size() > updatedSchedule.getCapacity();
 		boolean isCurrentResInconsistent = updatedSchedule.getCurrentRes() != reservationList.size();
 
 		System.out.println("  - 오버부킹 발생: " + isOverbooking +
-			" (예약 " + reservationList.size() + "개 > 용량 " + updatedSchedule.getCapacity() + "개)");
-		System.out.println("  - currentRes 불일치: " + isCurrentResInconsistent +
-			" (DB예약수: " + reservationList.size() + " vs currentRes: " + updatedSchedule.getCurrentRes() + ")");
+			" (생성된 예약 수" + reservationList.size() + "개 > 실제 생성되어야할 예약 수 " + updatedSchedule.getCurrentRes() + "개)");
 
 		if (isOverbooking || isCurrentResInconsistent) {
 			System.out.println("동시성 문제 확인");
