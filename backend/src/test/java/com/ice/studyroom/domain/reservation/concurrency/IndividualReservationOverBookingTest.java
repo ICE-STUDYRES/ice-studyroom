@@ -37,8 +37,6 @@ import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReser
 import com.ice.studyroom.global.security.jwt.JwtTokenProvider;
 import com.ice.studyroom.global.security.service.TokenService;
 
-import jakarta.persistence.EntityManager;
-
 @SpringBootTest
 @ActiveProfiles("test")
 @TestMethodOrder(OrderAnnotation.class)
@@ -82,6 +80,7 @@ public class IndividualReservationOverBookingTest {
 
 		List<String> successResults = Collections.synchronizedList(new ArrayList<>());
 		List<Exception> exceptions = Collections.synchronizedList(new ArrayList<>());
+		List<Long> responseTimes = Collections.synchronizedList(new ArrayList<>());
 
 		// When: 10명이 동시에 용량 1인 스케줄 예약 시도
 		for (int i = 0; i < threadCount; i++) {
@@ -90,11 +89,16 @@ public class IndividualReservationOverBookingTest {
 				try {
 					startLatch.await(); // 모든 스레드가 동시에 시작
 
+					long requestStart = System.nanoTime();
+
 					CreateReservationRequest request = createTestRequest(schedule.getId());
 					String authHeader = "Bearer test-token-" + userIndex;
 
 					String result = reservationService.createIndividualReservation(authHeader, request);
 					successResults.add(result);
+
+					long requestEnd = System.nanoTime();
+					responseTimes.add((requestEnd - requestStart) / 1_000_000);
 				} catch (Exception e) {
 					exceptions.add(e);
 				} finally {
@@ -110,7 +114,7 @@ public class IndividualReservationOverBookingTest {
 		// Then: 오버부킹 발생 확인
 		// 해당 schedule 로 예약된 예약 목록 조회
 		List<Reservation> reservationResultList = reservationRepository.findByFirstScheduleId(schedule.getId());
-		printDetailedTestResults(successResults, exceptions, schedule, reservationResultList);
+		printDetailedTestResults(successResults, exceptions, schedule, reservationResultList, responseTimes);
 	}
 
 	private Schedule createTestSchedule() {
@@ -156,7 +160,7 @@ public class IndividualReservationOverBookingTest {
 	}
 
 	private void printDetailedTestResults(List<String> successResults, List<Exception> exceptions,
-		Schedule originalSchedule, List<Reservation> reservationList) {
+		Schedule originalSchedule, List<Reservation> reservationList, List<Long> responseTimes) {
 
 		Schedule updatedSchedule = scheduleRepository.findById(originalSchedule.getId()).get();
 
@@ -178,8 +182,9 @@ public class IndividualReservationOverBookingTest {
 		System.out.println("  - 예약 ID 목록:");
 		for (int i = 0; i < reservationList.size(); i++) {
 			Reservation reservation = reservationList.get(i);
-			System.out.println("    " + (i+1) + ". 예약ID: " + reservation.getId() +
+			System.out.println("    " + (i + 1) + ". 예약ID: " + reservation.getId() +
 				", 상태: " + reservation.getStatus() +
+				", 스케줄 ID: " + reservation.getFirstScheduleId() +
 				", 방번호: " + reservation.getRoomNumber() +
 				", isHolder: " + reservation.isHolder());
 		}
@@ -193,6 +198,13 @@ public class IndividualReservationOverBookingTest {
 			" (예약 " + reservationList.size() + "개 > 용량 " + updatedSchedule.getCapacity() + "개)");
 		System.out.println("  - currentRes 불일치: " + isCurrentResInconsistent +
 			" (DB예약수: " + reservationList.size() + " vs currentRes: " + updatedSchedule.getCurrentRes() + ")");
+
+		if (!responseTimes.isEmpty()) {
+			double avgResponseTime = responseTimes.stream().mapToLong(Long::longValue).average().orElse(0.0);
+			long maxResponseTime = responseTimes.stream().mapToLong(Long::longValue).max().orElse(0L);
+			System.out.println("\n평균 응답 시간: " + String.format("%.2f ms", avgResponseTime));
+			System.out.println("최대 응답 시간: " + maxResponseTime + " ms");
+		}
 
 		if (isOverbooking || isCurrentResInconsistent) {
 			System.out.println("동시성 문제 확인");

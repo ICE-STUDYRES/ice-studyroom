@@ -80,6 +80,7 @@ public class GroupReservationOverBookingTest {
 
 		List<String> successResults = Collections.synchronizedList(new ArrayList<>());
 		List<Exception> exceptions = Collections.synchronizedList(new ArrayList<>());
+		List<Long> responseTimes = Collections.synchronizedList(new ArrayList<>());
 
 		// When: 10명이 동시에 용량 1인 스케줄 예약 시도
 		for (int i = 0; i < threadCount; i++) {
@@ -88,12 +89,17 @@ public class GroupReservationOverBookingTest {
 				try {
 					startLatch.await(); // 모든 스레드가 동시에 시작
 
+					long requestStart = System.nanoTime();
+
 					CreateReservationRequest request = createGroupTestRequest(
 						schedule.getId(), groupIndex, testMembers);
 					String authHeader = "Bearer test-token-" + (groupIndex * 3);
 
 					String result = reservationService.createGroupReservation(authHeader, request);
 					successResults.add(result);
+
+					long requestEnd = System.nanoTime();
+					responseTimes.add((requestEnd - requestStart) / 1_000_000);
 				} catch (Exception e) {
 					exceptions.add(e);
 				} finally {
@@ -109,7 +115,7 @@ public class GroupReservationOverBookingTest {
 		// Then: 오버부킹 발생 확인
 		// 해당 schedule 로 예약된 예약 목록 조회
 		List<Reservation> reservationResultList = reservationRepository.findByFirstScheduleId(schedule.getId());
-		printDetailedTestResults(successResults, exceptions, schedule, reservationResultList);
+		printDetailedTestResults(successResults, exceptions, schedule, reservationResultList, responseTimes);
 	}
 
 	private Schedule createTestSchedule() {
@@ -164,7 +170,7 @@ public class GroupReservationOverBookingTest {
 	}
 
 	private void printDetailedTestResults(List<String> successResults, List<Exception> exceptions,
-		Schedule originalSchedule, List<Reservation> reservationList) {
+		Schedule originalSchedule, List<Reservation> reservationList, List<Long> responseTimes) {
 
 		Schedule updatedSchedule = scheduleRepository.findById(originalSchedule.getId()).get();
 
@@ -189,6 +195,7 @@ public class GroupReservationOverBookingTest {
 			Reservation reservation = reservationList.get(i);
 			System.out.println("    " + (i+1) + ". 예약ID: " + reservation.getId() +
 				", 상태: " + reservation.getStatus() +
+				", 스케줄 ID: " + reservation.getFirstScheduleId() +
 				", 방번호: " + reservation.getRoomNumber() +
 				", isHolder: " + reservation.isHolder());
 			if (reservation.isHolder()) {
@@ -205,11 +212,17 @@ public class GroupReservationOverBookingTest {
 		System.out.println("  - 오버부킹 발생: " + isOverbooking +
 			" (생성된 예약 수" + reservationList.size() + "개 > 실제 생성되어야할 예약 수 " + updatedSchedule.getCurrentRes() + "개)");
 
+		if (!responseTimes.isEmpty()) {
+			double avgResponseTime = responseTimes.stream().mapToLong(Long::longValue).average().orElse(0.0);
+			long maxResponseTime = responseTimes.stream().mapToLong(Long::longValue).max().orElse(0L);
+			System.out.println("\n평균 응답 시간: " + String.format("%.2f ms", avgResponseTime));
+			System.out.println("최대 응답 시간: " + maxResponseTime + " ms");
+		}
+
 		if (isOverbooking || isCurrentResInconsistent) {
 			System.out.println("동시성 문제 확인");
 		} else {
 			System.out.println("동시성 문제 해결 완료");
 		}
 	}
-
 }
