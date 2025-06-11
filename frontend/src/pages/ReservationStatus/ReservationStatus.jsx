@@ -110,13 +110,17 @@ const mapSchedulesToRooms = (scheduleData) => {
     }
 
     Object.values(updatedGroups).forEach((groupSchedules) => {
-      const sorted = groupSchedules.sort((a, b) => a.startTime.localeCompare(b.startTime));
+      // currentRes > 0인 예약만 추출
+      const validReservations = groupSchedules.filter(s => s.currentRes > 0);
+
+      // 유효한 예약이 하나도 없으면 push하지 않음
+      if (validReservations.length === 0) return;
+
+      const sorted = validReservations.sort((a, b) => a.startTime.localeCompare(b.startTime));
       const mergedTime = `${sorted[0].startTime.slice(0, 5)}-${sorted[sorted.length - 1].endTime.slice(0, 5)}`;
       const mergedReserver = [...new Set(sorted.map(s => s.reserverEmail))].join(', ');
       const status = sorted[0].status;
       const available = sorted[0].available;
-
-      // **참여 인원은 첫 예약 기준만 사용**
       const representativeParticipants = `${sorted[0].currentRes}`;
 
       roomsMap[roomId].reservations.push({
@@ -127,6 +131,7 @@ const mapSchedulesToRooms = (scheduleData) => {
         available: available,
       });
     });
+
   });
 
   setSchedules(Object.values(roomsMap));
