@@ -13,7 +13,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.hibernate.PessimisticLockException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
@@ -235,23 +237,6 @@ public class ReservationService {
 				return new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reservationOwnerEmail);
 			});
 
-		// 예약 가능 여부 확인
-		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
-		List<Schedule> schedules = scheduleRepository.findAllByIdIn(idList);
-
-		if (schedules.size() != idList.size()) {
-			ReservationLogUtil.logWarn("개인 예약 실패 - 존재하지 않는 스케줄 포함됨", "스케줄 ID: " + idList);
-			throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
-		}
-
-		validateSchedulesAvailable(schedules);
-
-		RoomType roomType = schedules.get(0).getRoomType();
-		if(roomType == RoomType.GROUP) {
-			ReservationLogUtil.logWarn("개인 예약 실패 - 그룹 전용 방 예약 시도","방 번호: " + schedules.get(0).getRoomNumber());
-			throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다.");
-		}
-
 		// 패널티 상태 확인 (예약 불가)
 		if (reservationOwner.isPenalty()) {
 			ReservationLogUtil.logWarn("개인 예약 실패 - 패널티 상태의 사용자", "예약자 이메일: " + reservationOwnerEmail);
@@ -261,27 +246,53 @@ public class ReservationService {
 		// 예약 중복 방지
 		checkDuplicateReservation(Email.of(reservationOwnerEmail));
 
+		// 예약 가능 여부 확인
+		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
+		List<Schedule> schedules = processIndividualReservationWithLock(idList);
 		Reservation reservation = Reservation.from(schedules, true, reservationOwner);
 		reservationRepository.save(reservation);
 
-		// 스케줄 업데이트 (currentRes 증가 및 상태 변경)
-		for (Schedule schedule : schedules) {
-			if (!schedule.isCurrentResLessThanCapacity()) {
-					ReservationLogUtil.logWarn("개인 예약 실패 - 수용 인원 초과", "스케줄 ID: " + schedule.getId());
-				throw new BusinessException(StatusCode.BAD_REQUEST, "예약 가능한 자리가 없습니다.");
-			}
-
-			schedule.reserve(); // 개인예약은 현재사용인원에서 +1 진행
-			if (schedule.getCurrentRes().equals(schedule.getCapacity())) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
-				schedule.updateStatus(ScheduleSlotStatus.RESERVED);
-			}
-		}
-
-		scheduleRepository.saveAll(schedules);
 		ReservationLogUtil.log("개인 예약 생성 성공", "예약자: " + reservationOwnerEmail, "예약 ID: " + reservation.getId());
-		sendReservationSuccessEmail(roomType, reservationOwnerEmail, new HashSet<>(), schedules);
+		sendReservationSuccessEmail(schedules.get(0).getRoomType(), reservationOwnerEmail, new HashSet<>(), schedules);
 
 		return "Success";
+	}
+
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public List<Schedule> processIndividualReservationWithLock(List<Long> scheduleIds){
+		try {
+			List<Schedule> lockedSchedules = scheduleRepository.findByIdsWithPessimisticLock(scheduleIds);
+
+			if (lockedSchedules.size() != scheduleIds.size()) {
+				ReservationLogUtil.logWarn("개인 예약 실패 - 존재하지 않는 스케줄 포함됨", "스케줄 ID: " + scheduleIds);
+				throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
+			}
+
+			RoomType roomType = lockedSchedules.get(0).getRoomType();
+			if (roomType == RoomType.GROUP) {
+				ReservationLogUtil.logWarn("개인 예약 실패 - 그룹 전용 방 예약 시도",
+					"방 번호: " + lockedSchedules.get(0).getRoomNumber());
+				throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다.");
+			}
+
+			// 스케줄 업데이트 (currentRes 증가 및 상태 변경)
+			for (Schedule schedule : lockedSchedules) {
+				if (!schedule.isCurrentResLessThanCapacity()) {
+					ReservationLogUtil.logWarn("개인 예약 실패 - 수용 인원 초과", "스케줄 ID: " + schedule.getId());
+					throw new BusinessException(StatusCode.BAD_REQUEST, "예약 가능한 자리가 없습니다.");
+				}
+
+				schedule.reserve(); // 개인예약은 현재사용인원에서 +1 진행
+				if (schedule.getCurrentRes().equals(schedule.getCapacity())) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
+					schedule.updateStatus(ScheduleSlotStatus.RESERVED);
+				}
+			}
+			scheduleRepository.saveAll(lockedSchedules);
+			return lockedSchedules;
+		} catch (PessimisticLockException e) {
+			throw new BusinessException(StatusCode.CONFLICT,
+				"현재 예약이 집중되고 있습니다. 잠시 후 다시 시도해주세요.");
+		}
 	}
 
 	@Transactional
@@ -297,31 +308,13 @@ public class ReservationService {
 				return new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reservationOwnerEmail);
 			});
 
-		// 예약 가능 여부 확인
-		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
-		List<Schedule> schedules = scheduleRepository.findAllByIdIn(idList);
-
-		if (schedules.size() != idList.size()) {
-			ReservationLogUtil.logWarn("단체 예약 실패 - 존재하지 않는 스케줄 포함됨", "스케줄 ID: " + idList);
-			throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
-		}
-
-		validateSchedulesAvailable(schedules);
-
-		// 스케줄에서 Type을 저장해야하며, Type에 따른 RES 처리가 필요하다.
-		RoomType roomType = schedules.get(0).getRoomType();
-		if(roomType == RoomType.INDIVIDUAL) {
-			ReservationLogUtil.logWarn("단체 예약 실패 - 개인 전용 방 예약 시도", "방 번호: " + schedules.get(0).getRoomNumber());
-			throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 개인예약 전용입니다.");
-		}
-
 		if(reservationOwner.isPenalty()) {
 			ReservationLogUtil.logWarn("단체 예약 실패 - 예약자가 패널티 상태", "예약자 이메일: " + reservationOwnerEmail);
 			throw new BusinessException(StatusCode.FORBIDDEN, "예약자가 패널티 상태입니다. 예약이 불가능합니다.");
 		}
 
 		// 예약 중복 방지
-		checkDuplicateReservation(Email.of(reservationOwnerEmail));
+		//checkDuplicateReservation(Email.of(reservationOwnerEmail));
 
 		// 중복된 이메일 검사 (예약자 포함)
 		Set<String> uniqueEmails = new HashSet<>();
@@ -351,32 +344,22 @@ public class ReservationService {
 				}
 
 				//참여자 최근 예약 상태 확인
-				Optional<Reservation> recentReservationOpt = reservationRepository.findLatestReservationByMemberEmail(Email.of(email));
-				if(recentReservationOpt.isPresent()) {
-					ReservationStatus recentStatus = recentReservationOpt.get().getStatus();
-					if(recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
-						ReservationLogUtil.logWarn("단체 예약 실패 - 참여자가 이미 예약 중", "이메일: " + email);
-						throw new BusinessException(StatusCode.CONFLICT, "참여자 중 현재 예약이 진행 중인 사용자가 있어 예약이 불가능합니다. (이메일: " + email + ")");
-					}
-				}
+				// Optional<Reservation> recentReservationOpt = reservationRepository.findLatestReservationByMemberEmail(Email.of(email));
+				// if(recentReservationOpt.isPresent()) {
+				// 	ReservationStatus recentStatus = recentReservationOpt.get().getStatus();
+				// 	if(recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
+				// 		ReservationLogUtil.logWarn("단체 예약 실패 - 참여자가 이미 예약 중", "이메일: " + email);
+				// 		throw new BusinessException(StatusCode.CONFLICT, "참여자 중 현재 예약이 진행 중인 사용자가 있어 예약이 불가능합니다. (이메일: " + email + ")");
+				// 	}
+				// }
 
 				emailToMemberMap.put(email, participant);
 			}
 		}
 
-		// 최소 예약 인원(minRes) 검사 (예약자 + 참여자 수 체크)
-		int totalParticipants = uniqueEmails.size(); // 예약자 + 참여자 수
-		int minRes = schedules.get(0).getMinRes(); // 모든 Group 전용 schedule의 min_res는 2로 동일
-		int capacity = schedules.get(0).getCapacity(); // 같은 방의 schedule은 capacity는 동일
-		if (totalParticipants < minRes) {
-			ReservationLogUtil.logWarn("단체 예약 실패 - 최소 인원 미달", "최소 인원: " + minRes, "현재 인원: " + totalParticipants);
-			throw new BusinessException(StatusCode.BAD_REQUEST,
-				"최소 예약 인원 조건을 만족하지 않습니다. (필요 인원: " + minRes + ", 현재 인원: " + totalParticipants + ")");
-		}else if (totalParticipants > capacity) {
-			ReservationLogUtil.logWarn("단체 예약 실패 - 최대 인원 초과", "최대 수용 인원: " + capacity, "현재 인원: " + totalParticipants);
-			throw new BusinessException(StatusCode.BAD_REQUEST,
-				"방의 최대 수용 인원을 초과했습니다. (최대 수용 인원: " + capacity + ", 현재 인원: " + totalParticipants + ")");
-		}
+		// 예약 가능 여부 확인
+		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
+		List<Schedule> schedules = processGroupReservationWithLock(idList, uniqueEmails);
 
 		// 예약 리스트 생성
 		List<Reservation> reservations = new ArrayList<>();
@@ -388,17 +371,61 @@ public class ReservationService {
 			reservations.add(Reservation.from(schedules, isHolder, member));
 		}
 		reservationRepository.saveAll(reservations);
-
-		for (Schedule schedule : schedules) {
-			schedule.updateGroupCurrentRes(totalParticipants); // 현재 사용 인원을 예약자 + 참여자 숫자로 지정
-			schedule.updateStatus(ScheduleSlotStatus.RESERVED);
-		}
 		ReservationLogUtil.log("단체 예약 생성 성공", "예약자: " + reservationOwnerEmail, "참여자 수: " + (uniqueEmails.size()-1), "예약 ID: " + reservations.get(0).getId());
 
 		//전 인원에게 예약 확정 메일 발송
-		sendReservationSuccessEmail(roomType, reservationOwnerEmail, uniqueEmails, schedules);
+		sendReservationSuccessEmail(schedules.get(0).getRoomType(), reservationOwnerEmail, uniqueEmails, schedules);
 
 		return "Success";
+	}
+
+	@Transactional(propagation = Propagation.REQUIRES_NEW)
+	public List<Schedule> processGroupReservationWithLock(List<Long> scheduleIds, Set<String> uniqueEmails){
+		try{
+			List<Schedule> lockedSchedules = scheduleRepository.findByIdsWithPessimisticLock(scheduleIds);
+
+			if (lockedSchedules.size() != scheduleIds.size()) {
+				ReservationLogUtil.logWarn("단체 예약 실패 - 존재하지 않는 스케줄 포함됨", "스케줄 ID: " + scheduleIds);
+				throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
+			}
+
+			//임계 영역에서 중복 예약 검사
+			for (String email : uniqueEmails) {
+				checkDuplicateReservation(Email.of(email));
+			}
+
+			validateSchedulesAvailable(lockedSchedules);
+
+			RoomType roomType = lockedSchedules.get(0).getRoomType();
+			if(roomType == RoomType.INDIVIDUAL) {
+				ReservationLogUtil.logWarn("단체 예약 실패 - 개인 전용 방 예약 시도", "방 번호: " + lockedSchedules.get(0).getRoomNumber());
+				throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 개인예약 전용입니다.");
+			}
+
+			// 최소 예약 인원(minRes) 검사 (예약자 + 참여자 수 체크)
+			int totalParticipants = uniqueEmails.size(); // 예약자 + 참여자 수
+			int minRes = lockedSchedules.get(0).getMinRes(); // 모든 Group 전용 schedule의 min_res는 2로 동일
+			int capacity = lockedSchedules.get(0).getCapacity(); // 같은 방의 schedule은 capacity는 동일
+			if (totalParticipants < minRes) {
+				ReservationLogUtil.logWarn("단체 예약 실패 - 최소 인원 미달", "최소 인원: " + minRes, "현재 인원: " + totalParticipants);
+				throw new BusinessException(StatusCode.BAD_REQUEST,
+					"최소 예약 인원 조건을 만족하지 않습니다. (필요 인원: " + minRes + ", 현재 인원: " + totalParticipants + ")");
+			}else if (totalParticipants > capacity) {
+				ReservationLogUtil.logWarn("단체 예약 실패 - 최대 인원 초과", "최대 수용 인원: " + capacity, "현재 인원: " + totalParticipants);
+				throw new BusinessException(StatusCode.BAD_REQUEST,
+					"방의 최대 수용 인원을 초과했습니다. (최대 수용 인원: " + capacity + ", 현재 인원: " + totalParticipants + ")");
+			}
+
+			for (Schedule schedule : lockedSchedules) {
+				schedule.updateGroupCurrentRes(totalParticipants); // 현재 사용 인원을 예약자 + 참여자 숫자로 지정
+				schedule.updateStatus(ScheduleSlotStatus.RESERVED);
+			}
+
+			return lockedSchedules;
+		}catch (PessimisticLockException e) {
+			throw new BusinessException(StatusCode.CONFLICT,
+				"현재 예약이 집중되고 있습니다. 잠시 후 다시 시도해주세요.");
+		}
 	}
 
 	@Transactional

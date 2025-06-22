@@ -203,7 +203,7 @@ public class GroupReservationOverBookingTest {
 			}
 		}
 
-		System.out.println("\n- isHolder = true인 예약 개수(스레드 수와 같아야한다.): " + holderCount);
+		System.out.println("\n- isHolder = true인 예약 개수(생성된 예약 개수의 /3): " + holderCount);
 		System.out.println("\n 동시성 문제 분석:");
 
 		boolean isOverbooking = reservationList.size() > updatedSchedule.getCapacity();
