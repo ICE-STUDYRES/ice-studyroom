@@ -13,6 +13,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import com.ice.studyroom.domain.reservation.application.ReservationConcurrencyService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +56,9 @@ public class IndividualReservationOverBookingTest {
 	@Autowired
 	private ReservationRepository reservationRepository;
 
+	@Autowired
+	private ReservationConcurrencyService reservationConcurrencyService;
+
 	@MockitoBean
 	private TokenService tokenService;
 
@@ -64,10 +68,13 @@ public class IndividualReservationOverBookingTest {
 	@Test
 	void 개인_예약_오버부킹_시나리오() throws InterruptedException {
 		Schedule schedule = createTestSchedule();
-		scheduleRepository.save(schedule);
+		Schedule saved = scheduleRepository.save(schedule);
+		scheduleRepository.flush();
+		System.out.println(">>> 저장된 schedule ID = " + saved.getId()); // 반드시 출력해보세요
 
 		List<Member> testMembers = createTestMembers();
 		memberRepository.saveAll(testMembers);
+		memberRepository.flush();
 		setupTokenServiceMocking(testMembers);
 
 		int threadCount = 10;
@@ -100,6 +107,8 @@ public class IndividualReservationOverBookingTest {
 					long requestEnd = System.nanoTime();
 					responseTimes.add((requestEnd - requestStart) / 1_000_000);
 				} catch (Exception e) {
+					System.out.println("[예외 발생]: " + e.getClass().getSimpleName() + " - " + e.getMessage());
+					e.printStackTrace();
 					exceptions.add(e);
 				} finally {
 					endLatch.countDown();

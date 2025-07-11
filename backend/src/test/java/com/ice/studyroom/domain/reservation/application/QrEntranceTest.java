@@ -10,6 +10,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Optional;
 
+import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +46,8 @@ class QrEntranceTest {
 	@Mock private MemberRepository memberRepository;
 	@Mock private ReservationRepository reservationRepository;
 	@Mock private ScheduleRepository scheduleRepository;
+	@Mock private ReservationConcurrencyService reservationConcurrencyService;
+	@Mock private ReservationValidator reservationValidator;
 	@Mock private QRCodeService qrCodeService;
 	@Mock private PenaltyService penaltyService;
 	@Mock private MemberDomainService memberDomainService;
@@ -66,7 +69,7 @@ class QrEntranceTest {
 		);
 		reservationService = new ReservationService(
 			qrCodeUtil, tokenService, memberRepository, reservationRepository,
-			scheduleRepository, qrCodeService, penaltyService,
+			scheduleRepository, reservationConcurrencyService, reservationValidator, qrCodeService, penaltyService,
 			memberDomainService, emailService, clock
 		);
 	}
@@ -316,7 +319,7 @@ class QrEntranceTest {
 		this.clock = Clock.fixed(dateTime.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
 		reservationService = new ReservationService(
 			qrCodeUtil, tokenService, memberRepository, reservationRepository,
-			scheduleRepository, qrCodeService, penaltyService,
+			scheduleRepository, reservationConcurrencyService, reservationValidator, qrCodeService, penaltyService,
 			memberDomainService, emailService, clock
 		);
 	}
