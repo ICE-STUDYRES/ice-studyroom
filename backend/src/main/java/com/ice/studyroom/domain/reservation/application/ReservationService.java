@@ -62,6 +62,7 @@ public class ReservationService {
 	private final ReservationRepository reservationRepository;
 	private final ScheduleRepository scheduleRepository;
 	private final ReservationConcurrencyService reservationConcurrencyService;
+	private final ReservationCompensationService reservationCompensationService;
 	private final ReservationValidator reservationValidator;
 	private final QRCodeService qrCodeService;
 	private final PenaltyService penaltyService;
@@ -249,14 +250,25 @@ public class ReservationService {
 
 		// 예약 가능 여부 확인
 		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
-		List<Schedule> schedules = reservationConcurrencyService.processIndividualReservationWithLock(idList);
-		Reservation reservation = Reservation.from(schedules, true, reservationOwner);
-		reservationRepository.save(reservation);
 
-		ReservationLogUtil.log("개인 예약 생성 성공", "예약자: " + reservationOwnerEmail, "예약 ID: " + reservation.getId());
-		sendReservationSuccessEmail(schedules.get(0).getRoomType(), reservationOwnerEmail, new HashSet<>(), schedules);
+		try {
+			List<Schedule> schedules = reservationConcurrencyService.processIndividualReservationWithLock(idList);
+			Reservation reservation = Reservation.from(schedules, true, reservationOwner);
+			reservationRepository.save(reservation);
 
-		return "Success";
+			ReservationLogUtil.log("개인 예약 생성 성공", "예약자: " + reservationOwnerEmail, "예약 ID: " + reservation.getId());
+			sendReservationSuccessEmail(schedules.get(0).getRoomType(), reservationOwnerEmail, new HashSet<>(), schedules);
+
+			return "Success";
+
+		} catch (Exception e) {
+			try {
+				reservationCompensationService.rollbackSchedules(idList, reservationOwnerEmail);
+			} catch (Exception rollbackException) {
+				ReservationLogUtil.log("예약 실패에 따른 보상 트랜잭션 실패", "예약자: " + reservationOwnerEmail + " " + rollbackException.getMessage());
+			}
+			throw e;
+		}
 	}
 
 	@Transactional
@@ -323,24 +335,34 @@ public class ReservationService {
 
 		// 예약 가능 여부 확인
 		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
-		List<Schedule> schedules = reservationConcurrencyService.processGroupReservationWithLock(idList, uniqueEmails);
 
-		// 예약 리스트 생성
-		List<Reservation> reservations = new ArrayList<>();
+		try {
+			List<Schedule> schedules = reservationConcurrencyService.processGroupReservationWithLock(idList, uniqueEmails);
 
-		// 예약 생성 및 저장
-		for (String email : uniqueEmails) {
-			Member member = emailToMemberMap.get(email);
-			boolean isHolder = email.equals(reservationOwnerEmail);
-			reservations.add(Reservation.from(schedules, isHolder, member));
+			// 예약 리스트 생성
+			List<Reservation> reservations = new ArrayList<>();
+
+			// 예약 생성 및 저장
+			for (String email : uniqueEmails) {
+				Member member = emailToMemberMap.get(email);
+				boolean isHolder = email.equals(reservationOwnerEmail);
+				reservations.add(Reservation.from(schedules, isHolder, member));
+			}
+			reservationRepository.saveAll(reservations);
+			ReservationLogUtil.log("단체 예약 생성 성공", "예약자: " + reservationOwnerEmail, "참여자 수: " + (uniqueEmails.size() - 1), "예약 ID: " + reservations.get(0).getId());
+
+			//전 인원에게 예약 확정 메일 발송
+			sendReservationSuccessEmail(schedules.get(0).getRoomType(), reservationOwnerEmail, uniqueEmails, schedules);
+
+			return "Success";
+		} catch (Exception e) {
+			try {
+				reservationCompensationService.rollbackSchedules(idList, reservationOwnerEmail);
+			} catch (Exception rollbackException) {
+				ReservationLogUtil.log("예약 실패에 따른 보상 트랜잭션 실패", "예약자: " + reservationOwnerEmail + " " + rollbackException.getMessage());
+			}
+			throw e;
 		}
-		reservationRepository.saveAll(reservations);
-		ReservationLogUtil.log("단체 예약 생성 성공", "예약자: " + reservationOwnerEmail, "참여자 수: " + (uniqueEmails.size()-1), "예약 ID: " + reservations.get(0).getId());
-
-		//전 인원에게 예약 확정 메일 발송
-		sendReservationSuccessEmail(schedules.get(0).getRoomType(), reservationOwnerEmail, uniqueEmails, schedules);
-
-		return "Success";
 	}
 
 	@Transactional
