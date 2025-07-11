@@ -251,8 +251,9 @@ public class ReservationService {
 		// 예약 가능 여부 확인
 		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
 
+		List<Schedule> schedules = reservationConcurrencyService.processIndividualReservationWithLock(idList);
+
 		try {
-			List<Schedule> schedules = reservationConcurrencyService.processIndividualReservationWithLock(idList);
 			Reservation reservation = Reservation.from(schedules, true, reservationOwner);
 			reservationRepository.save(reservation);
 
@@ -335,10 +336,9 @@ public class ReservationService {
 
 		// 예약 가능 여부 확인
 		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
+		List<Schedule> schedules = reservationConcurrencyService.processGroupReservationWithLock(idList, uniqueEmails);
 
 		try {
-			List<Schedule> schedules = reservationConcurrencyService.processGroupReservationWithLock(idList, uniqueEmails);
-
 			// 예약 리스트 생성
 			List<Reservation> reservations = new ArrayList<>();
 
