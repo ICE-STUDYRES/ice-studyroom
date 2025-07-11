@@ -13,9 +13,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.hibernate.PessimisticLockException;
+import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
@@ -62,6 +61,8 @@ public class ReservationService {
 	private final MemberRepository memberRepository;
 	private final ReservationRepository reservationRepository;
 	private final ScheduleRepository scheduleRepository;
+	private final ReservationConcurrencyService reservationConcurrencyService;
+	private final ReservationValidator reservationValidator;
 	private final QRCodeService qrCodeService;
 	private final PenaltyService penaltyService;
 	private final MemberDomainService memberDomainService;
@@ -244,11 +245,11 @@ public class ReservationService {
 		}
 
 		// 예약 중복 방지
-		checkDuplicateReservation(Email.of(reservationOwnerEmail));
+		reservationValidator.checkDuplicateReservation(Email.of(reservationOwnerEmail));
 
 		// 예약 가능 여부 확인
 		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
-		List<Schedule> schedules = processIndividualReservationWithLock(idList);
+		List<Schedule> schedules = reservationConcurrencyService.processIndividualReservationWithLock(idList);
 		Reservation reservation = Reservation.from(schedules, true, reservationOwner);
 		reservationRepository.save(reservation);
 
@@ -256,43 +257,6 @@ public class ReservationService {
 		sendReservationSuccessEmail(schedules.get(0).getRoomType(), reservationOwnerEmail, new HashSet<>(), schedules);
 
 		return "Success";
-	}
-
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public List<Schedule> processIndividualReservationWithLock(List<Long> scheduleIds){
-		try {
-			List<Schedule> lockedSchedules = scheduleRepository.findByIdsWithPessimisticLock(scheduleIds);
-
-			if (lockedSchedules.size() != scheduleIds.size()) {
-				ReservationLogUtil.logWarn("개인 예약 실패 - 존재하지 않는 스케줄 포함됨", "스케줄 ID: " + scheduleIds);
-				throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
-			}
-
-			RoomType roomType = lockedSchedules.get(0).getRoomType();
-			if (roomType == RoomType.GROUP) {
-				ReservationLogUtil.logWarn("개인 예약 실패 - 그룹 전용 방 예약 시도",
-					"방 번호: " + lockedSchedules.get(0).getRoomNumber());
-				throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다.");
-			}
-
-			// 스케줄 업데이트 (currentRes 증가 및 상태 변경)
-			for (Schedule schedule : lockedSchedules) {
-				if (!schedule.isCurrentResLessThanCapacity()) {
-					ReservationLogUtil.logWarn("개인 예약 실패 - 수용 인원 초과", "스케줄 ID: " + schedule.getId());
-					throw new BusinessException(StatusCode.BAD_REQUEST, "예약 가능한 자리가 없습니다.");
-				}
-
-				schedule.reserve(); // 개인예약은 현재사용인원에서 +1 진행
-				if (schedule.getCurrentRes().equals(schedule.getCapacity())) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
-					schedule.updateStatus(ScheduleSlotStatus.RESERVED);
-				}
-			}
-			scheduleRepository.saveAll(lockedSchedules);
-			return lockedSchedules;
-		} catch (PessimisticLockException e) {
-			throw new BusinessException(StatusCode.CONFLICT,
-				"현재 예약이 집중되고 있습니다. 잠시 후 다시 시도해주세요.");
-		}
 	}
 
 	@Transactional
@@ -359,7 +323,7 @@ public class ReservationService {
 
 		// 예약 가능 여부 확인
 		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
-		List<Schedule> schedules = processGroupReservationWithLock(idList, uniqueEmails);
+		List<Schedule> schedules = reservationConcurrencyService.processGroupReservationWithLock(idList, uniqueEmails);
 
 		// 예약 리스트 생성
 		List<Reservation> reservations = new ArrayList<>();
@@ -377,55 +341,6 @@ public class ReservationService {
 		sendReservationSuccessEmail(schedules.get(0).getRoomType(), reservationOwnerEmail, uniqueEmails, schedules);
 
 		return "Success";
-	}
-
-	@Transactional(propagation = Propagation.REQUIRES_NEW)
-	public List<Schedule> processGroupReservationWithLock(List<Long> scheduleIds, Set<String> uniqueEmails){
-		try{
-			List<Schedule> lockedSchedules = scheduleRepository.findByIdsWithPessimisticLock(scheduleIds);
-
-			if (lockedSchedules.size() != scheduleIds.size()) {
-				ReservationLogUtil.logWarn("단체 예약 실패 - 존재하지 않는 스케줄 포함됨", "스케줄 ID: " + scheduleIds);
-				throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
-			}
-
-			//임계 영역에서 중복 예약 검사
-			for (String email : uniqueEmails) {
-				checkDuplicateReservation(Email.of(email));
-			}
-
-			validateSchedulesAvailable(lockedSchedules);
-
-			RoomType roomType = lockedSchedules.get(0).getRoomType();
-			if(roomType == RoomType.INDIVIDUAL) {
-				ReservationLogUtil.logWarn("단체 예약 실패 - 개인 전용 방 예약 시도", "방 번호: " + lockedSchedules.get(0).getRoomNumber());
-				throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 개인예약 전용입니다.");
-			}
-
-			// 최소 예약 인원(minRes) 검사 (예약자 + 참여자 수 체크)
-			int totalParticipants = uniqueEmails.size(); // 예약자 + 참여자 수
-			int minRes = lockedSchedules.get(0).getMinRes(); // 모든 Group 전용 schedule의 min_res는 2로 동일
-			int capacity = lockedSchedules.get(0).getCapacity(); // 같은 방의 schedule은 capacity는 동일
-			if (totalParticipants < minRes) {
-				ReservationLogUtil.logWarn("단체 예약 실패 - 최소 인원 미달", "최소 인원: " + minRes, "현재 인원: " + totalParticipants);
-				throw new BusinessException(StatusCode.BAD_REQUEST,
-					"최소 예약 인원 조건을 만족하지 않습니다. (필요 인원: " + minRes + ", 현재 인원: " + totalParticipants + ")");
-			}else if (totalParticipants > capacity) {
-				ReservationLogUtil.logWarn("단체 예약 실패 - 최대 인원 초과", "최대 수용 인원: " + capacity, "현재 인원: " + totalParticipants);
-				throw new BusinessException(StatusCode.BAD_REQUEST,
-					"방의 최대 수용 인원을 초과했습니다. (최대 수용 인원: " + capacity + ", 현재 인원: " + totalParticipants + ")");
-			}
-
-			for (Schedule schedule : lockedSchedules) {
-				schedule.updateGroupCurrentRes(totalParticipants); // 현재 사용 인원을 예약자 + 참여자 숫자로 지정
-				schedule.updateStatus(ScheduleSlotStatus.RESERVED);
-			}
-
-			return lockedSchedules;
-		}catch (PessimisticLockException e) {
-			throw new BusinessException(StatusCode.CONFLICT,
-				"현재 예약이 집중되고 있습니다. 잠시 후 다시 시도해주세요.");
-		}
 	}
 
 	@Transactional
@@ -606,35 +521,6 @@ public class ReservationService {
 		// 시간이 연속되는지 확인
 		if (!firstSchedule.getEndTime().equals(secondSchedule.getStartTime())) {
 			throw new BusinessException(StatusCode.BAD_REQUEST,"연속되지 않은 시간은 예약할 수 없습니다.");
-		}
-	}
-
-	private void validateSchedulesAvailable(List<Schedule> schedules) {
-		LocalDateTime now = LocalDateTime.now(clock);
-
-		if (schedules.stream().anyMatch(schedule -> {
-			LocalDateTime scheduleStartDateTime = LocalDateTime.of(schedule.getScheduleDate(), schedule.getStartTime());
-			return !schedule.isAvailable() ||
-				!schedule.isCurrentResLessThanCapacity() ||
-				!scheduleStartDateTime.isAfter(now); // 현재 시간보다 이전이면 예외 발생
-		})) {
-			ReservationLogUtil.logWarn("스케줄 유효성 검증 실패",
-				"현재 시간: " + now,
-				"대상 스케줄 ID 목록: " + schedules.stream().map(Schedule::getId).toList());
-			throw new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다. 스케줄이 유효하지 않거나 이미 예약이 완료되었습니다.");
-		}
-	}
-
-	private void checkDuplicateReservation(Email reservationOwnerEmail) {
-		Optional<Reservation> recentReservation = reservationRepository.findLatestReservationByMemberEmail(
-			reservationOwnerEmail);
-		if (recentReservation.isPresent()) {
-			ReservationStatus recentStatus = recentReservation.get().getStatus();
-			if (recentStatus == ReservationStatus.RESERVED || recentStatus == ReservationStatus.ENTRANCE) {
-				ReservationLogUtil.logWarn("중복 예약 시도",
-					"userEmail: " + reservationOwnerEmail.getValue() + "현재 상태: " + recentStatus);
-				throw new BusinessException(StatusCode.CONFLICT, "현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다.");
-			}
 		}
 	}
 
