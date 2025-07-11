@@ -268,7 +268,7 @@ public class ReservationService {
 			} catch (Exception rollbackException) {
 				ReservationLogUtil.log("예약 실패에 따른 보상 트랜잭션 실패", "예약자: " + reservationOwnerEmail + " " + rollbackException.getMessage());
 			}
-			throw e;
+			throw new BusinessException(StatusCode.INTERNAL_ERROR, "예약 처리 중 오류가 발생하여 모든 변경사항이 롤백됩니다." + e);
 		}
 	}
 
@@ -361,7 +361,7 @@ public class ReservationService {
 			} catch (Exception rollbackException) {
 				ReservationLogUtil.log("예약 실패에 따른 보상 트랜잭션 실패", "예약자: " + reservationOwnerEmail + " " + rollbackException.getMessage());
 			}
-			throw e;
+			throw new BusinessException(StatusCode.INTERNAL_ERROR, "예약 처리 중 오류가 발생하여 모든 변경사항이 롤백됩니다." + e);
 		}
 	}
 
