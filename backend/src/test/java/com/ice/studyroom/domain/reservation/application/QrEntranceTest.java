@@ -47,6 +47,7 @@ class QrEntranceTest {
 	@Mock private ReservationRepository reservationRepository;
 	@Mock private ScheduleRepository scheduleRepository;
 	@Mock private ReservationConcurrencyService reservationConcurrencyService;
+	@Mock private ReservationCompensationService reservationCompensationService;
 	@Mock private ReservationValidator reservationValidator;
 	@Mock private QRCodeService qrCodeService;
 	@Mock private PenaltyService penaltyService;
@@ -69,7 +70,7 @@ class QrEntranceTest {
 		);
 		reservationService = new ReservationService(
 			qrCodeUtil, tokenService, memberRepository, reservationRepository,
-			scheduleRepository, reservationConcurrencyService, reservationValidator, qrCodeService, penaltyService,
+			scheduleRepository, reservationConcurrencyService, reservationCompensationService, reservationValidator, qrCodeService, penaltyService,
 			memberDomainService, emailService, clock
 		);
 	}
@@ -319,7 +320,7 @@ class QrEntranceTest {
 		this.clock = Clock.fixed(dateTime.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
 		reservationService = new ReservationService(
 			qrCodeUtil, tokenService, memberRepository, reservationRepository,
-			scheduleRepository, reservationConcurrencyService, reservationValidator, qrCodeService, penaltyService,
+			scheduleRepository, reservationConcurrencyService, reservationCompensationService, reservationValidator, qrCodeService, penaltyService,
 			memberDomainService, emailService, clock
 		);
 	}
