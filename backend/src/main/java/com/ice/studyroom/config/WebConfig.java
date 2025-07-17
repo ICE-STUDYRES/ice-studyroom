@@ -28,6 +28,6 @@ public class WebConfig implements WebMvcConfigurer {
 		registry.addInterceptor(penaltyCheckInterceptor())
 			.order(1)
 			.addPathPatterns("/api/**")
-			.excludePathPatterns("/api/reservations/my/latest", "/api/reservations/my", "/api/users/**");
+			.excludePathPatterns("/api/reservations/my/latest", "/api/reservations/my", "/api/users/**", "/api/qr/recognize");
 	}
 }
