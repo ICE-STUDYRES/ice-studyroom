@@ -50,12 +50,10 @@ public class SecurityConfig {
 				// ADMIN 역할만 접근 가능
 				.requestMatchers("/api/admin/**").hasRole("ADMIN")
 
-				// ATTENDANT 역할만 접근 가능
-				.requestMatchers("/api/qr/recognize").hasRole("ATTENDANT")
-
 				// 인증 없이 접근 가능한 엔드포인트
 				.requestMatchers(HttpMethod.POST, "/api/users").permitAll() // 회원가입
 				.requestMatchers(HttpMethod.POST, "/api/users/login").permitAll() // 로그인
+				.requestMatchers(HttpMethod.POST, "/api/qr/recognize").permitAll() // qr 인증
 				.requestMatchers(HttpMethod.POST, "/api/users/email-verification").permitAll() // 이메일 인증 메일 전송
 				.requestMatchers(HttpMethod.POST, "/api/users/email-verification/confirm").permitAll() // 이메일 인증 코드 검증
 
