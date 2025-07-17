@@ -143,7 +143,7 @@ public class ReservationService {
 
 		if(reservation.getStatus() != ReservationStatus.RESERVED){
 			ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 상태 아님", "예약 ID: " + reservationId);
-			throw new BusinessException(StatusCode.BAD_REQUEST, "예약 상태가 아닙니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "유효한 예약 상태가 존재하지않습니다.");
 		}
 
 		// 해당 사용자의 예약인지 확인
