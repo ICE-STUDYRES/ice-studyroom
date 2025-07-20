@@ -2,6 +2,8 @@ package com.ice.studyroom.domain.reservation.infrastructure.redis;
 
 import java.util.concurrent.TimeUnit;
 
+import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
+import com.ice.studyroom.global.exception.token.InvalidQrTokenException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import lombok.extern.slf4j.Slf4j;
@@ -11,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 public class QRCodeService {
 
 	private final StringRedisTemplate redisTemplate;
-	private static final long EXPIRATION_MINUTES = 15;
+	private static final long EXPIRATION_MINUTES = 24;
 
 	public QRCodeService(StringRedisTemplate redisTemplate) {
 		this.redisTemplate = redisTemplate;
@@ -19,12 +21,12 @@ public class QRCodeService {
 
 	// QR 토큰 저장 Redis에 reservationId 매핑
 	public void storeToken(String token, Long reservationId) {
-		log.info("QR 토큰 저장 - token: {}, reservationId: {}, 만료: {}분",  maskToken(token), reservationId, EXPIRATION_MINUTES);
+		log.info("QR 토큰 저장 - token: {}, reservationId: {}, 만료: {}시간",  maskToken(token), reservationId, EXPIRATION_MINUTES);
 		redisTemplate.opsForValue().set(
 			"qr:" + token,
 			String.valueOf(reservationId),
 			EXPIRATION_MINUTES,
-			TimeUnit.MINUTES
+			TimeUnit.HOURS
 		);
 	}
 
@@ -32,7 +34,13 @@ public class QRCodeService {
 	public Long getReservationIdByToken(String token) {
 		String value = redisTemplate.opsForValue().get("qr:" + token);
 		log.info("QR 토큰으로 예약ID 조회 - token: {}, 결과: {}",  maskToken(token), value);
-		return value != null ? Long.parseLong(value) : null;
+
+		if (value == null) {
+			ReservationLogUtil.logWarn("QR 입장 실패 - 유효하지 않은 QR 토큰", token);
+			throw new InvalidQrTokenException("유효하지않는 QR 코드입니다");
+		}
+
+		return Long.parseLong(value);
 	}
 
 	// 유효성 확인이 필요할 경우 처리
