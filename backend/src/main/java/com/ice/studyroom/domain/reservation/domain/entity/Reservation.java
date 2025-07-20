@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
@@ -111,6 +112,15 @@ public class Reservation extends BaseTimeEntity {
 	}
 
 	/**
+	 * 전달받은 토큰을 qrToken 필드에 할당합니다.
+	 * 이 메서드는 qrToken이 null일 때만 호출되는 것을 전제로 합니다.
+	 * @param newQrToken 새로 생성된 QR 토큰
+	 */
+	private void assignQrToken(String newQrToken) {
+		this.qrToken = newQrToken;
+	}
+
+	/**
 	 * 이 예약의 소유자가 맞는지 검증합니다.
 	 * 소유자가 아닐 경우 ReservationAccessDeniedException을 발생시킵니다.
 	 * @param rawEmail 검증할 사용자의 이메일
@@ -121,8 +131,6 @@ public class Reservation extends BaseTimeEntity {
 		}
 	}
 
-	public void assignQrToken(String generatedToken) {this.qrToken = generatedToken;}
-
 	// TODO: private로 외부공개하지않게 수정할 예정
 	public void markStatus(ReservationStatus status) {
 		this.status = status;
@@ -131,6 +139,20 @@ public class Reservation extends BaseTimeEntity {
 	public void extendReservation(Long secondScheduleId, LocalTime endTime) {
 		this.secondScheduleId = secondScheduleId;
 		this.endTime = endTime;
+	}
+
+	/**
+	 * QR 토큰을 발급하거나 기존 토큰을 반환합니다.
+	 * 토큰이 없는 경우에만 새로운 토큰을 생성하여 할당합니다.
+	 * @param tokenGenerator 토큰 생성 로직을 제공하는 Supplier
+	 * @return 발급되거나 기존에 존재하던 QR 토큰
+	 */
+	public String issueQrToken(Supplier<String> tokenGenerator) {
+		if (this.qrToken == null) {
+			assignQrToken(tokenGenerator.get());
+		}
+
+		return this.qrToken;
 	}
 
 	/**
@@ -203,7 +225,7 @@ public class Reservation extends BaseTimeEntity {
 	 * @param entranceTime 실제 입장 시간
 	 * @return ReservationStatus
 	 */
-	private ReservationStatus checkAttendanceStatus(LocalDateTime entranceTime) {
+	public ReservationStatus checkAttendanceStatus(LocalDateTime entranceTime) {
 		LocalDateTime startDateTime = LocalDateTime.of(scheduleDate, startTime);
 		LocalDateTime endDateTime = LocalDateTime.of(scheduleDate, endTime);
 
