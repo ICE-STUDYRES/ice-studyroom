@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
 import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
@@ -196,9 +197,11 @@ class ReservationCancelTest {
 	@Test
 	@DisplayName("본인 예약이 아닐 경우 예외")
 	void 본인_예약이_아닐_경우_예외() {
-		given(tokenService.extractEmailFromAccessToken(token)).willReturn("wrong@example.com");
+		String wrongEmail = "wrong@example.com";
+		given(tokenService.extractEmailFromAccessToken(token)).willReturn(wrongEmail);
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
-		given(reservation.isOwnedBy("wrong@example.com")).willReturn(false);
+		willThrow(new ReservationAccessDeniedException("해당 예약에 접근할 수 없습니다."))
+			.given(reservation).validateOwnership(wrongEmail);
 
 		BusinessException ex = assertThrows(BusinessException.class, () ->
 			reservationService.cancelReservation(reservationId, token)
@@ -393,7 +396,7 @@ class ReservationCancelTest {
 	void 기본_예약_정보_셋업(String token, Long reservationId, String userEmail) {
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(userEmail);
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
-		given(reservation.isOwnedBy(userEmail)).willReturn(true);
+		willDoNothing().given(reservation).validateOwnership(userEmail);
 	}
 
 	void 시간_고정_셋업(int hour, int minute) {
