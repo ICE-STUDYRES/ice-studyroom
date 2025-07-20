@@ -3,6 +3,7 @@ package com.ice.studyroom.global.exception;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.ice.studyroom.global.exception.token.InvalidQrTokenException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -58,6 +59,14 @@ public class GlobalExceptionHandler {
 		return ResponseEntity
 			.status(StatusCode.INVALID_INPUT.getStatus())
 			.body(ResponseDto.error(StatusCode.INVALID_INPUT, errors));
+	}
+
+	@ExceptionHandler(InvalidQrTokenException.class)
+	public ResponseEntity<ResponseDto<Object>> handleInvalidQrToken(InvalidQrTokenException ex) {
+		log.error("토큰 조회 실패 예외 발생: {}", ex.getMessage());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
 	}
 
 	@ExceptionHandler(AttendanceException.class)
