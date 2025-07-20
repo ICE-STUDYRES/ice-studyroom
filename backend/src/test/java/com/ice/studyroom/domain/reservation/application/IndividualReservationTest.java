@@ -13,6 +13,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
+import com.ice.studyroom.global.type.StatusCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,7 +31,6 @@ import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
-import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
@@ -42,6 +43,10 @@ class IndividualReservationTest {
 	@Spy
 	@InjectMocks
 	private ReservationService reservationService;
+	@Mock
+	private ReservationConcurrencyService reservationConcurrencyService;
+	@Mock
+	private ReservationValidator reservationValidator;
 	@Mock
 	private ReservationRepository reservationRepository;
 	@Mock
@@ -216,10 +221,10 @@ class IndividualReservationTest {
 			new String[]{}
 		);
 
-		시간_고정_셋업(13, 0);
-		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 0);
 		예약자_패널티_설정(false);
+
+		given(reservationConcurrencyService.processIndividualReservationWithLock(anyList()))
+			.willThrow(new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다. 스케줄이 유효하지 않거나 이미 예약이 완료되었습니다."));
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -303,10 +308,10 @@ class IndividualReservationTest {
 			new String[]{}
 		);
 
-		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.GROUP, 13, 30);
 		예약자_패널티_설정(false);
+
+		given(reservationConcurrencyService.processIndividualReservationWithLock(anyList()))
+			.willThrow(new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다."));
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -345,10 +350,6 @@ class IndividualReservationTest {
 			new Long[]{firstScheduleId},
 			new String[]{}
 		);
-
-		// 시간_고정_셋업(12, 30);
-		// 스케줄_리스트_설정(request.scheduleId(), firstSchedule);
-		// 스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(email);
 		given(memberRepository.findByEmail(Email.of(email))).willReturn(Optional.empty());
@@ -391,9 +392,6 @@ class IndividualReservationTest {
 			new String[]{}
 		);
 
-		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 		예약자_패널티_설정(true);
 
 		// when & then
@@ -435,17 +433,10 @@ class IndividualReservationTest {
 			new String[]{}
 		);
 
-		String name = "도성현";
-
-		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
 		예약자_패널티_설정(false);
 
-		Reservation duplicatedReservation = mock(Reservation.class);
-		given(duplicatedReservation.getStatus()).willReturn(ReservationStatus.RESERVED); // 진행 중인 예약
-		given(reservationRepository.findLatestReservationByMemberEmail(Email.of(email)))
-			.willReturn(Optional.of(duplicatedReservation));
+		doThrow(new BusinessException(StatusCode.CONFLICT, "현재 예약이 진행 중이므로 새로운 예약을 생성할 수 없습니다."))
+			.when(reservationValidator).checkDuplicateReservation(Email.of(email));
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -493,4 +484,3 @@ class IndividualReservationTest {
 		given(memberRepository.findByEmail(Email.of(email))).willReturn(Optional.of(member));
 	}
 }
-
