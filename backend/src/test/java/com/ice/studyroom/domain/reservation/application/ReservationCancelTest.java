@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
+import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
 import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
@@ -200,7 +201,7 @@ class ReservationCancelTest {
 		String wrongEmail = "wrong@example.com";
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(wrongEmail);
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
-		willThrow(new ReservationAccessDeniedException("해당 예약에 접근할 수 없습니다."))
+		willThrow(new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, reservationId))
 			.given(reservation).validateOwnership(wrongEmail);
 
 		BusinessException ex = assertThrows(BusinessException.class, () ->

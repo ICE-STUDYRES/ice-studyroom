@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
+import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -161,7 +162,7 @@ public class ReservationExtendTest {
 
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(notOwnerEmail);
-		willThrow(new ReservationAccessDeniedException("해당 예약에 접근할 수 없습니다."))
+		willThrow(new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, reservationId))
 			.given(reservation).validateOwnership(notOwnerEmail);
 
 		// when & then

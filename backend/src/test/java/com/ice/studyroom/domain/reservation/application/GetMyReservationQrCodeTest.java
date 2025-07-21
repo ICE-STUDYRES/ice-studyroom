@@ -1,6 +1,7 @@
 package com.ice.studyroom.domain.reservation.application;
 
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
+import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
 import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
@@ -209,7 +210,7 @@ class GetMyReservationQrCodeTest {
 			willDoNothing().given(reservation).validateOwnership(email);
 		} else {
 			// isOwner가 false이면, 접근 거부 예외를 던짐 (실패)
-			willThrow(new ReservationAccessDeniedException("해당 예약에 접근할 수 없습니다."))
+			willThrow(new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, reservationId))
 				.given(reservation).validateOwnership(email);
 		}
 		lenient().doNothing().when(reservation).validateForQrIssuance();
