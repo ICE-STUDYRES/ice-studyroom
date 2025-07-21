@@ -169,34 +169,25 @@ public class ReservationService {
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
 
-		try {
-			// 입장 가능한 예약인지 먼저 확인
-			reservation.validateForEntrance();
+		// 입장 가능한 예약인지 먼저 확인
+		reservation.validateForEntrance();
 
-			// 가능하다면 현재 시간으로 입장 처리 진행
-			ReservationStatus status = reservation.processEntrance(LocalDateTime.now(clock));
+		// 가능하다면 현재 시간으로 입장 처리 진행
+		ReservationStatus status = reservation.processEntrance(LocalDateTime.now(clock));
 
-			// 입실 완료 이후에는 qr 무효화 진행
-			qrCodeService.invalidateToken(token);
+		// 입실 완료 이후에는 qr 무효화 진행
+		qrCodeService.invalidateToken(token);
 
-			Member reservationOwner = reservation.getMember();
+		Member reservationOwner = reservation.getMember();
 
-			if(status == ReservationStatus.LATE){
-				ReservationLogUtil.logWarn("지각 입장 - 패널티 부여", "예약 ID: " + reservationId,
-					"userId: " + reservationOwner.getEmail().getValue());
-				penaltyService.assignPenalty(reservationOwner, reservationId, PenaltyReasonType.LATE);
-			}
-
-			ReservationLogUtil.log("QR 입장 처리 완료", "예약 ID: " + reservationId);
-			return new QrEntranceResponse(status, reservationOwner.getName(), reservationOwner.getStudentNum());
-
-		} catch (InvalidEntranceAttemptException e) {
-			ReservationLogUtil.logWarn("QR 입장 실패 - 사전 검증 오류" + e.getMessage(), "예약 ID: " + reservationId);
-			throw e;
-		} catch (InvalidEntranceTimeException e) {
-			ReservationLogUtil.logWarn("QR 입장 실패 - 입실 시간 오류" + e.getMessage(), "예약 ID: " + reservationId);
-			throw e;
+		if(status == ReservationStatus.LATE){
+			ReservationLogUtil.logWarn("지각 입장 - 패널티 부여", "예약 ID: " + reservationId,
+				"userId: " + reservationOwner.getEmail().getValue());
+			penaltyService.assignPenalty(reservationOwner, reservationId, PenaltyReasonType.LATE);
 		}
+
+		ReservationLogUtil.log("QR 입장 처리 완료", "예약 ID: " + reservationId);
+		return new QrEntranceResponse(status, reservationOwner.getName(), reservationOwner.getStudentNum());
 	}
 
 	@Transactional

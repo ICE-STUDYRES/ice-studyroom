@@ -9,6 +9,8 @@ import java.util.function.Supplier;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.*;
+import com.ice.studyroom.domain.reservation.domain.exception.type.InvalidEntranceAttemptReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.InvalidEntranceTimeReason;
 import com.ice.studyroom.domain.reservation.domain.exception.type.QrIssuanceErrorReason;
 import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
@@ -188,15 +190,15 @@ public class Reservation extends BaseTimeEntity {
 			case RESERVED:
 				return;
 			case ENTRANCE, LATE:
-				throw new InvalidEntranceAttemptException("이미 입실 처리 된 예약입니다.");
+				throw new InvalidEntranceAttemptException(InvalidEntranceAttemptReason.ALREADY_USED, this.id);
 			case CANCELLED:
-				throw new InvalidEntranceAttemptException("취소된 예약입니다.");
+				throw new InvalidEntranceAttemptException(InvalidEntranceAttemptReason.ALREADY_CANCELLED, this.id);
 			case COMPLETED:
-				throw new InvalidEntranceAttemptException("이미 사용 완료된 예약입니다.");
+				throw new InvalidEntranceAttemptException(InvalidEntranceAttemptReason.ALREADY_COMPLETED, this.id);
 			case NO_SHOW:
-				throw new InvalidEntranceAttemptException("이미 노쇼 처리 된 예약입니다.");
+				throw new InvalidEntranceAttemptException(InvalidEntranceAttemptReason.NO_SHOW, this.id);
 			default:
-				throw new InvalidEntranceAttemptException("입장 처리를 할 수 없는 상태의 예약입니다.");
+				throw new InvalidEntranceAttemptException(InvalidEntranceAttemptReason.INVALID_STATE, this.id);
 		}
 	}
 
@@ -210,9 +212,9 @@ public class Reservation extends BaseTimeEntity {
 		ReservationStatus newStatus = this.checkAttendanceStatus(entranceTime);
 
 		if (newStatus == ReservationStatus.NO_SHOW) {
-			throw new InvalidEntranceTimeException("출석 시간이 만료되었습니다.");
+			throw new InvalidEntranceTimeException(InvalidEntranceTimeReason.TOO_LATE, this.id);
 		} else if (newStatus == ReservationStatus.RESERVED) {
-			throw new InvalidEntranceTimeException("출석 시간이 아닙니다.");
+			throw new InvalidEntranceTimeException(InvalidEntranceTimeReason.TOO_EARLY, this.id);
 		}
 
 		this.updateEnterTime(entranceTime);
