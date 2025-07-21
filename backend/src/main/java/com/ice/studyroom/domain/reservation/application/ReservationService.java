@@ -138,18 +138,10 @@ public class ReservationService {
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
 
-		try {
-			// QR 코드를 발급하기 위해 유효한 예약 상태를 가지고 있는지 검증
-			reservation.validateForQrIssuance();
-			// 요청한 사용자가 해당 예약에 접근할 수 있는지 검증
-			reservation.validateOwnership(reservationOwnerEmail);
-		} catch (QrIssuanceNotAllowedException e) {
-			ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 상태 아님", "예약 ID: " + "예약 ID: " + reservationId);
-			throw e;
-		} catch (ReservationAccessDeniedException e) {
-			ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 접근 권한 없음", "예약 ID: " + reservationId);
-			throw e;
-		}
+		// QR 코드를 발급하기 위해 유효한 예약 상태를 가지고 있는지 검증
+		reservation.validateForQrIssuance();
+		// 요청한 사용자가 해당 예약에 접근할 수 있는지 검증
+		reservation.validateOwnership(reservationOwnerEmail);
 
 		String token = reservation.issueQrToken(() -> SecureTokenUtil.generate(10));
 		ReservationLogUtil.log("QR코드 조회 ", "예약 ID: " + reservationId);

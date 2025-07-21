@@ -9,6 +9,8 @@ import java.util.function.Supplier;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.*;
+import com.ice.studyroom.domain.reservation.domain.exception.type.QrIssuanceErrorReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 
@@ -127,7 +129,7 @@ public class Reservation extends BaseTimeEntity {
 	 */
 	public void validateOwnership(String rawEmail) {
 		if (this.member == null || !this.member.getEmail().equals(Email.of(rawEmail))) {
-			throw new ReservationAccessDeniedException("유효하지 않은 사용자는 해당 예약에 접근할 수 없습니다.");
+			throw new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, this.id);
 		}
 	}
 
@@ -165,15 +167,15 @@ public class Reservation extends BaseTimeEntity {
 				// RESERVED 상태만 QR 코드를 발급받을 수 있다.
 				return;
 			case ENTRANCE, LATE:
-				throw new QrIssuanceNotAllowedException("이미 입실 처리된 예약입니다.");
+				throw new QrIssuanceNotAllowedException(QrIssuanceErrorReason.ALREADY_ENTRANCE, this.id);
 			case CANCELLED:
-				throw new QrIssuanceNotAllowedException("이미 취소된 예약입니다.");
+				throw new QrIssuanceNotAllowedException(QrIssuanceErrorReason.RESERVATION_CANCELLED, this.id);
 			case COMPLETED:
-				throw new QrIssuanceNotAllowedException("이미 정상 퇴실된 예약입니다.");
+				throw new QrIssuanceNotAllowedException(QrIssuanceErrorReason.ALREADY_COMPLETED, this.id);
 			case NO_SHOW:
-				throw new QrIssuanceNotAllowedException("노쇼 처리된 예약입니다.");
+				throw new QrIssuanceNotAllowedException(QrIssuanceErrorReason.NO_SHOW, this.id);
 			default:
-				throw new QrIssuanceNotAllowedException("QR 코드를 발급할 수 없는 예약 상태입니다.");
+				throw new QrIssuanceNotAllowedException(QrIssuanceErrorReason.INVALID_STATE, this.id);
 		}
 	}
 
