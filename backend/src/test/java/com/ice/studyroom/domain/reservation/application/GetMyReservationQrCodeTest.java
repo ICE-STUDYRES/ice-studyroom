@@ -1,5 +1,7 @@
 package com.ice.studyroom.domain.reservation.application;
 
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
+import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
 import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
@@ -81,22 +83,22 @@ class GetMyReservationQrCodeTest {
 		토큰_추출과_예약_조회_설정(reservation);
 		QR_코드_생성_스텁(anyString(), qrImage);
 
-		String result = reservationService.getMyReservationQrCode(reservationId, authHeader);
-
-		assertThat(result).isEqualTo(qrImage);
-		verify(reservationRepository).save(reservation);
+		String expectedToken = "generated-token-123";
+		when(reservation.issueQrToken(any())).thenReturn(expectedToken);
 
 		ArgumentCaptor<String> tokenCaptor = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
 
-		verify(reservation).assignQrToken(tokenCaptor.capture());
+		String result = reservationService.getMyReservationQrCode(reservationId, authHeader);
+
+		assertThat(result).isEqualTo(qrImage);
+
 		verify(qrCodeService).storeToken(tokenCaptor.capture(), idCaptor.capture());
 
-		String actualToken = tokenCaptor.getAllValues().get(1);
+		String capturedToken = tokenCaptor.getValue();
 		Long capturedId = idCaptor.getValue();
 
-		assertThat(actualToken).isNotNull();
-		assertThat(actualToken).hasSize(10);
+		assertThat(capturedToken).isEqualTo(expectedToken);
 		assertThat(capturedId).isEqualTo(reservationId);
 	}
 
@@ -126,13 +128,14 @@ class GetMyReservationQrCodeTest {
 	void QR_토큰이_이미_있는_예약은_기존_토큰으로_QR_반환() {
 		Reservation reservation = 예약_모킹_설정(token, true);
 		토큰_추출과_예약_조회_설정(reservation);
+		when(reservation.issueQrToken(any())).thenReturn(token);
 		given(qrCodeUtil.generateQRCodeFromToken(token)).willReturn(qrImage);
 
 		String result = reservationService.getMyReservationQrCode(reservationId, authHeader);
 
 		assertThat(result).isEqualTo(qrImage);
-		verify(reservationRepository, never()).save(any());
 		verify(qrCodeService).storeToken(token, reservationId);
+		verify(reservationRepository, never()).save(any());
 	}
 
 	/**
@@ -201,7 +204,17 @@ class GetMyReservationQrCodeTest {
 		Reservation reservation = mock(Reservation.class);
 		lenient().when(reservation.getQrToken()).thenReturn(qrToken);
 		lenient().when(reservation.getId()).thenReturn(reservationId);
-		given(reservation.isOwnedBy(email)).willReturn(isOwner);
+		// isOwnedBy(email) 메서드에 대한 동작을 isOwner 값에 따라 설정
+		if (isOwner) {
+			// isOwner가 true이면, 예외를 던지지 않음 (성공)
+			willDoNothing().given(reservation).validateOwnership(email);
+		} else {
+			// isOwner가 false이면, 접근 거부 예외를 던짐 (실패)
+			willThrow(new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, reservationId))
+				.given(reservation).validateOwnership(email);
+		}
+		lenient().doNothing().when(reservation).validateForQrIssuance();
+
 		return reservation;
 	}
 

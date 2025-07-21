@@ -4,13 +4,17 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.function.Supplier;
 
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.*;
+import com.ice.studyroom.domain.reservation.domain.exception.type.InvalidEntranceAttemptReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.InvalidEntranceTimeReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.QrIssuanceErrorReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
-import com.ice.studyroom.global.exception.BusinessException;
-import com.ice.studyroom.global.type.StatusCode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -80,65 +84,16 @@ public class Reservation extends BaseTimeEntity {
 	@Column(name = "qr_token", length = 32, unique = true)
 	private String qrToken;
 
-	public boolean isEntered() {
-		return status == ReservationStatus.ENTRANCE;
-	}
-
-	public boolean isOwnedBy(String rawEmail) {
-		return this.member.getEmail().equals(Email.of(rawEmail));
-	}
-
-	// 정상 입실인지 지각인지 노쇼인지 판단하는 코드
-	public ReservationStatus checkAttendanceStatus(LocalDateTime now) {
-		LocalDateTime startDateTime = LocalDateTime.of(scheduleDate, startTime);
-		LocalDateTime endDateTime = LocalDateTime.of(scheduleDate, endTime);
-
-		if (now.isBefore(startDateTime)) {
-			return ReservationStatus.RESERVED;
-		}
-
-		if (now.isAfter(startDateTime.plusMinutes(30))) {
-			if (now.isBefore(endDateTime)) {
-				return ReservationStatus.LATE;
-			} else {
-				return ReservationStatus.NO_SHOW;
-			}
-		}
-
-		return ReservationStatus.ENTRANCE;
-	}
-
-	public void assignQrToken(String generatedToken) {
-		this.qrToken = generatedToken;
-	}
-
-	public void updateEnterTime(LocalDateTime now) {
-		this.enterTime = now;
-	}
-
-	public void markStatus(ReservationStatus status) {
-		this.status = status;
-		if(status != ReservationStatus.CANCELLED && status != ReservationStatus.NO_SHOW
-			&& status != ReservationStatus.COMPLETED) {
-			this.enterTime = LocalDateTime.now();
-		}
-	}
-
-	public void extendReservation(Long secondScheduleId, LocalTime endTime) {
-		this.secondScheduleId = secondScheduleId;
-		this.endTime = endTime;
-	}
-
 	public static Reservation from(List<Schedule> schedules, boolean isReservationHolder, Member member) {
 		if (schedules == null || schedules.isEmpty()) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "Schedules List가 비어있습니다.");
+			throw new InvalidReservationCreationException("Schedules List가 비어있습니다.");
 		}
 
 		Schedule firstSchedule = schedules.get(0);
 		Schedule secondSchedule = schedules.size() > 1 ? schedules.get(1) : null;
 
 		if (firstSchedule.getRoomNumber() == null) {
-			throw new BusinessException(StatusCode.BAD_REQUEST, "firstSchedule은 null일  수 없습니다.");
+			throw new InvalidReservationCreationException("firstSchedule은 null일  수 없습니다.");
 		}
 
 		return Reservation.builder()
@@ -152,5 +107,144 @@ public class Reservation extends BaseTimeEntity {
 			.status(ReservationStatus.RESERVED)
 			.isHolder(isReservationHolder)
 			.build();
+	}
+
+	public boolean isEntered() {return status == ReservationStatus.ENTRANCE;}
+
+	private void updateEnterTime(LocalDateTime now) {
+		this.enterTime = now;
+	}
+
+	/**
+	 * 전달받은 토큰을 qrToken 필드에 할당합니다.
+	 * 이 메서드는 qrToken이 null일 때만 호출되는 것을 전제로 합니다.
+	 * @param newQrToken 새로 생성된 QR 토큰
+	 */
+	private void assignQrToken(String newQrToken) {
+		this.qrToken = newQrToken;
+	}
+
+	/**
+	 * 이 예약의 소유자가 맞는지 검증합니다.
+	 * 소유자가 아닐 경우 ReservationAccessDeniedException을 발생시킵니다.
+	 * @param rawEmail 검증할 사용자의 이메일
+	 */
+	public void validateOwnership(String rawEmail) {
+		if (this.member == null || !this.member.getEmail().equals(Email.of(rawEmail))) {
+			throw new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, this.id);
+		}
+	}
+
+	// TODO: private로 외부공개하지않게 수정할 예정
+	public void markStatus(ReservationStatus status) {
+		this.status = status;
+	}
+
+	public void extendReservation(Long secondScheduleId, LocalTime endTime) {
+		this.secondScheduleId = secondScheduleId;
+		this.endTime = endTime;
+	}
+
+	/**
+	 * QR 토큰을 발급하거나 기존 토큰을 반환합니다.
+	 * 토큰이 없는 경우에만 새로운 토큰을 생성하여 할당합니다.
+	 * @param tokenGenerator 토큰 생성 로직을 제공하는 Supplier
+	 * @return 발급되거나 기존에 존재하던 QR 토큰
+	 */
+	public String issueQrToken(Supplier<String> tokenGenerator) {
+		if (this.qrToken == null) {
+			assignQrToken(tokenGenerator.get());
+		}
+
+		return this.qrToken;
+	}
+
+	/**
+	 * QR 코드 발급이 가능한 상태인지 검증합니다.
+	 * 발급이 불가능한 상태일 경우, 상태에 맞는 구체적인 InvalidReservationStatusException 발생시킵니다.
+	 */
+	public void validateForQrIssuance() {
+		switch (this.status) {
+			case RESERVED:
+				// RESERVED 상태만 QR 코드를 발급받을 수 있다.
+				return;
+			case ENTRANCE, LATE:
+				throw new QrIssuanceNotAllowedException(QrIssuanceErrorReason.ALREADY_ENTRANCE, this.id);
+			case CANCELLED:
+				throw new QrIssuanceNotAllowedException(QrIssuanceErrorReason.RESERVATION_CANCELLED, this.id);
+			case COMPLETED:
+				throw new QrIssuanceNotAllowedException(QrIssuanceErrorReason.ALREADY_COMPLETED, this.id);
+			case NO_SHOW:
+				throw new QrIssuanceNotAllowedException(QrIssuanceErrorReason.NO_SHOW, this.id);
+			default:
+				throw new QrIssuanceNotAllowedException(QrIssuanceErrorReason.INVALID_STATE, this.id);
+		}
+	}
+
+	/**
+	 * 입장을 시도하기에 유효한 상태인지 검증합니다.
+	 * 유효하지 않은 경우, InvalidEntranceAttemptException 예외를 발생키십니다.
+	 */
+	public void validateForEntrance() {
+		switch (this.status) {
+			case RESERVED:
+				return;
+			case ENTRANCE, LATE:
+				throw new InvalidEntranceAttemptException(InvalidEntranceAttemptReason.ALREADY_USED, this.id);
+			case CANCELLED:
+				throw new InvalidEntranceAttemptException(InvalidEntranceAttemptReason.ALREADY_CANCELLED, this.id);
+			case COMPLETED:
+				throw new InvalidEntranceAttemptException(InvalidEntranceAttemptReason.ALREADY_COMPLETED, this.id);
+			case NO_SHOW:
+				throw new InvalidEntranceAttemptException(InvalidEntranceAttemptReason.NO_SHOW, this.id);
+			default:
+				throw new InvalidEntranceAttemptException(InvalidEntranceAttemptReason.INVALID_STATE, this.id);
+		}
+	}
+
+	/**
+	 * 실제 입장 처리를 수행하고, 처리 결과 상태를 반환합니다.
+	 * @param entranceTime 실제 입장 시간
+	 * @return 처리 결과 상태 (ENTRANCE, LATE, NO_SHOW 등)
+	 */
+	public ReservationStatus processEntrance(LocalDateTime entranceTime) {
+
+		ReservationStatus newStatus = this.checkAttendanceStatus(entranceTime);
+
+		if (newStatus == ReservationStatus.NO_SHOW) {
+			throw new InvalidEntranceTimeException(InvalidEntranceTimeReason.TOO_LATE, this.id);
+		} else if (newStatus == ReservationStatus.RESERVED) {
+			throw new InvalidEntranceTimeException(InvalidEntranceTimeReason.TOO_EARLY, this.id);
+		}
+
+		this.updateEnterTime(entranceTime);
+		this.markStatus(newStatus);
+
+		return newStatus;
+	}
+
+	/**
+	 * 입실 시도 시간을 기준으로 처리 결과를 판별합니다.
+	 * RESERVED 입실 가능 시간 이전, ENTRANCE 입실 가능, LATE 지각, NO_SHOW 노쇼
+	 * @param entranceTime 실제 입장 시간
+	 * @return ReservationStatus
+	 */
+	public ReservationStatus checkAttendanceStatus(LocalDateTime entranceTime) {
+		LocalDateTime startDateTime = LocalDateTime.of(scheduleDate, startTime);
+		LocalDateTime endDateTime = LocalDateTime.of(scheduleDate, endTime);
+
+		if (entranceTime.isBefore(startDateTime)) {
+			return ReservationStatus.RESERVED;
+		}
+
+		if (entranceTime.isAfter(startDateTime.plusMinutes(30))) {
+			if (entranceTime.isBefore(endDateTime)) {
+				return ReservationStatus.LATE;
+			} else {
+				return ReservationStatus.NO_SHOW;
+			}
+		}
+
+		return ReservationStatus.ENTRANCE;
 	}
 }

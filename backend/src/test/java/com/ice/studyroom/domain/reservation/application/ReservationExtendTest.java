@@ -11,6 +11,8 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
+import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -160,7 +162,8 @@ public class ReservationExtendTest {
 
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(notOwnerEmail);
-		given(reservation.isOwnedBy(notOwnerEmail)).willReturn(false);
+		willThrow(new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, reservationId))
+			.given(reservation).validateOwnership(notOwnerEmail);
 
 		// when & then
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -789,7 +792,7 @@ public class ReservationExtendTest {
 	private void 통과된_기본_예약_검증_셋업(Long reservationId, String token, String email) {
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(email);
-		given(reservation.isOwnedBy(email)).willReturn(true);
+		willDoNothing().given(reservation).validateOwnership(email);
 	}
 
 	private void 통과된_스케줄_연장_시간_검증_셋업() {

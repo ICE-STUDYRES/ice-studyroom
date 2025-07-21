@@ -3,16 +3,13 @@ package com.ice.studyroom.domain.reservation.application;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidEntranceAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidEntranceTimeException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.QrIssuanceNotAllowedException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
 import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -130,9 +127,9 @@ public class ReservationService {
 
 	@Transactional
 	public String getMyReservationQrCode(Long reservationId, String authorizationHeader) {
-		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
-
 		ReservationLogUtil.log("QR코드 요청 수신", "예약 ID: " + reservationId);
+
+		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// 예약이 유효한지 확인
 		Reservation reservation = reservationRepository.findById(reservationId)
@@ -141,27 +138,13 @@ public class ReservationService {
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
 
-		if(reservation.getStatus() != ReservationStatus.RESERVED){
-			ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 상태 아님", "예약 ID: " + reservationId);
-			throw new BusinessException(StatusCode.BAD_REQUEST, "유효한 예약 상태가 존재하지않습니다.");
-		}
+		// QR 코드를 발급하기 위해 유효한 예약 상태를 가지고 있는지 검증
+		reservation.validateForQrIssuance();
+		// 요청한 사용자가 해당 예약에 접근할 수 있는지 검증
+		reservation.validateOwnership(reservationOwnerEmail);
 
-		// 해당 사용자의 예약인지 확인
-		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
-			ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 접근 권한 없음", "예약 ID: " + reservationId);
-			throw new BusinessException(StatusCode.FORBIDDEN, "해당 예약에 접근할 수 없습니다.");
-		}
-
-		String token = reservation.getQrToken();
-
-		if (token == null) {
-			token = SecureTokenUtil.generate(10);
-			reservation.assignQrToken(token);
-			reservationRepository.save(reservation);
-			ReservationLogUtil.log("QR코드 생성 완료", "예약 ID: " + reservationId);
-		} else {
-			ReservationLogUtil.log("QR코드 재사용", "예약 ID: " + reservationId);
-		}
+		String token = reservation.issueQrToken(() -> SecureTokenUtil.generate(10));
+		ReservationLogUtil.log("QR코드 조회 ", "예약 ID: " + reservationId);
 
 		qrCodeService.storeToken(token, reservation.getId());
 		String qrCode = qrCodeUtil.generateQRCodeFromToken(token);
@@ -176,10 +159,6 @@ public class ReservationService {
 
 		// 토큰으로 예약 ID 조회
 		Long reservationId = qrCodeService.getReservationIdByToken(token);
-		if (reservationId == null) {
-			ReservationLogUtil.logWarn("QR 입장 실패 - 유효하지 않은 QR 토큰", token);
-			throw new BusinessException(StatusCode.BAD_REQUEST, "만료되었거나 유효하지 않은 QR 코드입니다.");
-		}
 
 		ReservationLogUtil.log("QR 입장 요청 수신", "예약 ID: " + reservationId);
 
@@ -190,33 +169,18 @@ public class ReservationService {
 				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
 			});
 
-		Member reservationOwner = reservation.getMember();
+		// 입장 가능한 예약인지 먼저 확인
+		reservation.validateForEntrance();
 
-		// 예약의 상태에 따른 에러 처리
-		if(reservation.getStatus() == ReservationStatus.CANCELLED){
-			ReservationLogUtil.logWarn("QR 입장 실패 - 취소된 예약", "예약 ID: " + reservationId);
-			throw new BusinessException(StatusCode.BAD_REQUEST, "취소된 예약입니다.");
-		} else if(reservation.getStatus() == ReservationStatus.ENTRANCE || reservation.getStatus() == ReservationStatus.LATE){
-			ReservationLogUtil.logWarn("QR 입장 실패 - 이미 입장 처리된 예약", "예약 ID: " + reservationId);
-			throw new BusinessException(StatusCode.BAD_REQUEST, "이미 입실처리 된 예약입니다.");
-		}
+		// 가능하다면 현재 시간으로 입장 처리 진행
+		ReservationStatus status = reservation.processEntrance(LocalDateTime.now(clock));
 
-		LocalDateTime now = LocalDateTime.now(clock);
-		ReservationStatus status = reservation.checkAttendanceStatus(now);
-
-		reservation.updateEnterTime(now);
-		reservation.markStatus(status);
-
-		// qr 무효화
+		// 입실 완료 이후에는 qr 무효화 진행
 		qrCodeService.invalidateToken(token);
 
-		if (status == ReservationStatus.RESERVED) {
-			ReservationLogUtil.logWarn("QR 입장 실패 - 출석 시간 아님", "예약 ID: " + reservationId);
-			throw new BusinessException(StatusCode.BAD_REQUEST, "출석 시간이 아닙니다.");
-		} else if (status == ReservationStatus.NO_SHOW) {
-			ReservationLogUtil.logWarn("QR 입장 실패 - 출석 시간 만료", "예약 ID: " + reservationId);
-			throw new BusinessException(StatusCode.BAD_REQUEST, "출석 시간이 만료되었습니다.");
-		} else if(status == ReservationStatus.LATE){
+		Member reservationOwner = reservation.getMember();
+
+		if(status == ReservationStatus.LATE){
 			ReservationLogUtil.logWarn("지각 입장 - 패널티 부여", "예약 ID: " + reservationId,
 				"userId: " + reservationOwner.getEmail().getValue());
 			penaltyService.assignPenalty(reservationOwner, reservationId, PenaltyReasonType.LATE);
@@ -249,9 +213,9 @@ public class ReservationService {
 		reservationValidator.checkDuplicateReservation(Email.of(reservationOwnerEmail));
 
 		// 예약 가능 여부 확인
-		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
+		List<Long> scheduleIds = Arrays.stream(request.scheduleId()).toList();
 
-		List<Schedule> schedules = reservationConcurrencyService.processIndividualReservationWithLock(idList);
+		List<Schedule> schedules = reservationConcurrencyService.processIndividualReservationWithLock(scheduleIds);
 
 		try {
 			Reservation reservation = Reservation.from(schedules, true, reservationOwner);
@@ -264,11 +228,11 @@ public class ReservationService {
 
 		} catch (Exception e) {
 			try {
-				reservationCompensationService.rollbackSchedules(idList, reservationOwnerEmail);
+				reservationCompensationService.rollbackSchedules(scheduleIds, reservationOwnerEmail);
 			} catch (Exception rollbackException) {
 				ReservationLogUtil.log("예약 실패에 따른 보상 트랜잭션 실패", "예약자: " + reservationOwnerEmail + " " + rollbackException.getMessage());
 			}
-			throw new BusinessException(StatusCode.INTERNAL_ERROR, "예약 처리 중 오류가 발생하여 모든 변경사항이 롤백됩니다." + e);
+			throw new BusinessException(StatusCode.INTERNAL_ERROR, "예약 처리 중 오류가 발생하여 모든 변경사항이 롤백됩니다. 사유: " + e.getMessage());
 		}
 	}
 
@@ -379,7 +343,9 @@ public class ReservationService {
 		Member reservationOwner = reservation.getMember();
 
 		// JWT 를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
-		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
+		try {
+			reservation.validateOwnership(reservationOwnerEmail);
+		} catch (ReservationAccessDeniedException e) {
 			ReservationLogUtil.logWarn("예약 취소 실패 - 사용자 예약 아님","예약 ID: " + reservationId, "예약자 이메일: " + reservationOwnerEmail);
 			throw new BusinessException(StatusCode.NOT_FOUND, "이전에 예약이 되지 않았습니다.");
 		}
@@ -437,7 +403,9 @@ public class ReservationService {
 
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
-		if (!reservation.isOwnedBy(reservationOwnerEmail)) {
+		try {
+			reservation.validateOwnership(reservationOwnerEmail);
+		} catch (ReservationAccessDeniedException e) {
 			ReservationLogUtil.logWarn("예약 연장 실패 - 예약자 불일치", "예약 ID: " + reservationId, "예약자 이메일: " + reservationOwnerEmail);
 			throw new BusinessException(StatusCode.NOT_FOUND, "해당 예약 정보가 존재하지 않습니다.");
 		}
