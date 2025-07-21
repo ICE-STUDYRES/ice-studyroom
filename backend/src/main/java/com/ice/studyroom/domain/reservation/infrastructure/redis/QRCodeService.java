@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 public class QRCodeService {
 
 	private final StringRedisTemplate redisTemplate;
-	private static final long EXPIRATION_MINUTES = 24;
+	private static final long EXPIRATION_HOURS = 24;
 
 	public QRCodeService(StringRedisTemplate redisTemplate) {
 		this.redisTemplate = redisTemplate;
@@ -21,11 +21,11 @@ public class QRCodeService {
 
 	// QR 토큰 저장 Redis에 reservationId 매핑
 	public void storeToken(String token, Long reservationId) {
-		log.info("QR 토큰 저장 - token: {}, reservationId: {}, 만료: {}시간",  maskToken(token), reservationId, EXPIRATION_MINUTES);
+		log.info("QR 토큰 저장 - token: {}, reservationId: {}, 만료: {}시간",  maskToken(token), reservationId, EXPIRATION_HOURS);
 		redisTemplate.opsForValue().set(
 			"qr:" + token,
 			String.valueOf(reservationId),
-			EXPIRATION_MINUTES,
+			EXPIRATION_HOURS,
 			TimeUnit.HOURS
 		);
 	}
