@@ -2,8 +2,8 @@ package com.ice.studyroom.domain.reservation.application;
 
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
-import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
-import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationActionType;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationAccessDeniedReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
 import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
