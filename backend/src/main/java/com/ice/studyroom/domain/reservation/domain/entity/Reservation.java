@@ -9,9 +9,15 @@ import java.util.function.Supplier;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.*;
-import com.ice.studyroom.domain.reservation.domain.exception.type.InvalidEntranceAttemptReason;
-import com.ice.studyroom.domain.reservation.domain.exception.type.InvalidEntranceTimeReason;
-import com.ice.studyroom.domain.reservation.domain.exception.type.QrIssuanceErrorReason;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.cancel.InvalidCancelAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.QrIssuanceNotAllowedException;
+import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationActionType;
+import com.ice.studyroom.domain.reservation.domain.exception.type.cancel.InvalidCancelAttemptReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.qr.InvalidEntranceAttemptReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.qr.InvalidEntranceTimeReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.qr.QrIssuanceErrorReason;
 import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
@@ -32,6 +38,8 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+
+import static com.ice.studyroom.domain.reservation.domain.type.ReservationStatus.*;
 
 @Entity
 @Table(name = "reservation")
@@ -93,7 +101,7 @@ public class Reservation extends BaseTimeEntity {
 		Schedule secondSchedule = schedules.size() > 1 ? schedules.get(1) : null;
 
 		if (firstSchedule.getRoomNumber() == null) {
-			throw new InvalidReservationCreationException("firstSchedule은 null일  수 없습니다.");
+			throw new InvalidReservationCreationException("firstSchedule은 null일 수 없습니다.");
 		}
 
 		return Reservation.builder()
@@ -109,7 +117,7 @@ public class Reservation extends BaseTimeEntity {
 			.build();
 	}
 
-	public boolean isEntered() {return status == ReservationStatus.ENTRANCE;}
+	public boolean isEntered() { return status == ENTRANCE; }
 
 	private void updateEnterTime(LocalDateTime now) {
 		this.enterTime = now;
@@ -118,6 +126,7 @@ public class Reservation extends BaseTimeEntity {
 	/**
 	 * 전달받은 토큰을 qrToken 필드에 할당합니다.
 	 * 이 메서드는 qrToken이 null일 때만 호출되는 것을 전제로 합니다.
+	 *
 	 * @param newQrToken 새로 생성된 QR 토큰
 	 */
 	private void assignQrToken(String newQrToken) {
@@ -127,11 +136,12 @@ public class Reservation extends BaseTimeEntity {
 	/**
 	 * 이 예약의 소유자가 맞는지 검증합니다.
 	 * 소유자가 아닐 경우 ReservationAccessDeniedException을 발생시킵니다.
-	 * @param rawEmail 검증할 사용자의 이메일
+	 *
+	 * @param requesterEmail 검증할 사용자의 이메일
 	 */
-	public void validateOwnership(String rawEmail) {
-		if (this.member == null || !this.member.getEmail().equals(Email.of(rawEmail))) {
-			throw new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, this.id);
+	public void validateOwnership(String requesterEmail, ReservationActionType actionType) {
+		if (this.member == null || !this.member.getEmail().equals(Email.of(requesterEmail))) {
+			throw new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, this.id, requesterEmail, actionType);
 		}
 	}
 
@@ -148,6 +158,7 @@ public class Reservation extends BaseTimeEntity {
 	/**
 	 * QR 토큰을 발급하거나 기존 토큰을 반환합니다.
 	 * 토큰이 없는 경우에만 새로운 토큰을 생성하여 할당합니다.
+	 *
 	 * @param tokenGenerator 토큰 생성 로직을 제공하는 Supplier
 	 * @return 발급되거나 기존에 존재하던 QR 토큰
 	 */
@@ -211,7 +222,7 @@ public class Reservation extends BaseTimeEntity {
 
 		ReservationStatus newStatus = this.checkAttendanceStatus(entranceTime);
 
-		if (newStatus == ReservationStatus.NO_SHOW) {
+		if (newStatus == NO_SHOW) {
 			throw new InvalidEntranceTimeException(InvalidEntranceTimeReason.TOO_LATE, this.id);
 		} else if (newStatus == ReservationStatus.RESERVED) {
 			throw new InvalidEntranceTimeException(InvalidEntranceTimeReason.TOO_EARLY, this.id);
@@ -226,6 +237,7 @@ public class Reservation extends BaseTimeEntity {
 	/**
 	 * 입실 시도 시간을 기준으로 처리 결과를 판별합니다.
 	 * RESERVED 입실 가능 시간 이전, ENTRANCE 입실 가능, LATE 지각, NO_SHOW 노쇼
+	 *
 	 * @param entranceTime 실제 입장 시간
 	 * @return ReservationStatus
 	 */
@@ -241,10 +253,52 @@ public class Reservation extends BaseTimeEntity {
 			if (entranceTime.isBefore(endDateTime)) {
 				return ReservationStatus.LATE;
 			} else {
-				return ReservationStatus.NO_SHOW;
+				return NO_SHOW;
 			}
 		}
 
-		return ReservationStatus.ENTRANCE;
+		return ENTRANCE;
+	}
+
+	/**
+	 * 예약 취소 시도 시간을 기준으로 처리 결과를 판별합니다.
+	 * RESERVED 예약 상태의 경우에만 처리가 가능하며, 입실까지 남은 시간이 1시간 이하일 경우 패널티 부여
+	 * 패널티를 부여해야하는지에 대한 boolean 값을 응용계층에 전달합니다.
+	 * 유효하지 않은 경우, InvalidCancelAttemptException 예외를 발생키십니다.
+	 *
+	 * @param now 예약 취소 시도 시간
+	 * @return 패널티에 해당하는지 여부
+	 */
+	public boolean cancel(LocalDateTime now) {
+		LocalDateTime startTime = LocalDateTime.of(now.toLocalDate(), this.startTime);
+		validateForCancel();
+
+		if (now.isAfter(startTime)) {
+			throw new InvalidCancelAttemptException(InvalidCancelAttemptReason.TOO_LATE, this.id);
+		}
+
+		markStatus(CANCELLED);
+
+		return !now.isBefore(startTime.minusHours(1));
+	}
+
+	/**
+	 * 취소를 시도하기에 유효한 상태인지 검증합니다.
+	 * 유효하지 않은 경우, InvalidCancelAttemptException 예외를 발생키십니다.
+	 */
+	private void validateForCancel() {
+		switch (this.status) {
+			case RESERVED:
+				return;
+			case CANCELLED:
+				throw new InvalidCancelAttemptException(InvalidCancelAttemptReason.ALREADY_CANCELLED, this.id);
+			case COMPLETED:
+			case ENTRANCE:
+			case LATE:
+			case NO_SHOW:
+				throw new InvalidCancelAttemptException(InvalidCancelAttemptReason.ALREADY_USED, this.id);
+			default:
+				throw new InvalidCancelAttemptException(InvalidCancelAttemptReason.INVALID_STATE, this.id);
+		}
 	}
 }
