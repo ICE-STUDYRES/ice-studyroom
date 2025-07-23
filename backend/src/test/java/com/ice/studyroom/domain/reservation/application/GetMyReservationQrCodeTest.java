@@ -1,13 +1,14 @@
 package com.ice.studyroom.domain.reservation.application;
 
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationActionType;
 import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.redis.QRCodeService;
 import com.ice.studyroom.domain.reservation.infrastructure.util.QRCodeUtil;
-import com.ice.studyroom.global.exception.BusinessException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -163,7 +164,7 @@ class GetMyReservationQrCodeTest {
 		given(tokenService.extractEmailFromAccessToken(authHeader)).willReturn(email);
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.empty());
 
-		BusinessException ex = assertThrows(BusinessException.class, () ->
+		ReservationNotFoundException ex = assertThrows(ReservationNotFoundException.class, () ->
 			reservationService.getMyReservationQrCode(reservationId, authHeader)
 		);
 		assertThat(ex.getMessage()).contains("존재하지 않는 예약");
@@ -194,7 +195,7 @@ class GetMyReservationQrCodeTest {
 		Reservation reservation = 예약_모킹_설정(null, false);
 		토큰_추출과_예약_조회_설정(reservation);
 
-		BusinessException ex = assertThrows(BusinessException.class, () ->
+		ReservationAccessDeniedException ex = assertThrows(ReservationAccessDeniedException.class, () ->
 			reservationService.getMyReservationQrCode(reservationId, authHeader)
 		);
 		assertThat(ex.getMessage()).contains("접근할 수 없습니다");
@@ -207,11 +208,11 @@ class GetMyReservationQrCodeTest {
 		// isOwnedBy(email) 메서드에 대한 동작을 isOwner 값에 따라 설정
 		if (isOwner) {
 			// isOwner가 true이면, 예외를 던지지 않음 (성공)
-			willDoNothing().given(reservation).validateOwnership(email);
+			willDoNothing().given(reservation).validateOwnership(email, ReservationActionType.ISSUE_QR_CODE);
 		} else {
 			// isOwner가 false이면, 접근 거부 예외를 던짐 (실패)
-			willThrow(new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, reservationId))
-				.given(reservation).validateOwnership(email);
+			willThrow(new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, reservationId, email, ReservationActionType.ISSUE_QR_CODE))
+				.given(reservation).validateOwnership(email, ReservationActionType.ISSUE_QR_CODE);
 		}
 		lenient().doNothing().when(reservation).validateForQrIssuance();
 
