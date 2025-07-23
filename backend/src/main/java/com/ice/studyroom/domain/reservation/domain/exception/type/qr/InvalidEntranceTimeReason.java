@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.domain.exception.type;
+package com.ice.studyroom.domain.reservation.domain.exception.type.qr;
 
 public enum InvalidEntranceTimeReason {
 	TOO_EARLY("출석 시간이 아닙니다."),

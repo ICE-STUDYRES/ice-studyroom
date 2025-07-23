@@ -1,6 +1,6 @@
 package com.ice.studyroom.domain.reservation.domain.exception.reservation.qr;
 
-import com.ice.studyroom.domain.reservation.domain.exception.type.InvalidEntranceTimeReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.qr.InvalidEntranceTimeReason;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 
