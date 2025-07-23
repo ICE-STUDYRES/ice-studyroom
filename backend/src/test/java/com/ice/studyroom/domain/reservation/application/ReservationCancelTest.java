@@ -4,15 +4,18 @@ import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
+import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
-import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.cancel.InvalidCancelAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationAccessDeniedReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.cancel.InvalidCancelAttemptReason;
 import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
-import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
@@ -28,7 +31,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Optional;
 
@@ -55,6 +57,8 @@ class ReservationCancelTest {
 	private Schedule firstSchedule;
 	@Mock
 	private Schedule secondSchedule;
+	@Mock
+	private Member member;
 
 	Long reservationId;
 	String token;
@@ -107,18 +111,20 @@ class ReservationCancelTest {
 		// given
 		기본_예약_정보_셋업(token, reservationId, userEmail);
 		시간_고정_셋업(12, 30);
-		스케줄_정보_셋업(100L, LocalTime.of(14, 0), null, false);
-		willDoNothing().given(reservation).markStatus(any());
+		스케줄_정보_셋업(100L, 101L, false);
+		given(reservation.cancel(any(LocalDateTime.class))).willReturn(false);
 
 		// when
 		CancelReservationResponse response = reservationService.cancelReservation(reservationId, token);
 
 		// then
-		assertNotNull(response);
-		assertEquals(reservationId, response.id());
+		assertThat(response).isNotNull();
+		assertThat(response.id()).isEqualTo(reservationId);
 
-		verify(reservation).markStatus(ReservationStatus.CANCELLED);
+		verify(reservation).cancel(any(LocalDateTime.class));
 		verify(firstSchedule).cancel();
+		verify(secondSchedule, never()).cancel();
+		verify(penaltyService, never()).assignPenalty(any(), anyLong(), any());
 	}
 
 	/**
@@ -156,17 +162,18 @@ class ReservationCancelTest {
 	void 예약_2시간_취소_성공() {
 		기본_예약_정보_셋업(token, reservationId, userEmail);
 		시간_고정_셋업(12, 30);
-		스케줄_정보_셋업(100L, LocalTime.of(14, 0), 101L, true);
-		willDoNothing().given(reservation).markStatus(any());
+		스케줄_정보_셋업(100L, 101L, true);
+		given(reservation.cancel(any(LocalDateTime.class))).willReturn(false);
 
 		CancelReservationResponse response = reservationService.cancelReservation(reservationId, token);
 
 		assertThat(response).isNotNull();
 		assertThat(response.id()).isEqualTo(reservationId);
 
-		verify(reservation).markStatus(ReservationStatus.CANCELLED);
+		verify(reservation).cancel(any(LocalDateTime.class));
 		verify(firstSchedule).cancel();
 		verify(secondSchedule).cancel();
+		verify(penaltyService, never()).assignPenalty(any(), anyLong(), any());
 	}
 
 	/**
@@ -187,7 +194,7 @@ class ReservationCancelTest {
 	 *   - 타인의 예약을 취소하는 행위는 무효이며, 예외로 처리해야 한다.
 	 *
 	 * 🧩 검증 포인트:
-	 *   - `cancelReservation()` 호출 시 `BusinessException`이 발생해야 한다.
+	 *   - `cancelReservation()` 호출 시 `ReservationAccessDeniedException`이 발생해야 한다.
 	 *   - 예외 메시지는 정확히 `"이전에 예약이 되지 않았습니다."` 여야 한다.
 	 *   - 예약 삭제(`delete()`), 상태 변경(`markStatus()`), 스케줄 변경 등은 **절대 호출되지 않아야 한다.**
 	 *
@@ -199,17 +206,18 @@ class ReservationCancelTest {
 	@DisplayName("본인 예약이 아닐 경우 예외")
 	void 본인_예약이_아닐_경우_예외() {
 		String wrongEmail = "wrong@example.com";
+		시간_고정_셋업(12, 0);
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(wrongEmail);
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
-		willThrow(new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, reservationId))
-			.given(reservation).validateOwnership(wrongEmail);
+		willThrow(new ReservationAccessDeniedException(ReservationAccessDeniedReason.NOT_OWNER, reservationId, wrongEmail, ReservationActionType.CANCEL_RESERVATION))
+			.given(reservation).validateOwnership(wrongEmail, ReservationActionType.CANCEL_RESERVATION);
 
-		BusinessException ex = assertThrows(BusinessException.class, () ->
+		ReservationAccessDeniedException ex = assertThrows(ReservationAccessDeniedException.class, () ->
 			reservationService.cancelReservation(reservationId, token)
 		);
 
-		assertThat(ex.getMessage()).isEqualTo("이전에 예약이 되지 않았습니다.");
-		verify(reservationRepository, never()).delete(any());
+		assertThat(ex.getMessage()).isEqualTo("유효하지 않은 사용자는 해당 예약에 접근할 수 없습니다.");
+		verify(reservation, never()).cancel(any());
 	}
 
 	/**
@@ -247,15 +255,15 @@ class ReservationCancelTest {
 	void 입실까지_1시간보다_적게_남았으면_패널티_부여() {
 		기본_예약_정보_셋업(token, reservationId, userEmail);
 		시간_고정_셋업(12, 30);
-		스케줄_정보_셋업(100L, LocalTime.of(13, 0), 101L, true);
+		스케줄_정보_셋업(100L, 101L, true);
 
-		willDoNothing().given(penaltyService).assignPenalty(any(), eq(reservationId), eq(PenaltyReasonType.CANCEL));
-		willDoNothing().given(reservation).markStatus(any());
+		given(reservation.cancel(any(LocalDateTime.class))).willReturn(true);
+		given(reservation.getMember()).willReturn(member);
 
 		CancelReservationResponse response = reservationService.cancelReservation(reservationId, token);
 
 		assertThat(response).isNotNull();
-		verify(reservation).markStatus(ReservationStatus.CANCELLED);
+		verify(reservation).cancel(any(LocalDateTime.class));
 		verify(firstSchedule).cancel();
 		verify(secondSchedule).cancel();
 		verify(penaltyService).assignPenalty(any(), eq(reservationId), eq(PenaltyReasonType.CANCEL));
@@ -296,18 +304,18 @@ class ReservationCancelTest {
 	void 경계값_테스트_입실까지_정확히_60분_남았을_때_취소하면_패널티_부여() {
 		기본_예약_정보_셋업(token, reservationId, userEmail);
 		시간_고정_셋업(12, 0);
-		스케줄_정보_셋업(100L, LocalTime.of(13, 0), 101L, true);
+		스케줄_정보_셋업(100L,101L, true);
 
-		willDoNothing().given(penaltyService).assignPenalty(any(), eq(reservationId), eq(PenaltyReasonType.CANCEL));
-		willDoNothing().given(reservation).markStatus(any());
+		given(reservation.cancel(any(LocalDateTime.class))).willReturn(true);
+		given(reservation.getMember()).willReturn(member);
 
 		CancelReservationResponse response = reservationService.cancelReservation(reservationId, token);
 
 		assertThat(response).isNotNull();
-		verify(reservation).markStatus(ReservationStatus.CANCELLED);
+		verify(reservation).cancel(any(LocalDateTime.class));
 		verify(firstSchedule).cancel();
 		verify(secondSchedule).cancel();
-		verify(penaltyService).assignPenalty(any(), eq(reservationId), eq(PenaltyReasonType.CANCEL));
+		verify(penaltyService).assignPenalty(member, reservationId, PenaltyReasonType.CANCEL);
 	}
 
 	/**
@@ -338,6 +346,8 @@ class ReservationCancelTest {
 	@Test
 	@DisplayName("예약이 존재하지 않을 경우 예외")
 	void 예약이_존재하지_않을_경우_예외() {
+		시간_고정_셋업(12, 0);
+
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.empty());
 
 		BusinessException ex = assertThrows(BusinessException.class, () ->
@@ -382,22 +392,20 @@ class ReservationCancelTest {
 	void 입실_시간_이후_취소는_불가능_하다는_예외_발생() {
 		시간_고정_셋업(13, 30);
 		기본_예약_정보_셋업(token, reservationId, userEmail);
-		스케줄_정보_셋업(100L, LocalTime.of(13, 0), null, false);
+		given(reservation.cancel(any(LocalDateTime.class)))
+			.willThrow(new InvalidCancelAttemptException(InvalidCancelAttemptReason.TOO_LATE, reservationId));
 
-		BusinessException ex = assertThrows(BusinessException.class, () ->
+		assertThrows(InvalidCancelAttemptException.class, () ->
 			reservationService.cancelReservation(reservationId, token)
 		);
 
-		assertThat(ex.getMessage()).isEqualTo("입실 시간이 초과하였기에 취소할 수 없습니다.");
-		verify(firstSchedule, never()).cancel();
-		verify(reservation, never()).markStatus(any());
-		verify(penaltyService, never()).assignPenalty(any(), anyLong(), any());
+		verify(scheduleRepository, never()).findById(anyLong());
 	}
 
 	void 기본_예약_정보_셋업(String token, Long reservationId, String userEmail) {
 		given(tokenService.extractEmailFromAccessToken(token)).willReturn(userEmail);
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.of(reservation));
-		willDoNothing().given(reservation).validateOwnership(userEmail);
+		willDoNothing().given(reservation).validateOwnership(userEmail, ReservationActionType.CANCEL_RESERVATION);
 	}
 
 	void 시간_고정_셋업(int hour, int minute) {
@@ -406,10 +414,9 @@ class ReservationCancelTest {
 		given(clock.getZone()).willReturn(ZoneId.systemDefault());
 	}
 
-	void 스케줄_정보_셋업(Long firstId, LocalTime firstStartTime, Long secondId, boolean includeSecond) {
+	void 스케줄_정보_셋업(Long firstId, Long secondId, boolean includeSecond) {
 		given(reservation.getFirstScheduleId()).willReturn(firstId);
 		given(scheduleRepository.findById(firstId)).willReturn(Optional.of(firstSchedule));
-		given(firstSchedule.getStartTime()).willReturn(firstStartTime);
 
 		if (includeSecond) {
 			given(reservation.getSecondScheduleId()).willReturn(secondId);
