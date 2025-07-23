@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.domain.exception.reservation;
+package com.ice.studyroom.domain.reservation.domain.exception.reservation.qr;
 
 import com.ice.studyroom.domain.reservation.domain.exception.type.InvalidEntranceTimeReason;
 import com.ice.studyroom.global.exception.BusinessException;

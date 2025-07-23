@@ -3,9 +3,9 @@ package com.ice.studyroom.global.exception;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidEntranceAttemptException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidEntranceTimeException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.QrIssuanceNotAllowedException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.QrIssuanceNotAllowedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
 import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
 import com.ice.studyroom.global.exception.token.InvalidQrTokenException;
@@ -76,7 +76,7 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(ReservationAccessDeniedException.class)
 	public ResponseEntity<ResponseDto<Object>> handleReservationAccessDenied(ReservationAccessDeniedException ex) {
-		ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 접근 권한 없음", "예약 ID: " + ex.getReservationId());
+		ReservationLogUtil.logWarn("예약 접근 권한 없음", "예약 ID: " + ex.getReservationId());
 		return ResponseEntity
 			.status(ex.getStatusCode().getStatus())
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
