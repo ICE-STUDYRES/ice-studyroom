@@ -9,6 +9,7 @@ import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.Inva
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.QrIssuanceNotAllowedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationScheduleNotFoundException;
 import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
 import com.ice.studyroom.global.exception.token.InvalidQrTokenException;
 import org.springframework.http.ResponseEntity;
@@ -79,6 +80,14 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(QrIssuanceNotAllowedException.class)
 	public ResponseEntity<ResponseDto<Object>> handleQrIssuanceNotAllowed(QrIssuanceNotAllowedException ex) {
 		ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 상태 아님", "예약 ID: " + "예약 ID: " + ex.getReservationId());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	@ExceptionHandler(ReservationScheduleNotFoundException.class)
+	public ResponseEntity<ResponseDto<Object>> handleReservationScheduleNotFound(ReservationScheduleNotFoundException ex) {
+		ReservationLogUtil.logWarn("["+ ex.getDescription() +"]" + "찾을 수 없는 예약", "예약 ID: " + ex.getReservationId() + "유효하지않는 스케줄 ID " + ex.getScheduleId());
 		return ResponseEntity
 			.status(ex.getStatusCode().getStatus())
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
