@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.domain.exception.type.qr;
+package com.ice.studyroom.domain.reservation.domain.exception.type.reservation.qr;
 
 public enum InvalidEntranceAttemptReason {
 	ALREADY_USED("이미 입실 처리 된 예약입니다."),

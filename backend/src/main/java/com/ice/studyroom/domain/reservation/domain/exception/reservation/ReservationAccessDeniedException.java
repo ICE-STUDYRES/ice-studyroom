@@ -1,8 +1,7 @@
 package com.ice.studyroom.domain.reservation.domain.exception.reservation;
 
-import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
-import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
-import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationActionType;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationAccessDeniedReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 

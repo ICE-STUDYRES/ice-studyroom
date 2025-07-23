@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.domain.exception.type.cancel;
+package com.ice.studyroom.domain.reservation.domain.exception.type.reservation.cancel;
 
 public enum InvalidCancelAttemptReason {
 	ALREADY_USED("이미 사용되었거나 완료된 예약은 취소할 수 없습니다."),

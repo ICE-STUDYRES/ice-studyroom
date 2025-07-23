@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.domain.exception.type;
+package com.ice.studyroom.domain.reservation.domain.exception.type.reservation;
 
 public enum ReservationActionType {
 	CANCEL_RESERVATION("예약 취소"),

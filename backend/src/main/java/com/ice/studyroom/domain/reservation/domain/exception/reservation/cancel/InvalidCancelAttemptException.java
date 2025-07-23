@@ -1,10 +1,8 @@
 package com.ice.studyroom.domain.reservation.domain.exception.reservation.cancel;
 
-import com.ice.studyroom.domain.reservation.domain.exception.type.cancel.InvalidCancelAttemptReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.cancel.InvalidCancelAttemptReason;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
-
-import java.time.LocalDateTime;
 
 
 /**

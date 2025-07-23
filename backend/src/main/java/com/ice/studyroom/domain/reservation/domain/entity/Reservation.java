@@ -13,12 +13,12 @@ import com.ice.studyroom.domain.reservation.domain.exception.reservation.cancel.
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.QrIssuanceNotAllowedException;
-import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationActionType;
-import com.ice.studyroom.domain.reservation.domain.exception.type.cancel.InvalidCancelAttemptReason;
-import com.ice.studyroom.domain.reservation.domain.exception.type.qr.InvalidEntranceAttemptReason;
-import com.ice.studyroom.domain.reservation.domain.exception.type.qr.InvalidEntranceTimeReason;
-import com.ice.studyroom.domain.reservation.domain.exception.type.qr.QrIssuanceErrorReason;
-import com.ice.studyroom.domain.reservation.domain.exception.type.ReservationAccessDeniedReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.cancel.InvalidCancelAttemptReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.qr.InvalidEntranceAttemptReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.qr.InvalidEntranceTimeReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.qr.QrIssuanceErrorReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationAccessDeniedReason;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 
