@@ -12,12 +12,10 @@ import com.ice.studyroom.global.security.service.TokenService;
 
 import com.ice.studyroom.global.type.ActionType;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class ScheduleService {
 
