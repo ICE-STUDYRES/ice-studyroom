@@ -2,14 +2,12 @@ package com.ice.studyroom.domain.schedule.infrastructure.redis;
 
 import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 
 @Service
-@Slf4j
 @RequiredArgsConstructor
 public class ScheduleVacancyAlertService {
 
