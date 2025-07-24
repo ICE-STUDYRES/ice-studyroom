@@ -30,9 +30,9 @@ public class ScheduleVacancyAlertService {
 
 		if (redisTemplate.getExpire(redisKey) < 0) {
 			redisTemplate.expire(redisKey, Duration.ofHours(24));
-			ReservationLogUtil.log("새로운 빈자리 알림 키 생성. Key: {}, Expire: 24 hours", redisKey);
+			ReservationLogUtil.log("새로운 빈자리 알림 키 생성. Key: " + redisKey + ", Expire: 24 hours");
 		}
 
-		ReservationLogUtil.log("빈자리 알림 등록 완료. Key: {}, Email: {}, User: {}", redisKey, email, userName);
+		ReservationLogUtil.log("빈자리 알림 등록 완료. Key: " + redisKey + ", Email: " + email + ", User: " + userName);
 	}
 }
