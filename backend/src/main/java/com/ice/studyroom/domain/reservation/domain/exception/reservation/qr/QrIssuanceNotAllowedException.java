@@ -1,6 +1,6 @@
-package com.ice.studyroom.domain.reservation.domain.exception.reservation;
+package com.ice.studyroom.domain.reservation.domain.exception.reservation.qr;
 
-import com.ice.studyroom.domain.reservation.domain.exception.type.QrIssuanceErrorReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.qr.QrIssuanceErrorReason;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
 

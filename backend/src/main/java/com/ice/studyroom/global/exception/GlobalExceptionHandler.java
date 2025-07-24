@@ -3,10 +3,13 @@ package com.ice.studyroom.global.exception;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidEntranceAttemptException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidEntranceTimeException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.QrIssuanceNotAllowedException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.cancel.InvalidCancelAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.QrIssuanceNotAllowedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationScheduleNotFoundException;
 import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
 import com.ice.studyroom.global.exception.token.InvalidQrTokenException;
 import org.springframework.http.ResponseEntity;
@@ -66,6 +69,14 @@ public class GlobalExceptionHandler {
 			.body(ResponseDto.error(StatusCode.INVALID_INPUT, errors));
 	}
 
+	@ExceptionHandler(InvalidCancelAttemptException.class)
+	public ResponseEntity<ResponseDto<Object>> handleInvalidCancelAttempt(InvalidCancelAttemptException ex) {
+		ReservationLogUtil.logWarn("예약 취소 실패 - 입실 시간 초과", "예약 ID: " + ex.getReservationId());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
 	@ExceptionHandler(QrIssuanceNotAllowedException.class)
 	public ResponseEntity<ResponseDto<Object>> handleQrIssuanceNotAllowed(QrIssuanceNotAllowedException ex) {
 		ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 상태 아님", "예약 ID: " + "예약 ID: " + ex.getReservationId());
@@ -74,9 +85,25 @@ public class GlobalExceptionHandler {
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
 	}
 
+	@ExceptionHandler(ReservationScheduleNotFoundException.class)
+	public ResponseEntity<ResponseDto<Object>> handleReservationScheduleNotFound(ReservationScheduleNotFoundException ex) {
+		ReservationLogUtil.logWarn("["+ ex.getDescription() +"]" + "찾을 수 없는 예약", "예약 ID: " + ex.getReservationId() + "유효하지않는 스케줄 ID " + ex.getScheduleId());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	@ExceptionHandler(ReservationNotFoundException.class)
+	public ResponseEntity<ResponseDto<Object>> handleReservationNotFound(ReservationNotFoundException ex) {
+		ReservationLogUtil.logWarn("["+ ex.getDescription() +"]" + "찾을 수 없는 예약", "예약 ID: " + ex.getReservationId() + " 접근 시도자: " + ex.getRequesterEmail());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
 	@ExceptionHandler(ReservationAccessDeniedException.class)
 	public ResponseEntity<ResponseDto<Object>> handleReservationAccessDenied(ReservationAccessDeniedException ex) {
-		ReservationLogUtil.logWarn("QR코드 요청 실패 - 예약 접근 권한 없음", "예약 ID: " + ex.getReservationId());
+		ReservationLogUtil.logWarn("["+ ex.getDescription() +"]" + "예약 접근 권한 없음", "예약 ID: " + ex.getReservationId() + " 접근 시도자: " + ex.getRequesterEmail());
 		return ResponseEntity
 			.status(ex.getStatusCode().getStatus())
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));

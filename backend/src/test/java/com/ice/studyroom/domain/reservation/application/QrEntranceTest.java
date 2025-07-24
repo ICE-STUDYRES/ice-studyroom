@@ -10,6 +10,8 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Optional;
 
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
 import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +35,6 @@ import com.ice.studyroom.domain.reservation.infrastructure.redis.QRCodeService;
 import com.ice.studyroom.domain.reservation.infrastructure.util.QRCodeUtil;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
-import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.EmailService;
 @ExtendWith(MockitoExtension.class)
 class QrEntranceTest {
@@ -190,10 +191,10 @@ class QrEntranceTest {
 		mockQrFlow(reservation);
 
 		assertThatThrownBy(() -> reservationService.qrEntrance(new QrEntranceRequest(TOKEN)))
-			.isInstanceOf(BusinessException.class)
+			.isInstanceOf(InvalidEntranceTimeException.class)
 			.hasMessageContaining("출석 시간이 아닙니다");
 
-		verify(qrCodeService).invalidateToken(TOKEN); // 이 시점에도 무효화는 수행
+		verify(qrCodeService, never()).invalidateToken(TOKEN); // 이 시점에도 무효화는 수행
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
 	}
 
@@ -230,10 +231,10 @@ class QrEntranceTest {
 		mockQrFlow(reservation);
 
 		assertThatThrownBy(() -> reservationService.qrEntrance(new QrEntranceRequest(TOKEN)))
-			.isInstanceOf(BusinessException.class)
+			.isInstanceOf(InvalidEntranceTimeException.class)
 			.hasMessageContaining("출석 시간이 만료되었습니다");
 
-		verify(qrCodeService).invalidateToken(TOKEN);
+		verify(qrCodeService, never()).invalidateToken(TOKEN);
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
 	}
 
@@ -253,7 +254,7 @@ class QrEntranceTest {
 	 *   - 예외 메시지는 "이미 입실처리 된 예약입니다"
 	 *
 	 * 🧩 검증 포인트:
-	 *   - 예외 메시지에 "이미 입실처리 된 예약입니다" 포함 여부
+	 *   - 예외 메시지에 "이미 입실 처리 된 예약입니다" 포함 여부
 	 *   - `invalidateToken()` 및 `assignPenalty()`는 호출되지 않아야 함
 	 *
 	 * ✅ 기대 결과:
@@ -266,8 +267,8 @@ class QrEntranceTest {
 		mockQrFlow(reservation);
 
 		assertThatThrownBy(() -> reservationService.qrEntrance(new QrEntranceRequest(TOKEN)))
-			.isInstanceOf(BusinessException.class)
-			.hasMessageContaining("이미 입실처리 된 예약입니다");
+			.isInstanceOf(InvalidEntranceAttemptException.class)
+			.hasMessageContaining("이미 입실 처리 된 예약입니다");
 
 		verify(qrCodeService, never()).invalidateToken(any());
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
@@ -302,7 +303,7 @@ class QrEntranceTest {
 		mockQrFlow(reservation);
 
 		assertThatThrownBy(() -> reservationService.qrEntrance(new QrEntranceRequest(TOKEN)))
-			.isInstanceOf(BusinessException.class)
+			.isInstanceOf(InvalidEntranceAttemptException.class)
 			.hasMessageContaining("취소된 예약입니다");
 
 		verify(qrCodeService, never()).invalidateToken(any());

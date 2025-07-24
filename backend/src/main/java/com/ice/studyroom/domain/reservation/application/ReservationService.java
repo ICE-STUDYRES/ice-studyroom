@@ -6,10 +6,12 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidEntranceAttemptException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidEntranceTimeException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.QrIssuanceNotAllowedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationScheduleNotFoundException;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationNotFoundReason;
+import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ScheduleNotFoundReason;
 import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -129,22 +131,18 @@ public class ReservationService {
 	public String getMyReservationQrCode(Long reservationId, String authorizationHeader) {
 		ReservationLogUtil.log("QR코드 요청 수신", "예약 ID: " + reservationId);
 
-		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		String requesterEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		// 예약이 유효한지 확인
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> {
-				ReservationLogUtil.logWarn("QR코드 요청 실패 - 존재하지 않는 예약","예약 ID: " + reservationId);
-				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
+				return new ReservationNotFoundException(ReservationNotFoundReason.NOT_FOUND, reservationId, requesterEmail, ReservationActionType.ISSUE_QR_CODE);
 			});
 
-		// QR 코드를 발급하기 위해 유효한 예약 상태를 가지고 있는지 검증
-		reservation.validateForQrIssuance();
-		// 요청한 사용자가 해당 예약에 접근할 수 있는지 검증
-		reservation.validateOwnership(reservationOwnerEmail);
+		reservation.validateForQrIssuance(); // QR 코드를 발급하기 위해 유효한 예약 상태를 가지고 있는지 검증
+		reservation.validateOwnership(requesterEmail, ReservationActionType.ISSUE_QR_CODE);	// 요청한 사용자가 해당 예약에 접근할 수 있는지 검증
 
 		String token = reservation.issueQrToken(() -> SecureTokenUtil.generate(10));
-		ReservationLogUtil.log("QR코드 조회 ", "예약 ID: " + reservationId);
 
 		qrCodeService.storeToken(token, reservation.getId());
 		String qrCode = qrCodeUtil.generateQRCodeFromToken(token);
@@ -154,19 +152,13 @@ public class ReservationService {
 
 	@Transactional
 	public QrEntranceResponse qrEntrance(QrEntranceRequest request) {
-		// 클라이언트로부터 전달된 토큰 저장
 		String token = request.qrToken();
-
-		// 토큰으로 예약 ID 조회
 		Long reservationId = qrCodeService.getReservationIdByToken(token);
-
 		ReservationLogUtil.log("QR 입장 요청 수신", "예약 ID: " + reservationId);
 
-		// RDB에 존재하지않는 예약의 경우
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> {
-				ReservationLogUtil.logWarn("QR 입장 실패 - 존재하지 않는 예약", "예약 ID: " + reservationId);
-				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
+				return new ReservationNotFoundException(ReservationNotFoundReason.NOT_FOUND, reservationId, "", ReservationActionType.ISSUE_QR_CODE);
 			});
 
 		// 입장 가능한 예약인지 먼저 확인
@@ -331,61 +323,35 @@ public class ReservationService {
 
 	@Transactional
 	public CancelReservationResponse cancelReservation(Long reservationId, String authorizationHeader) {
-		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 		ReservationLogUtil.log("예약 취소 요청 수신", "예약 ID: " + reservationId);
+		String requesterEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
+		LocalDateTime now = LocalDateTime.now(clock);
 
 		Reservation reservation = reservationRepository.findById(reservationId)
 			.orElseThrow(() -> {
-				ReservationLogUtil.logWarn("예약 취소 실패 - 존재하지 않는 예약", "예약 ID: " + reservationId);
-				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 예약입니다.");
+				return new ReservationNotFoundException(ReservationNotFoundReason.NOT_FOUND, reservationId, requesterEmail, ReservationActionType.CANCEL_RESERVATION);
 			});
 
-		Member reservationOwner = reservation.getMember();
+		reservation.validateOwnership(requesterEmail, ReservationActionType.CANCEL_RESERVATION);
 
-		// JWT 를 통한 사용자 정보를 토대로, 본인의 예약인지 확인
-		try {
-			reservation.validateOwnership(reservationOwnerEmail);
-		} catch (ReservationAccessDeniedException e) {
-			ReservationLogUtil.logWarn("예약 취소 실패 - 사용자 예약 아님","예약 ID: " + reservationId, "예약자 이메일: " + reservationOwnerEmail);
-			throw new BusinessException(StatusCode.NOT_FOUND, "이전에 예약이 되지 않았습니다.");
-		}
-
-		LocalDateTime now = LocalDateTime.now(clock);
-
-		Schedule firstSchedule = scheduleRepository.findById(reservation.getFirstScheduleId())
-			.orElseThrow(() -> {
-				ReservationLogUtil.logWarn("예약 취소 실패 - 예약에 연결된 스케줄 없음", "예약 ID: " + reservationId);
-				return new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄입니다.");
-			});
-
-		LocalDateTime startTime = LocalDateTime.of(now.toLocalDate(), firstSchedule.getStartTime());
-
-		if (now.isAfter(startTime)) {
-			ReservationLogUtil.logWarn("예약 취소 실패 - 입실 시간 초과", "예약 ID: " + reservationId, "입실 시간: " + startTime);
-			throw new BusinessException(StatusCode.BAD_REQUEST, "입실 시간이 초과하였기에 취소할 수 없습니다.");
-		}
-
-		if (!now.isBefore(startTime.minusHours(1))) {
-			// 취소 패널티 부여
-			ReservationLogUtil.log("예약 취소 - 패널티 부여", "예약 ID: " + reservationId, "예약자 이메일: " + reservationOwnerEmail);
+		boolean shouldAssignPenalty = reservation.cancel(now); // Reservation 엔티티에서 cancel 검증 수행
+		if (shouldAssignPenalty) {
+			Member reservationOwner = reservation.getMember();
+			ReservationLogUtil.log("예약 취소 - 패널티 부여", "예약 ID: " + reservationId, "예약자 이메일: " + requesterEmail);
 			penaltyService.assignPenalty(reservationOwner, reservationId, PenaltyReasonType.CANCEL);
 		}
 
-		/*
-		 * 취소 프로세스 시작
-		 * 몇 개의 스케줄을 취소해야하는가?
-		 * secondSchedule도 존재한다면 cancel로 currentRes를 -1을 더해준다.
-		 */
-
-		firstSchedule.cancel();
-
-		Optional.ofNullable(reservation.getSecondScheduleId())
-			.flatMap(scheduleRepository::findById)
-			.ifPresent(schedule -> {
-				schedule.cancel();
+		Long firstScheduleId = reservation.getFirstScheduleId();
+		Schedule firstSchedule = scheduleRepository.findById(firstScheduleId)
+			.orElseThrow(() -> {
+				return new ReservationScheduleNotFoundException(ScheduleNotFoundReason.NOT_FOUND, firstScheduleId, reservationId, ReservationActionType.CANCEL_RESERVATION);
 			});
 
-		reservation.markStatus(ReservationStatus.CANCELLED);
+		firstSchedule.cancel();
+		Optional.ofNullable(reservation.getSecondScheduleId())
+			.flatMap(scheduleRepository::findById)
+			.ifPresent(Schedule::cancel);
+
 		ReservationLogUtil.log("예약 상태 CANCELLED 처리 완료", "예약 ID: " + reservationId);
 
 		return new CancelReservationResponse(reservationId);
@@ -404,7 +370,7 @@ public class ReservationService {
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
 
 		try {
-			reservation.validateOwnership(reservationOwnerEmail);
+			reservation.validateOwnership(reservationOwnerEmail, ReservationActionType.EXTEND_RESERVATION);
 		} catch (ReservationAccessDeniedException e) {
 			ReservationLogUtil.logWarn("예약 연장 실패 - 예약자 불일치", "예약 ID: " + reservationId, "예약자 이메일: " + reservationOwnerEmail);
 			throw new BusinessException(StatusCode.NOT_FOUND, "해당 예약 정보가 존재하지 않습니다.");
