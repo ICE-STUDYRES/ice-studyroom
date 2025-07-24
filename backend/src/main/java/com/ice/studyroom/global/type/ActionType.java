@@ -1,5 +1,8 @@
 package com.ice.studyroom.global.type;
 
+import lombok.Getter;
+
+@Getter
 public enum ActionType {
 	VACANCY_ALERT("빈자리 알림 등록");
 
@@ -7,9 +10,5 @@ public enum ActionType {
 
 	ActionType(String description) {
 		this.description = description;
-	}
-
-	public String getDescription() {
-		return description;
 	}
 }
