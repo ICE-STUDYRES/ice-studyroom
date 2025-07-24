@@ -15,7 +15,7 @@ public class ScheduleVacancyAlertService {
 
 	private final RedisTemplate<String, Object> redisTemplate;
 
-	private static final String REDIS_KEY_PREFIX = "vacancy-notification:";
+	private static final String REDIS_KEY_PREFIX = "vacancy-notification:schedule:";
 
 	/**
 	 * 특정 스터디룸에 대한 빈자리 알림을 신청합니다.
