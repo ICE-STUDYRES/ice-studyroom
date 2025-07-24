@@ -3,6 +3,7 @@ package com.ice.studyroom.global.exception;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.ice.studyroom.domain.membership.domain.exception.member.MemberNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.cancel.InvalidCancelAttemptException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
@@ -11,6 +12,7 @@ import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.QrIs
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationScheduleNotFoundException;
 import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
+import com.ice.studyroom.domain.schedule.domain.exception.schedule.ScheduleNotFoundException;
 import com.ice.studyroom.global.exception.token.InvalidQrTokenException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -96,6 +98,22 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(ReservationNotFoundException.class)
 	public ResponseEntity<ResponseDto<Object>> handleReservationNotFound(ReservationNotFoundException ex) {
 		ReservationLogUtil.logWarn("["+ ex.getDescription() +"]" + "찾을 수 없는 예약", "예약 ID: " + ex.getReservationId() + " 접근 시도자: " + ex.getRequesterEmail());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	@ExceptionHandler(ScheduleNotFoundException.class)
+	public ResponseEntity<ResponseDto<Object>> handleScheduleNotFound(ScheduleNotFoundException ex) {
+		ReservationLogUtil.logWarn("["+ ex.getDescription() +"]" + "찾을 수 없는 스케줄", "스케줄 ID: " + ex.getScheduleId() + " 접근 시도자: " + ex.getRequesterEmail());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	@ExceptionHandler(MemberNotFoundException.class)
+	public ResponseEntity<ResponseDto<Object>> handleMemberNotFound(MemberNotFoundException ex) {
+		ReservationLogUtil.logWarn("["+ ex.getDescription() +"]" + "찾을 수 없는 사용자", " 접근 시도자: " + ex.getRequesterEmail());
 		return ResponseEntity
 			.status(ex.getStatusCode().getStatus())
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
