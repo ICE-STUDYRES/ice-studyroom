@@ -8,11 +8,10 @@ import java.util.stream.Collectors;
 
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationScheduleNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationNotFoundReason;
-import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ScheduleNotFoundReason;
 import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
+import com.ice.studyroom.domain.schedule.domain.service.ScheduleCanceller;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -29,7 +28,7 @@ import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepo
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
-import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
@@ -64,16 +63,11 @@ public class ReservationService {
 	private final ReservationCompensationService reservationCompensationService;
 	private final ReservationValidator reservationValidator;
 	private final QRCodeService qrCodeService;
+	private final ScheduleCanceller scheduleCanceller;
 	private final PenaltyService penaltyService;
 	private final MemberDomainService memberDomainService;
 	private final EmailService emailService;
-
 	private final Clock clock;
-
-	public List<Schedule> getSchedule() {
-		LocalDate today = LocalDate.now(clock);
-		return scheduleRepository.findByScheduleDate(today);
-	}
 
 	public Optional<GetMostRecentReservationResponse> getMyMostRecentReservation(String authorizationHeader) {
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
@@ -342,15 +336,9 @@ public class ReservationService {
 		}
 
 		Long firstScheduleId = reservation.getFirstScheduleId();
-		Schedule firstSchedule = scheduleRepository.findById(firstScheduleId)
-			.orElseThrow(() -> {
-				return new ReservationScheduleNotFoundException(ScheduleNotFoundReason.NOT_FOUND, firstScheduleId, reservationId, ReservationActionType.CANCEL_RESERVATION);
-			});
+		Optional<Long> secondScheduleIdOpt = reservation.getSecondScheduleIdOpt();
 
-		firstSchedule.cancel();
-		Optional.ofNullable(reservation.getSecondScheduleId())
-			.flatMap(scheduleRepository::findById)
-			.ifPresent(Schedule::cancel);
+		scheduleCanceller.cancelAssociatedSchedules(reservationId, firstScheduleId, secondScheduleIdOpt);
 
 		ReservationLogUtil.log("예약 상태 CANCELLED 처리 완료", "예약 ID: " + reservationId);
 
