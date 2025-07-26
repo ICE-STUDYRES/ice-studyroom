@@ -1,7 +1,6 @@
 package com.ice.studyroom.domain.schedule.presentation;
 
-import com.ice.studyroom.domain.reservation.application.ReservationService;
-import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.schedule.application.ScheduleService;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,7 +23,6 @@ import java.util.List;
 public class ScheduleController {
 
 	private final ScheduleService scheduleService;
-	private final ReservationService reservationService;
 
 	@Operation(summary = "스터디룸 일정 조회", description = "스터디룸 예약 가능한 일정을 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "스터디룸 일정 조회 성공")
@@ -33,7 +31,7 @@ public class ScheduleController {
 	public ResponseEntity<ResponseDto<List<Schedule>>> getSchedule() {
 		return ResponseEntity
 			.status(HttpStatus.OK)
-			.body(ResponseDto.of(reservationService.getSchedule()));
+			.body(ResponseDto.of(scheduleService.getSchedule()));
 	}
 
 	@Operation(summary = "특정 스케줄 빈자리 알림 신청", description = "이미 예약된 특정 스케줄에 빈자리가 생길 경우 알림을 받도록 등록합니다.")
