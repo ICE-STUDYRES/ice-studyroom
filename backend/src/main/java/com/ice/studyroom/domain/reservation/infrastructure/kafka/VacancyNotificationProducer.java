@@ -5,6 +5,7 @@ import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.Clock;
@@ -25,6 +26,7 @@ public class VacancyNotificationProducer {
 	private final RedisTemplate<String, Object> redisTemplate;
 	private final Clock clock;
 
+	@Async("vacancyNotificationExecutor")
 	public void sendVacancyNotificationToSubscribers(Long scheduleId, String roomName) {
 		String redisKey = REDIS_KEY_PREFIX + scheduleId;
 
