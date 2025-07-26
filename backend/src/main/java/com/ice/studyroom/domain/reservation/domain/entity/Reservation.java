@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import com.ice.studyroom.domain.membership.domain.entity.Member;
@@ -20,6 +21,7 @@ import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.qr
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.qr.QrIssuanceErrorReason;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationAccessDeniedReason;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 
 import jakarta.persistence.Column;
@@ -115,6 +117,10 @@ public class Reservation extends BaseTimeEntity {
 			.status(ReservationStatus.RESERVED)
 			.isHolder(isReservationHolder)
 			.build();
+	}
+
+	public Optional<Long> getSecondScheduleIdOpt() {
+		return Optional.ofNullable(this.secondScheduleId);
 	}
 
 	public boolean isEntered() { return status == ENTRANCE; }

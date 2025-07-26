@@ -4,7 +4,7 @@ import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.exception.member.MemberNotFoundException;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
-import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.schedule.domain.exception.schedule.ScheduleNotFoundException;
 import com.ice.studyroom.domain.schedule.infrastructure.redis.ScheduleVacancyAlertService;
@@ -15,6 +15,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class ScheduleService {
@@ -23,6 +27,13 @@ public class ScheduleService {
 	private final MemberRepository memberRepository;
 	private final ScheduleRepository scheduleRepository;
 	private final ScheduleVacancyAlertService scheduleVacancyAlertService;
+	private final Clock clock;
+
+	@Transactional(readOnly = true)
+	public List<Schedule> getSchedule() {
+		LocalDate today = LocalDate.now(clock);
+		return scheduleRepository.findByScheduleDate(today);
+	}
 
 	@Transactional(readOnly = true)
 	public String registerVacancyAlert(Long scheduleId, String authorizationHeader) {

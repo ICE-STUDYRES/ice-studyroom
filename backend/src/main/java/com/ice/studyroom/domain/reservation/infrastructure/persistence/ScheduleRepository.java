@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 
-import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 
 import jakarta.persistence.LockModeType;

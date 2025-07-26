@@ -24,7 +24,7 @@
 // import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 // import com.ice.studyroom.domain.penalty.scheduler.PenaltyUpdateScheduler;
 // import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
-// import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+// import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 // import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 // import com.ice.studyroom.domain.reservation.domain.type.ScheduleStatus;
 // import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;

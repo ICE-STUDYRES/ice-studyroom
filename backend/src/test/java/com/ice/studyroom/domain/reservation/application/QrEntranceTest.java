@@ -13,6 +13,7 @@ import java.util.Optional;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
 import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
+import com.ice.studyroom.domain.schedule.domain.service.ScheduleCanceller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ import com.ice.studyroom.domain.reservation.infrastructure.util.QRCodeUtil;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
 import com.ice.studyroom.global.service.EmailService;
+
 @ExtendWith(MockitoExtension.class)
 class QrEntranceTest {
 
@@ -54,6 +56,7 @@ class QrEntranceTest {
 	@Mock private PenaltyService penaltyService;
 	@Mock private MemberDomainService memberDomainService;
 	@Mock private EmailService emailService;
+	@Mock private ScheduleCanceller scheduleCanceller;
 
 	private final String TOKEN = "valid-token";
 	private final Long RESERVATION_ID = 1L;
@@ -71,7 +74,7 @@ class QrEntranceTest {
 		);
 		reservationService = new ReservationService(
 			qrCodeUtil, tokenService, memberRepository, reservationRepository,
-			scheduleRepository, reservationConcurrencyService, reservationCompensationService, reservationValidator, qrCodeService, penaltyService,
+			scheduleRepository, reservationConcurrencyService, reservationCompensationService, reservationValidator, qrCodeService, scheduleCanceller, penaltyService,
 			memberDomainService, emailService, clock
 		);
 	}
@@ -321,7 +324,7 @@ class QrEntranceTest {
 		this.clock = Clock.fixed(dateTime.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
 		reservationService = new ReservationService(
 			qrCodeUtil, tokenService, memberRepository, reservationRepository,
-			scheduleRepository, reservationConcurrencyService, reservationCompensationService, reservationValidator, qrCodeService, penaltyService,
+			scheduleRepository, reservationConcurrencyService, reservationCompensationService, reservationValidator, qrCodeService, scheduleCanceller, penaltyService,
 			memberDomainService, emailService, clock
 		);
 	}
