@@ -98,6 +98,7 @@ public class Schedule extends BaseTimeEntity {
 	// TODO: 0 미만으로 감소하는 경우 데이터 정합성 에외 발생 추가
 	public void cancel() {
 		this.currentRes--;
+		updateStatus(ScheduleSlotStatus.AVAILABLE);
 		ifCurrentResZeroThanMakeAvailable();
 	}
 
