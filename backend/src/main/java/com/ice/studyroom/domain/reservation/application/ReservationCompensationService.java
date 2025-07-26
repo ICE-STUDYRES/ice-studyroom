@@ -1,7 +1,6 @@
 package com.ice.studyroom.domain.reservation.application;
 
-import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
-import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
 import lombok.RequiredArgsConstructor;

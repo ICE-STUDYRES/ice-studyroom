@@ -12,7 +12,7 @@ import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepo
 import com.ice.studyroom.domain.penalty.infrastructure.persistence.PenaltyRepository;
 import com.ice.studyroom.domain.admin.domain.entity.RoomTimeSlot;
 import com.ice.studyroom.domain.admin.infrastructure.persistence.RoomTimeSlotRepository;
-import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.global.exception.BusinessException;

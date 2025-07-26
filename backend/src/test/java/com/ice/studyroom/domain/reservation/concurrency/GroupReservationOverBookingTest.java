@@ -29,7 +29,7 @@ import com.ice.studyroom.domain.membership.domain.vo.EncodedPassword;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.reservation.application.ReservationService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
-import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;

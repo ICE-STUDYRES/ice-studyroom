@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.reservation.domain.entity;
+package com.ice.studyroom.domain.schedule.domain.entity;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
