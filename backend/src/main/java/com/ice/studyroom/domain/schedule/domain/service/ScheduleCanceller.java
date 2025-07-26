@@ -10,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
 import java.util.Optional;
 
 @Service
@@ -18,7 +17,6 @@ import java.util.Optional;
 public class ScheduleCanceller {
 	private final ScheduleRepository scheduleRepository;
 	private final VacancyNotificationProducer vacancyNotificationProducer;
-	private final Clock clock;
 
 	@Transactional
 	public void cancelAssociatedSchedules(Long reservationId, Long firstScheduleId, Optional<Long> secondScheduleIdOpt) {
@@ -34,7 +32,7 @@ public class ScheduleCanceller {
 		schedule.cancel();
 		// TODO: 추후 코드 리팩토링 필요
 //		if (schedule.getCapacity() - schedule.getCurrentRes() == 1) {
-//			vacancyNotificationProducer.sendVacancyNotificationToSubscribers(scheduleId, schedule.getRoomNumber(), LocalDateTime.now(clock).toString());
+//			vacancyNotificationProducer.sendVacancyNotificationToSubscribers(scheduleId, schedule.getRoomNumber());
 //		}
 	}
 }
