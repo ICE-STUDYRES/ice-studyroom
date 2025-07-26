@@ -29,7 +29,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api")
+@RequestMapping("/api/reservations")
 @Tag(
 	name = "Study Room",
 	description = "스터디룸 예약 및 관리 API. 예약 생성, 조회, 취소 등의 기능을 제공합니다."
@@ -48,7 +48,7 @@ public class ReservationController {
 	@Operation(summary = "내 예약 정보 조회", description = "현재 사용자의 예약 정보를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "예약 정보 조회 성공")
 	@ApiResponse(responseCode = "500", description = "예약 정보 조회 실패")
-	@GetMapping("/reservations/my")
+	@GetMapping("/my")
 	public ResponseEntity<ResponseDto<List<GetReservationsResponse>>> getMyReservation(
 		@RequestHeader("Authorization") String authorizationHeader
 	) {
@@ -57,7 +57,7 @@ public class ReservationController {
 			.body(ResponseDto.of(reservationService.getReservations(authorizationHeader)));
 	}
 
-	@GetMapping("/reservations/my/latest")
+	@GetMapping("/my/latest")
 	public ResponseEntity<ResponseDto<GetMostRecentReservationResponse>> getMyMostRecentReservation(
 		@RequestHeader("Authorization") String authorizationHeader
 	) {
@@ -73,7 +73,7 @@ public class ReservationController {
 	@Operation(summary = "예약 QR 코드 조회", description = "특정 예약의 QR 코드를 조회합니다.")
 	@ApiResponse(responseCode = "200", description = "QR 코드 조회 성공")
 	@ApiResponse(responseCode = "500", description = "QR 코드 조회 실패")
-	@GetMapping("/reservations/my/{resId}")
+	@GetMapping("/my/{resId}")
 	public ResponseEntity<ResponseDto<String>> getMyReservationQrCode(
 		@PathVariable Long resId,
 		@RequestHeader("Authorization") String authorizationHeader
@@ -86,7 +86,7 @@ public class ReservationController {
 	@Operation(summary = "단체 스터디룸 예약", description = "단체 단위로 스터디룸을 예약합니다.")
 	@ApiResponse(responseCode = "201", description = "스터디룸 단체 예약 성공")
 	@ApiResponse(responseCode = "500", description = "스터디룸 단체 예약 실패")
-	@PostMapping("/reservations/group")
+	@PostMapping("/group")
 	public ResponseEntity<ResponseDto<String>> reserveGroup(
 		@RequestHeader("Authorization") String authorizationHeader,
 		@Valid @RequestBody CreateReservationRequest request
@@ -100,7 +100,7 @@ public class ReservationController {
 	@Operation(summary = "개인 스터디룸 예약", description = "개인 단위로 스터디룸을 예약합니다.")
 	@ApiResponse(responseCode = "200", description = "스터디룸 개인 예약 성공")
 	@ApiResponse(responseCode = "500", description = "스터디룸 개인 예약 실패")
-	@PostMapping("/reservations/individual")
+	@PostMapping("/individual")
 	public ResponseEntity<ResponseDto<String>> reserveIndividual(
 		@RequestHeader("Authorization") String authorizationHeader,
 		@Valid @RequestBody CreateReservationRequest request
@@ -113,7 +113,7 @@ public class ReservationController {
 	@Operation(summary = "예약 취소", description = "예약을 취소합니다.")
 	@ApiResponse(responseCode = "200", description = "예약 취소 성공")
 	@ApiResponse(responseCode = "500", description = "예약 취소 실패")
-	@DeleteMapping("/reservations/{id}")
+	@DeleteMapping("/{id}")
 	public ResponseEntity<ResponseDto<CancelReservationResponse>> cancelReservation(
 		@PathVariable Long id,
 		@RequestHeader("Authorization") String authorizationHeader
@@ -126,7 +126,7 @@ public class ReservationController {
 	@Operation(summary = "예약 연장", description = "예약을 연장합니다.")
 	@ApiResponse(responseCode = "200", description = "예약 연장 성공")
 	@ApiResponse(responseCode = "500", description = "예약 연장 실패")
-	@PatchMapping("/reservations/{id}")
+	@PatchMapping("/{id}")
 	public ResponseEntity<ResponseDto<String>> extendReservation(
 		@PathVariable Long id,
 		@RequestHeader("Authorization") String authorizationHeader
