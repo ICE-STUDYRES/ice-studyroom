@@ -2,7 +2,7 @@ package com.ice.studyroom.domain.reservation.application;
 
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
-import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;

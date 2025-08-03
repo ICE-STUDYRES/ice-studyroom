@@ -2,7 +2,7 @@ package com.ice.studyroom.domain.admin.presentation.dto.response;
 
 import com.ice.studyroom.domain.admin.domain.entity.RoomTimeSlot;
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
-import com.ice.studyroom.domain.reservation.domain.entity.Schedule;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 
 import java.time.LocalTime;
