@@ -30,7 +30,7 @@ public class ScheduleCanceller {
 				ScheduleNotFoundReason.NOT_FOUND, scheduleId, reservationId, ReservationActionType.CANCEL_RESERVATION
 			));
 		schedule.cancel();
-		// TODO: 추후 코드 리팩토링 필요
+		// 배포할 경우 주석 제거
 //		if (schedule.getCapacity() - schedule.getCurrentRes() == 1) {
 //			vacancyNotificationProducer.sendVacancyNotificationToSubscribers(scheduleId, schedule.getRoomNumber());
 //		}
