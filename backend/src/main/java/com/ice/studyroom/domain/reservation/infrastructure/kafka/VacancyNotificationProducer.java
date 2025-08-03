@@ -5,6 +5,7 @@ import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.SendResult;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +13,7 @@ import java.time.Clock;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -46,8 +48,22 @@ public class VacancyNotificationProducer {
 
 		for (String email : subscribers) {
 			VacancyNotificationRequest request = new VacancyNotificationRequest(email, roomName, formattedDate);
-			kafkaTemplate.send(TOPIC_NAME, request);
-			ReservationLogUtil.log("빈자리 알림 이메일 전송. 이메일: " + email);
+			CompletableFuture<SendResult<String, VacancyNotificationRequest>> future = kafkaTemplate.send(TOPIC_NAME, request);
+
+			future.whenComplete((result, ex) -> {
+				if (ex == null) {
+					ReservationLogUtil.log("빈자리 알림 이메일 전송 성공. " +
+						"Email: " + request.getEmail() +
+						"Topic: " + result.getRecordMetadata().topic() +
+						"Partition: " + result.getRecordMetadata().partition() +
+						"Offset: " + result.getRecordMetadata().offset());
+				} else {
+					ReservationLogUtil.logError("빈자리 알림 이메일 전송 실패. " +
+						"Email: " + request.getEmail() +
+						"Topic: " + TOPIC_NAME +
+						"Error: " + ex.getMessage());
+				}
+			});
 		}
 	}
 }

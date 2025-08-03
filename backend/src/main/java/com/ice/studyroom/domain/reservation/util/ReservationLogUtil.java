@@ -15,4 +15,7 @@ public class ReservationLogUtil {
 		log.warn("[RESERVATION] {} - {}", message, Arrays.toString(details));
 	}
 
+	public static void logError(String message, Object... details) {
+		log.warn("[RESERVATION] {} - {}", message, Arrays.toString(details));
+	}
 }
