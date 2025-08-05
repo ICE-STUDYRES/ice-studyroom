@@ -1,11 +1,12 @@
 package com.ice.studyroom.domain.reservation.infrastructure.kafka;
 
 import com.ice.studyroom.domain.reservation.infrastructure.kafka.dto.VacancyNotificationRequest;
-import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -16,11 +17,13 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class VacancyNotificationProducer {
 
 	private static final String TOPIC_NAME = "vacancy-notifications";
+	private static final String KAFKA_PRODUCER_CIRCUIT = "kafka-producer";
 	private static final String REDIS_KEY_PREFIX = "vacancy-notification:schedule:";
 	private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy년 MM월 dd일");
 
@@ -35,7 +38,7 @@ public class VacancyNotificationProducer {
 		Set<Object> subscriberObjects = redisTemplate.opsForHash().keys(redisKey);
 
 		if (subscriberObjects.isEmpty()) {
-			ReservationLogUtil.log("빈자리 알림을 신청한 구독자가 존재하지 않습니다. 스케줄 ID: " + scheduleId);
+			log.info("빈자리 알림을 신청한 구독자가 존재하지 않습니다. 스케줄 ID: {}", scheduleId);
 			return;
 		}
 
@@ -43,27 +46,34 @@ public class VacancyNotificationProducer {
 			.map(String::valueOf)
 			.collect(Collectors.toSet());
 
-		ReservationLogUtil.log("빈자리 알림 이메일 전송 프로세스 수행, 인원: " + subscribers.size() + "방 번호: " + roomName);
+		log.info("빈자리 알림 이메일 전송 프로세스 수행, 인원: {} 방 번호: {}", subscribers.size(), roomName);
 		String formattedDate = LocalDateTime.now(clock).format(DATE_FORMATTER);
 
 		for (String email : subscribers) {
 			VacancyNotificationRequest request = new VacancyNotificationRequest(email, roomName, formattedDate);
-			CompletableFuture<SendResult<String, VacancyNotificationRequest>> future = kafkaTemplate.send(TOPIC_NAME, request);
-
-			future.whenComplete((result, ex) -> {
-				if (ex == null) {
-					ReservationLogUtil.log("빈자리 알림 이메일 전송 성공. " +
-						"Email: " + request.getEmail() +
-						"Topic: " + result.getRecordMetadata().topic() +
-						"Partition: " + result.getRecordMetadata().partition() +
-						"Offset: " + result.getRecordMetadata().offset());
-				} else {
-					ReservationLogUtil.logError("빈자리 알림 이메일 전송 실패. " +
-						"Email: " + request.getEmail() +
-						"Topic: " + TOPIC_NAME +
-						"Error: " + ex.getMessage());
-				}
-			});
+			sendSingleNotification(request);
 		}
+	}
+
+	@CircuitBreaker(name = KAFKA_PRODUCER_CIRCUIT, fallbackMethod = "handleSendFailure")
+	public CompletableFuture<Void> sendSingleNotification(VacancyNotificationRequest request) {
+		return kafkaTemplate.send(TOPIC_NAME, request)
+			.whenComplete((result, ex) -> {
+				if (ex == null) {
+					log.info("빈자리 알림 이메일 전송 성공. 이메일: {} 토픽: {}",
+						request.getEmail(),
+						result.getRecordMetadata().topic());
+				}
+			})
+			.thenAccept(sendResult -> {});
+	}
+
+	private CompletableFuture<Void> handleSendFailure(VacancyNotificationRequest request, Throwable throwable) {
+		if (throwable instanceof CallNotPermittedException) {
+			log.error("서킷 브레이커가 OPEN 상태입니다. 카프카 전송을 시도하지 않습니다. Email: {}", request.getEmail());
+		} else {
+			log.error("빈자리 알림 이메일 전송 실패. 이메일: {} 에러: {}", request.getEmail(), throwable.getMessage());
+		}
+		return CompletableFuture.completedFuture(null);
 	}
 }
