@@ -78,7 +78,7 @@ public class GroupReservationOverBookingTest {
 		//모든 스레드의 작업이 완료될 때까지 대기
 		CountDownLatch endLatch = new CountDownLatch(threadCount);
 
-		List<String> successResults = Collections.synchronizedList(new ArrayList<>());
+		List<Integer> successResults = Collections.synchronizedList(new ArrayList<>());
 		List<Exception> exceptions = Collections.synchronizedList(new ArrayList<>());
 		List<Long> responseTimes = Collections.synchronizedList(new ArrayList<>());
 
@@ -95,8 +95,8 @@ public class GroupReservationOverBookingTest {
 						schedule.getId(), groupIndex, testMembers);
 					String authHeader = "Bearer test-token-" + (groupIndex * 3);
 
-					String result = reservationService.createGroupReservation(authHeader, request);
-					successResults.add(result);
+					reservationService.createGroupReservation(authHeader, request);
+					successResults.add(groupIndex);
 
 					long requestEnd = System.nanoTime();
 					responseTimes.add((requestEnd - requestStart) / 1_000_000);
@@ -169,7 +169,7 @@ public class GroupReservationOverBookingTest {
 		);
 	}
 
-	private void printDetailedTestResults(List<String> successResults, List<Exception> exceptions,
+	private void printDetailedTestResults(List<Integer> successResults, List<Exception> exceptions,
 		Schedule originalSchedule, List<Reservation> reservationList, List<Long> responseTimes) {
 
 		Schedule updatedSchedule = scheduleRepository.findById(originalSchedule.getId()).get();

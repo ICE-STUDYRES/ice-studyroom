@@ -6,19 +6,16 @@ import static org.mockito.BDDMockito.*;
 
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.cancel.InvalidCancelAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidCancelAttemptException;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationAccessDeniedReason;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.cancel.InvalidCancelAttemptReason;
 import com.ice.studyroom.domain.schedule.domain.service.ScheduleCanceller;
 import com.ice.studyroom.global.security.service.TokenService;
-import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
-import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
-import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.global.exception.BusinessException;
 

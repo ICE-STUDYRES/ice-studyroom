@@ -3,6 +3,7 @@ package com.ice.studyroom.domain.reservation.presentation;
 import java.util.List;
 import java.util.Optional;
 
+import com.ice.studyroom.global.type.ResponseMessage;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -87,13 +88,14 @@ public class ReservationController {
 	@ApiResponse(responseCode = "201", description = "스터디룸 단체 예약 성공")
 	@ApiResponse(responseCode = "500", description = "스터디룸 단체 예약 실패")
 	@PostMapping("/group")
-	public ResponseEntity<ResponseDto<String>> reserveGroup(
+	public ResponseEntity<ResponseDto<Void>> reserveGroup(
 		@RequestHeader("Authorization") String authorizationHeader,
 		@Valid @RequestBody CreateReservationRequest request
 	) {
+		reservationService.createGroupReservation(authorizationHeader, request);
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.createGroupReservation(authorizationHeader, request)));
+			.body(ResponseDto.success(ResponseMessage.GROUP_RESERVATION_SUCCESS));
 	}
 
 	// 예약 취소 시 본인 인증이 필요하다.
@@ -101,13 +103,14 @@ public class ReservationController {
 	@ApiResponse(responseCode = "200", description = "스터디룸 개인 예약 성공")
 	@ApiResponse(responseCode = "500", description = "스터디룸 개인 예약 실패")
 	@PostMapping("/individual")
-	public ResponseEntity<ResponseDto<String>> reserveIndividual(
+	public ResponseEntity<ResponseDto<Void>> reserveIndividual(
 		@RequestHeader("Authorization") String authorizationHeader,
 		@Valid @RequestBody CreateReservationRequest request
 	) {
+		reservationService.createIndividualReservation(authorizationHeader, request);
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.createIndividualReservation(authorizationHeader, request)));
+			.body(ResponseDto.success(ResponseMessage.INDIVIDUAL_RESERVATION_SUCCESS));
 	}
 
 	@Operation(summary = "예약 취소", description = "예약을 취소합니다.")

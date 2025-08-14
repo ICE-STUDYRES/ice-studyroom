@@ -5,6 +5,9 @@ import java.time.LocalTime;
 
 import com.ice.studyroom.domain.admin.domain.type.DayOfWeekStatus;
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
+import com.ice.studyroom.domain.schedule.domain.exception.schedule.GroupRoomOnlyException;
+import com.ice.studyroom.domain.schedule.domain.exception.schedule.ReservationCapacityExceededException;
+import com.ice.studyroom.domain.schedule.domain.exception.schedule.CancellationNotAllowedException;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 
@@ -89,26 +92,37 @@ public class Schedule extends BaseTimeEntity {
 		this.currentRes = totalParticipants;
 	}
 
-	// TODO: capacity 를 초가하는 경우 데이터 정합성 에외 발생 추가
 	public void reserve() {
+		if (!isCurrentResLessThanCapacity()) {
+			throw new ReservationCapacityExceededException("예약 가능한 자리가 없습니다. 스케줄 ID: " + this.id);
+		}
+
 		this.currentRes++;
-		ifCurrentResFullThanMakeReserved();
+		updateStatusIfFull();
 	}
 
-	// TODO: 0 미만으로 감소하는 경우 데이터 정합성 에외 발생 추가
 	public void cancel() {
+		if (this.currentRes <= 0) {
+			throw new CancellationNotAllowedException("취소할 예약이 없습니다. 스케줄 ID: " + this.id);
+		}
+
 		this.currentRes--;
-		updateStatus(ScheduleSlotStatus.AVAILABLE);
-		ifCurrentResZeroThanMakeAvailable();
+		updateStatusIfEmpty();
 	}
 
-	private void ifCurrentResFullThanMakeReserved() {
+	public void validateForIndividualReservation() {
+		if (this.roomType == RoomType.GROUP) {
+			throw new GroupRoomOnlyException("해당 방은 단체예약 전용입니다. 스케줄 ID: " + this.id);
+		}
+	}
+
+	private void updateStatusIfFull() {
 		if (this.currentRes.equals(this.capacity)) {
 			this.status = ScheduleSlotStatus.RESERVED;
 		}
 	}
 
-	private void ifCurrentResZeroThanMakeAvailable() {
+	private void updateStatusIfEmpty() {
 		if (this.currentRes == 0) {
 			this.status = ScheduleSlotStatus.AVAILABLE;
 		}
