@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ice.studyroom.domain.membership.domain.exception.member.MemberPenaltyException;
 import com.ice.studyroom.domain.membership.domain.vo.EncodedPassword;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
@@ -73,6 +74,15 @@ public class Member extends BaseTimeEntity {
 			.studentNum(studentNum)
 			.roles(List.of("ROLE_USER"))
 			.build();
+	}
+
+	public void validateReservationEligibility() {
+		if (isPenalty()) {
+			throw new MemberPenaltyException(
+				"패널티 상태의 사용자는 예약이 불가능합니다.",
+				email.getValue()
+			);
+		}
 	}
 
 	public void changePassword(EncodedPassword newPassword) {
