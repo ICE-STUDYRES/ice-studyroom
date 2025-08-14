@@ -9,6 +9,7 @@ import java.util.stream.Collectors;
 import com.ice.studyroom.domain.membership.domain.exception.member.MemberNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationProcessException;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationNotFoundReason;
 import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
@@ -211,7 +212,7 @@ public class ReservationService {
 			} catch (Exception rollbackException) {
 				ReservationLogUtil.log("예약 실패 보상 트랜잭션 실패", "예약자: " + reservationOwnerEmail + " " + rollbackException.getMessage());
 			}
-			throw new BusinessException(StatusCode.INTERNAL_ERROR, "예약 처리 중 오류가 발생하여 모든 변경사항이 롤백됩니다. 사유: " + e.getMessage());
+			throw new ReservationProcessException(reservationOwnerEmail, scheduleIds, e.getMessage());
 		}
 	}
 
@@ -264,8 +265,8 @@ public class ReservationService {
 		}
 
 		// 예약 가능 여부 확인
-		List<Long> idList = Arrays.stream(request.scheduleId()).toList();
-		List<Schedule> schedules = reservationConcurrencyService.processGroupReservationWithLock(idList, uniqueEmails);
+		List<Long> scheduleIds = Arrays.stream(request.scheduleId()).toList();
+		List<Schedule> schedules = reservationConcurrencyService.processGroupReservationWithLock(scheduleIds, uniqueEmails);
 
 		try {
 			// 예약 리스트 생성
@@ -286,11 +287,11 @@ public class ReservationService {
 			return "성공적으로 단체 예약되었습니다.";
 		} catch (Exception e) {
 			try {
-				reservationCompensationService.rollbackSchedules(idList, reservationOwnerEmail);
+				reservationCompensationService.rollbackSchedules(scheduleIds, reservationOwnerEmail);
 			} catch (Exception rollbackException) {
 				ReservationLogUtil.log("예약 실패에 따른 보상 트랜잭션 실패", "예약자: " + reservationOwnerEmail + " " + rollbackException.getMessage());
 			}
-			throw new BusinessException(StatusCode.INTERNAL_ERROR, "예약 처리 중 오류가 발생하여 모든 변경사항이 롤백됩니다." + e);
+			throw new ReservationProcessException(reservationOwnerEmail, scheduleIds, e.getMessage());
 		}
 	}
 
