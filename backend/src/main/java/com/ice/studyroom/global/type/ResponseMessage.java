@@ -6,7 +6,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ResponseMessage {
-	INDIVIDUAL_RESERVATION_SUCCESS("성공적으로 개인 예약을 완료했습니다.");
+	INDIVIDUAL_RESERVATION_SUCCESS("성공적으로 개인 예약을 완료했습니다."),
+	GROUP_RESERVATION_SUCCESS("성공적으로 단체 예약되었습니다.");
 
 	private final String message;
 }

@@ -88,13 +88,14 @@ public class ReservationController {
 	@ApiResponse(responseCode = "201", description = "스터디룸 단체 예약 성공")
 	@ApiResponse(responseCode = "500", description = "스터디룸 단체 예약 실패")
 	@PostMapping("/group")
-	public ResponseEntity<ResponseDto<String>> reserveGroup(
+	public ResponseEntity<ResponseDto<Void>> reserveGroup(
 		@RequestHeader("Authorization") String authorizationHeader,
 		@Valid @RequestBody CreateReservationRequest request
 	) {
+		reservationService.createGroupReservation(authorizationHeader, request);
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.createGroupReservation(authorizationHeader, request)));
+			.body(ResponseDto.success(ResponseMessage.GROUP_RESERVATION_SUCCESS));
 	}
 
 	// 예약 취소 시 본인 인증이 필요하다.
