@@ -46,6 +46,8 @@ class IndividualReservationTest {
 	@Mock
 	private ReservationConcurrencyService reservationConcurrencyService;
 	@Mock
+	private ReservationCompensationService reservationCompensationService;
+	@Mock
 	private ReservationValidator reservationValidator;
 	@Mock
 	private ReservationRepository reservationRepository;
@@ -57,9 +59,7 @@ class IndividualReservationTest {
 	private TokenService tokenService;
 	@Mock
 	private Clock clock;
-	@Mock
 	private Schedule firstSchedule;
-	@Mock
 	private Schedule secondSchedule;
 	private String email;
 	private String token;
@@ -72,8 +72,31 @@ class IndividualReservationTest {
 		token = "Bearer valid_token";
 		firstScheduleId = 1L;
 
-		firstSchedule = mock(Schedule.class);
-		secondSchedule = mock(Schedule.class);
+		firstSchedule = Schedule.builder()
+			.id(1L)
+			.roomType(RoomType.INDIVIDUAL)
+			.scheduleDate(LocalDate.of(2025, 3, 22))
+			.startTime(LocalTime.of(13, 30))
+			.endTime(LocalTime.of(14, 30))
+			.roomNumber("305-1")
+			.capacity(6)
+			.currentRes(0)
+			.status(ScheduleSlotStatus.AVAILABLE)
+			.build();
+
+		secondSchedule = Schedule.builder()
+			.id(2L)
+			.roomType(RoomType.INDIVIDUAL)
+			.scheduleDate(LocalDate.of(2025, 3, 22))
+			.roomNumber("305-1")
+			.roomTimeSlotId(2L)
+			.startTime(LocalTime.of(14, 30))
+			.endTime(LocalTime.of(15, 30))
+			.currentRes(0)
+			.capacity(6)
+			.minRes(1)
+			.status(ScheduleSlotStatus.AVAILABLE)
+			.build();
 	}
 
 	/**
@@ -116,20 +139,18 @@ class IndividualReservationTest {
 		);
 
 		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
-		스케줄_인원_제한_설정(firstSchedule, 6, 0);
 		예약자_패널티_설정(false);
+
+		given(reservationConcurrencyService.processIndividualReservationWithLock(anyList()))
+			.willReturn(Arrays.asList(firstSchedule));
 
 		// 이메일 발송 제거
 		doNothing().when(reservationService).sendReservationSuccessEmail(any(), any(), any(), any());
 
 		// when
-		String result = reservationService.createIndividualReservation(token, request);
+		reservationService.createIndividualReservation(token, request);
 
 		// then
-		assertEquals("Success", result);
-		verify(scheduleRepository).saveAll(anyList());
 		verify(reservationRepository).save(any(Reservation.class));
 	}
 
@@ -168,22 +189,17 @@ class IndividualReservationTest {
 			new String[]{} // 개인 예약이라 참여자 없음
 		);
 
-		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(), firstSchedule, secondSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
-		스케줄_인원_제한_설정(firstSchedule, 6, 0);
-		스케줄_설정(secondSchedule, ScheduleSlotStatus.AVAILABLE, RoomType.INDIVIDUAL, 13, 30);
-		스케줄_인원_제한_설정(secondSchedule, 6, 0);
 		예약자_패널티_설정(false);
+
+		given(reservationConcurrencyService.processIndividualReservationWithLock(anyList()))
+			.willReturn(Arrays.asList(firstSchedule, secondSchedule));
 
 		doNothing().when(reservationService).sendReservationSuccessEmail(any(), any(), any(), any());
 
 		// when
-		String result = reservationService.createIndividualReservation(token, request);
+		reservationService.createIndividualReservation(token, request);
 
 		// then
-		assertEquals("Success", result);
-		verify(scheduleRepository).saveAll(anyList());
 		verify(reservationRepository).save(any(Reservation.class));
 	}
 
@@ -242,7 +258,7 @@ class IndividualReservationTest {
 	 *   - 예약이 불가능한 스케줄에 대해 예약을 시도할 경우 예외가 발생하는지 검증한다.
 	 *
 	 * 🧪 시나리오 설명:
-	 *   1. 예약할 스케줄의 상태가 AVAILABLE이 아님 (RESERVED)
+	 *   1. 예약할 스케줄의 예약 가능한 자리가 없음 (RESERVED)
 	 *   2. findById()는 Optional.of(schedule)를 반환하나, 상태 조건 미달
 	 *   3. 예외 발생: "존재하지 않거나 사용 불가능한 스케줄입니다."
 	 *
@@ -264,18 +280,29 @@ class IndividualReservationTest {
 			new String[]{}// 개인 예약이라 참여자 없음
 		);
 
-		시간_고정_셋업(12, 30);
-		스케줄_리스트_설정(request.scheduleId(), firstSchedule);
-		스케줄_설정(firstSchedule, ScheduleSlotStatus.RESERVED, RoomType.INDIVIDUAL, 13, 0);
+		Schedule unavailableSchedule = Schedule.builder()
+			.id(1L)
+			.roomType(RoomType.INDIVIDUAL)
+			.scheduleDate(LocalDate.of(2025, 3, 22))
+			.roomNumber("305-1")
+			.startTime(LocalTime.of(13, 0))
+			.endTime(LocalTime.of(14, 0))
+			.currentRes(6)
+			.capacity(6)
+			.status(ScheduleSlotStatus.RESERVED)
+			.build();
+
 		예약자_패널티_설정(false);
 
 		// when & then
+		given(reservationConcurrencyService.processIndividualReservationWithLock(anyList()))
+			.willThrow(new BusinessException(StatusCode.BAD_REQUEST, "예약이 불가능합니다. 스케줄이 유효하지 않거나 이미 예약이 완료되었습니다."));
+
 		BusinessException ex = assertThrows(BusinessException.class, () ->
 			reservationService.createIndividualReservation(token, request)
 		);
 
 		assertThat(ex.getMessage()).isEqualTo("예약이 불가능합니다. 스케줄이 유효하지 않거나 이미 예약이 완료되었습니다.");
-
 		verify(reservationRepository, never()).save(any());
 	}
 
@@ -359,7 +386,7 @@ class IndividualReservationTest {
 			reservationService.createIndividualReservation(token, request)
 		);
 
-		assertThat(ex.getMessage()).isEqualTo("예약자 이메일이 존재하지 않습니다: " + email);
+		assertThat(ex.getMessage()).isEqualTo("사용자를 찾을 수 없습니다.");
 		verify(reservationRepository, never()).save(any());
 	}
 
@@ -399,7 +426,7 @@ class IndividualReservationTest {
 			reservationService.createIndividualReservation(token, request)
 		);
 
-		assertThat(ex.getMessage()).isEqualTo("사용정지 상태입니다.");
+		assertThat(ex.getMessage()).isEqualTo("패널티 상태의 사용자는 예약이 불가능합니다.");
 		verify(reservationRepository, never()).save(any());
 	}
 
@@ -449,8 +476,8 @@ class IndividualReservationTest {
 
 	void 시간_고정_셋업(int hour, int minute) {
 		LocalDateTime fixedNow = LocalDateTime.of(2025, 3, 22, hour, minute);
-		given(clock.instant()).willReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
-		given(clock.getZone()).willReturn(ZoneId.systemDefault());
+		lenient().when(clock.instant()).thenReturn(fixedNow.atZone(ZoneId.systemDefault()).toInstant());
+		lenient().when(clock.getZone()).thenReturn(ZoneId.systemDefault());
 	}
 
 	void 스케줄_리스트_설정(Long[] ids, Schedule... schedules) {
