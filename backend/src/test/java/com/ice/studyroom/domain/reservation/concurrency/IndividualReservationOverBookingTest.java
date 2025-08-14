@@ -70,7 +70,7 @@ public class IndividualReservationOverBookingTest {
 		Schedule schedule = createTestSchedule();
 		Schedule saved = scheduleRepository.save(schedule);
 		scheduleRepository.flush();
-		System.out.println(">>> 저장된 schedule ID = " + saved.getId()); // 반드시 출력해보세요
+		System.out.println(">>> 저장된 schedule ID = " + saved.getId());
 
 		List<Member> testMembers = createTestMembers();
 		memberRepository.saveAll(testMembers);
@@ -85,7 +85,7 @@ public class IndividualReservationOverBookingTest {
 		//모든 스레드의 작업이 완료될 때까지 대기
 		CountDownLatch endLatch = new CountDownLatch(threadCount);
 
-		List<String> successResults = Collections.synchronizedList(new ArrayList<>());
+		List<Integer> successResults = Collections.synchronizedList(new ArrayList<>());
 		List<Exception> exceptions = Collections.synchronizedList(new ArrayList<>());
 		List<Long> responseTimes = Collections.synchronizedList(new ArrayList<>());
 
@@ -101,8 +101,8 @@ public class IndividualReservationOverBookingTest {
 					CreateReservationRequest request = createTestRequest(schedule.getId());
 					String authHeader = "Bearer test-token-" + userIndex;
 
-					String result = reservationService.createIndividualReservation(authHeader, request);
-					successResults.add(result);
+					reservationService.createIndividualReservation(authHeader, request);
+					successResults.add(userIndex);
 
 					long requestEnd = System.nanoTime();
 					responseTimes.add((requestEnd - requestStart) / 1_000_000);
@@ -168,7 +168,7 @@ public class IndividualReservationOverBookingTest {
 		return new CreateReservationRequest(new Long[]{scheduleId}, new String[]{});
 	}
 
-	private void printDetailedTestResults(List<String> successResults, List<Exception> exceptions,
+	private void printDetailedTestResults(List<Integer> successResults, List<Exception> exceptions,
 		Schedule originalSchedule, List<Reservation> reservationList, List<Long> responseTimes) {
 
 		Schedule updatedSchedule = scheduleRepository.findById(originalSchedule.getId()).get();
