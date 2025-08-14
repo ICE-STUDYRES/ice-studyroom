@@ -3,6 +3,7 @@ package com.ice.studyroom.global.dto.response;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import com.ice.studyroom.global.type.ResponseMessage;
 import com.ice.studyroom.global.type.StatusCode;
 
 import lombok.Builder;
@@ -32,6 +33,16 @@ public class ResponseDto<T> {
 			.code(StatusCode.OK.getCode())
 			.message(StatusCode.OK.getMessage())
 			.data(data)
+			.timestamp(LocalDateTime.now())
+			.build();
+	}
+
+	// 성공 응답 (상수화된 응답 처리)
+	public static <T> ResponseDto<T> success(ResponseMessage responseMessage) {
+		return ResponseDto.<T>builder()
+			.code(StatusCode.OK.getCode())
+			.message(responseMessage.getMessage())
+			.data(null)
 			.timestamp(LocalDateTime.now())
 			.build();
 	}
