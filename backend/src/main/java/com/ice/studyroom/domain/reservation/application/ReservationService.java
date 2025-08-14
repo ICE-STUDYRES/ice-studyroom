@@ -6,12 +6,14 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.ice.studyroom.domain.membership.domain.exception.member.MemberNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationNotFoundReason;
 import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
 import com.ice.studyroom.domain.schedule.domain.service.ScheduleCanceller;
+import com.ice.studyroom.global.type.ActionType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
@@ -177,30 +179,23 @@ public class ReservationService {
 	}
 
 	@Transactional
-	public String createIndividualReservation(String authorizationHeader, CreateReservationRequest request) {
+	public void createIndividualReservation(String authorizationHeader, CreateReservationRequest request) {
 		// Access Token 에서 예약자 이메일 추출
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		ReservationLogUtil.log("개인 예약 생성 요청", "스케줄 ID: " + Arrays.toString(request.scheduleId()), "참여자 이메일: " + Arrays.toString(request.participantEmail()));
+		ReservationLogUtil.log("개인 예약 생성 요청", "스케줄 ID: " + Arrays.toString(request.scheduleId()), "예약자 이메일: " + reservationOwnerEmail);
 
 		// 예약자 확인
 		Member reservationOwner = memberRepository.findByEmail(Email.of(reservationOwnerEmail))
-			.orElseThrow(() -> {
-				ReservationLogUtil.logWarn("개인 예약 실패 - 존재하지 않는 예약자", "예약자 이메일: " + reservationOwnerEmail);
-				return new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reservationOwnerEmail);
-			});
+			.orElseThrow(() -> new MemberNotFoundException(reservationOwnerEmail, ActionType.INDIVIDUAL_RESERVATION));
 
 		// 패널티 상태 확인 (예약 불가)
-		if (reservationOwner.isPenalty()) {
-			ReservationLogUtil.logWarn("개인 예약 실패 - 패널티 상태의 사용자", "예약자 이메일: " + reservationOwnerEmail);
-			throw new BusinessException(StatusCode.FORBIDDEN, "사용정지 상태입니다.");
-		}
+		reservationOwner.validateReservationEligibility();
 
 		// 예약 중복 방지
 		reservationValidator.checkDuplicateReservation(Email.of(reservationOwnerEmail));
 
-		// 예약 가능 여부 확인
+		// 예약 가능 여부 검증 및 스케줄 현재 예약 가능 인원 감소
 		List<Long> scheduleIds = Arrays.stream(request.scheduleId()).toList();
-
 		List<Schedule> schedules = reservationConcurrencyService.processIndividualReservationWithLock(scheduleIds);
 
 		try {
@@ -210,13 +205,11 @@ public class ReservationService {
 			ReservationLogUtil.log("개인 예약 생성 성공", "예약자: " + reservationOwnerEmail, "예약 ID: " + reservation.getId());
 			sendReservationSuccessEmail(schedules.get(0).getRoomType(), reservationOwnerEmail, new HashSet<>(), schedules);
 
-			return "Success";
-
 		} catch (Exception e) {
 			try {
 				reservationCompensationService.rollbackSchedules(scheduleIds, reservationOwnerEmail);
 			} catch (Exception rollbackException) {
-				ReservationLogUtil.log("예약 실패에 따른 보상 트랜잭션 실패", "예약자: " + reservationOwnerEmail + " " + rollbackException.getMessage());
+				ReservationLogUtil.log("예약 실패 보상 트랜잭션 실패", "예약자: " + reservationOwnerEmail + " " + rollbackException.getMessage());
 			}
 			throw new BusinessException(StatusCode.INTERNAL_ERROR, "예약 처리 중 오류가 발생하여 모든 변경사항이 롤백됩니다. 사유: " + e.getMessage());
 		}
@@ -224,21 +217,14 @@ public class ReservationService {
 
 	@Transactional
 	public String createGroupReservation(String authorizationHeader, CreateReservationRequest request) {
-		// JWT에서 예약자 이메일 추출
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
-		ReservationLogUtil.log("단체 예약 생성 요청", "스케줄 ID: " + Arrays.toString(request.scheduleId()), "참여자 이메일: " + Arrays.toString(request.participantEmail()));
+		ReservationLogUtil.log("단체 예약 생성 요청", "스케줄 ID: " + Arrays.toString(request.scheduleId()),
+			"참여자 이메일: " + Arrays.toString(request.participantEmail()));
 
-		// 예약자(User) 확인 및 user_name 가져오기
 		Member reservationOwner = memberRepository.findByEmail(Email.of(reservationOwnerEmail))
-			.orElseThrow(() -> {
-				ReservationLogUtil.logWarn("단체 예약 실패 - 존재하지 않는 예약자", "예약자 이메일: " + reservationOwnerEmail);
-				return new BusinessException(StatusCode.NOT_FOUND, "예약자 이메일이 존재하지 않습니다: " + reservationOwnerEmail);
-			});
+			.orElseThrow(() -> new MemberNotFoundException(reservationOwnerEmail, ActionType.GROUP_RESERVATION));
 
-		if(reservationOwner.isPenalty()) {
-			ReservationLogUtil.logWarn("단체 예약 실패 - 예약자가 패널티 상태", "예약자 이메일: " + reservationOwnerEmail);
-			throw new BusinessException(StatusCode.FORBIDDEN, "예약자가 패널티 상태입니다. 예약이 불가능합니다.");
-		}
+		reservationOwner.validateReservationEligibility();
 
 		// 예약 중복 방지
 		//checkDuplicateReservation(Email.of(reservationOwnerEmail));
@@ -255,20 +241,13 @@ public class ReservationService {
 		if (!ObjectUtils.isEmpty(request.participantEmail())) {
 			for (String email : request.participantEmail()) {
 				if (!uniqueEmails.add(email)) {
-						ReservationLogUtil.logWarn("단체 예약 실패 - 중복된 참여자 이메일", "이메일: " + email);
+					ReservationLogUtil.logWarn("단체 예약 실패 - 중복된 참여자 이메일", "이메일: " + email);
 					throw new BusinessException(StatusCode.BAD_REQUEST, "중복된 참여자 이메일이 존재합니다: " + email);
 				}
 				Member participant = memberRepository.findByEmail(Email.of(email))
-					.orElseThrow(() -> {
-						ReservationLogUtil.logWarn("단체 예약 실패 - 존재하지 않는 참여자 이메일", "이메일: " + email);
-						return new BusinessException(StatusCode.NOT_FOUND, "참여자 이메일이 존재하지 않습니다: " + email);
-					});
+					.orElseThrow(() -> new MemberNotFoundException(reservationOwnerEmail, ActionType.GROUP_RESERVATION));
 
-				//참여자 패널티 상태 확인
-				if (participant.isPenalty()) {
-					ReservationLogUtil.logWarn("단체 예약 실패 - 패널티 상태 참여자 존재", "이메일: " + email);
-					throw new BusinessException(StatusCode.FORBIDDEN, "참여자 중 패널티 상태인 사용자가 있습니다. 예약이 불가능합니다. (이메일: " + email + ")");
-				}
+				participant.validateReservationEligibility();
 
 				//참여자 최근 예약 상태 확인
 				// Optional<Reservation> recentReservationOpt = reservationRepository.findLatestReservationByMemberEmail(Email.of(email));
@@ -304,7 +283,7 @@ public class ReservationService {
 			//전 인원에게 예약 확정 메일 발송
 			sendReservationSuccessEmail(schedules.get(0).getRoomType(), reservationOwnerEmail, uniqueEmails, schedules);
 
-			return "Success";
+			return "성공적으로 단체 예약되었습니다.";
 		} catch (Exception e) {
 			try {
 				reservationCompensationService.rollbackSchedules(idList, reservationOwnerEmail);

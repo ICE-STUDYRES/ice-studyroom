@@ -2,12 +2,15 @@ package com.ice.studyroom.domain.reservation.application;
 
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationConcurrencyException;
 import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
 import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
+import com.ice.studyroom.domain.schedule.domain.exception.schedule.ScheduleNotFoundException;
 import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.ActionType;
 import com.ice.studyroom.global.type.StatusCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -32,40 +36,25 @@ public class ReservationConcurrencyService {
 	@Transactional(propagation = Propagation.REQUIRES_NEW)
 	public List<Schedule> processIndividualReservationWithLock(List<Long> scheduleIds){
 		try {
-			List<Long> sortedScheduleIds = new ArrayList<>(scheduleIds);
-			Collections.sort(sortedScheduleIds);
+			List<Long> sortedScheduleIds = scheduleIds.stream()
+				.sorted()
+				.collect(Collectors.toList());
 
 			List<Schedule> lockedSchedules = scheduleRepository.findByIdsWithPessimisticLock(sortedScheduleIds);
-
 			if (lockedSchedules.size() != scheduleIds.size()) {
-				ReservationLogUtil.logWarn("개인 예약 실패 - 존재하지 않는 스케줄 포함됨", "스케줄 ID: " + scheduleIds);
-				throw new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 스케줄이 포함되어 있습니다.");
+				throw new ScheduleNotFoundException(scheduleIds, ActionType.INDIVIDUAL_RESERVATION);
 			}
 
-			RoomType roomType = lockedSchedules.get(0).getRoomType();
-			if (roomType == RoomType.GROUP) {
-				ReservationLogUtil.logWarn("개인 예약 실패 - 그룹 전용 방 예약 시도",
-					"방 번호: " + lockedSchedules.get(0).getRoomNumber());
-				throw new BusinessException(StatusCode.FORBIDDEN, "해당 방은 단체예약 전용입니다.");
-			}
+			lockedSchedules.forEach(schedule -> {
+				schedule.validateForIndividualReservation();
+				schedule.reserve();
+			});
 
-			// 스케줄 업데이트 (currentRes 증가 및 상태 변경)
-			for (Schedule schedule : lockedSchedules) {
-				if (!schedule.isCurrentResLessThanCapacity()) {
-					ReservationLogUtil.logWarn("개인 예약 실패 - 수용 인원 초과", "스케줄 ID: " + schedule.getId());
-					throw new BusinessException(StatusCode.BAD_REQUEST, "예약 가능한 자리가 없습니다.");
-				}
-
-				schedule.reserve(); // 개인예약은 현재사용인원에서 +1 진행
-				if (schedule.getCurrentRes().equals(schedule.getCapacity())) { //예약 후 현재인원 == 방수용인원 경우 RESERVE
-					schedule.updateStatus(ScheduleSlotStatus.RESERVED);
-				}
-			}
 			scheduleRepository.saveAll(lockedSchedules);
 			return lockedSchedules;
+
 		} catch (PessimisticLockException e) {
-			throw new BusinessException(StatusCode.CONFLICT,
-				"현재 예약이 집중되고 있습니다. 잠시 후 다시 시도해주세요.");
+			throw new ReservationConcurrencyException();
 		}
 	}
 
@@ -116,8 +105,7 @@ public class ReservationConcurrencyService {
 
 			return lockedSchedules;
 		}catch (PessimisticLockException e) {
-			throw new BusinessException(StatusCode.CONFLICT,
-				"현재 예약이 집중되고 있습니다. 잠시 후 다시 시도해주세요.");
+			throw new ReservationConcurrencyException();
 		}
 	}
 }
