@@ -4,8 +4,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.ice.studyroom.domain.membership.domain.exception.member.MemberNotFoundException;
+import com.ice.studyroom.domain.membership.domain.exception.member.MemberPenaltyException;
+import com.ice.studyroom.domain.reservation.application.exception.ParticipantAlreadyReservedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.cancel.InvalidCancelAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidCancelAttemptException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.QrIssuanceNotAllowedException;
@@ -105,10 +107,30 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(ScheduleNotFoundException.class)
 	public ResponseEntity<ResponseDto<Object>> handleScheduleNotFound(ScheduleNotFoundException ex) {
-		ReservationLogUtil.logWarn("["+ ex.getDescription() +"]" + "찾을 수 없는 스케줄", "스케줄 ID: " + ex.getScheduleId() + " 접근 시도자: " + ex.getRequesterEmail());
+		// 로그 메시지 동적 구성 로직
+		String scheduleInfo = buildScheduleInfo(ex);
+		String requesterInfo = ex.getRequesterEmail() != null ?
+			" 접근 시도자: " + ex.getRequesterEmail() :
+			" 접근 시도자: Unknown";
+
+		ReservationLogUtil.logWarn(
+			"[" + ex.getDescription() + "] 찾을 수 없는 스케줄",
+			scheduleInfo + requesterInfo
+		);
+
 		return ResponseEntity
 			.status(ex.getStatusCode().getStatus())
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	private String buildScheduleInfo(ScheduleNotFoundException ex) {
+		if (ex.getScheduleIds() != null) {
+			return "스케줄 IDs: " + ex.getScheduleIds();
+		} else if (ex.getScheduleId() != null) {
+			return "스케줄 ID: " + ex.getScheduleId();
+		} else {
+			return "스케줄 ID: Unknown";
+		}
 	}
 
 	@ExceptionHandler(MemberNotFoundException.class)
@@ -151,9 +173,20 @@ public class GlobalExceptionHandler {
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
 	}
 
-	@ExceptionHandler(AttendanceException.class)
-	public ResponseEntity<String> handleAttendanceException(AttendanceException ex) {
-		return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
+	@ExceptionHandler(ParticipantAlreadyReservedException.class)
+	public ResponseEntity<ResponseDto<Object>> handleParticipantAlreadyReserved(ParticipantAlreadyReservedException ex) {
+		ReservationLogUtil.logWarn("단체 예약 실패 - 중복된 참여자 이메일", "이메일: " + ex.getEmail());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	@ExceptionHandler(MemberPenaltyException.class)
+	public ResponseEntity<ResponseDto<Object>> handleMemberPenalty(MemberPenaltyException ex) {
+		ReservationLogUtil.logWarn("단체 예약 실패 - 패널티 상태의 참여자 존재", "이메일: " + ex.getEmail());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
 	}
 
 	// 비즈니스 예외 처리
