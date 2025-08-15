@@ -29,7 +29,7 @@ import static org.mockito.BDDMockito.*;
 class GetMyReservationQrCodeTest {
 
 	@InjectMocks
-	private ReservationService reservationService;
+	private QrEntranceApplicationService qrEntranceApplicationService;
 
 	@Mock private ReservationRepository reservationRepository;
 	@Mock private TokenService tokenService;
@@ -90,7 +90,7 @@ class GetMyReservationQrCodeTest {
 		ArgumentCaptor<String> tokenCaptor = ArgumentCaptor.forClass(String.class);
 		ArgumentCaptor<Long> idCaptor = ArgumentCaptor.forClass(Long.class);
 
-		String result = reservationService.getMyReservationQrCode(reservationId, authHeader);
+		String result = qrEntranceApplicationService.getMyReservationQrCode(reservationId, authHeader);
 
 		assertThat(result).isEqualTo(qrImage);
 
@@ -132,7 +132,7 @@ class GetMyReservationQrCodeTest {
 		when(reservation.issueQrToken(any())).thenReturn(token);
 		given(qrCodeUtil.generateQRCodeFromToken(token)).willReturn(qrImage);
 
-		String result = reservationService.getMyReservationQrCode(reservationId, authHeader);
+		String result = qrEntranceApplicationService.getMyReservationQrCode(reservationId, authHeader);
 
 		assertThat(result).isEqualTo(qrImage);
 		verify(qrCodeService).storeToken(token, reservationId);
@@ -165,7 +165,7 @@ class GetMyReservationQrCodeTest {
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.empty());
 
 		ReservationNotFoundException ex = assertThrows(ReservationNotFoundException.class, () ->
-			reservationService.getMyReservationQrCode(reservationId, authHeader)
+			qrEntranceApplicationService.getMyReservationQrCode(reservationId, authHeader)
 		);
 		assertThat(ex.getMessage()).contains("존재하지 않는 예약");
 	}
@@ -196,7 +196,7 @@ class GetMyReservationQrCodeTest {
 		토큰_추출과_예약_조회_설정(reservation);
 
 		ReservationAccessDeniedException ex = assertThrows(ReservationAccessDeniedException.class, () ->
-			reservationService.getMyReservationQrCode(reservationId, authHeader)
+			qrEntranceApplicationService.getMyReservationQrCode(reservationId, authHeader)
 		);
 		assertThat(ex.getMessage()).contains("접근할 수 없습니다");
 	}
