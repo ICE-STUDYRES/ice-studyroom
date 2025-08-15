@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ice.studyroom.domain.reservation.application.ReservationService;
+import com.ice.studyroom.domain.reservation.application.QrEntranceApplicationService;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
@@ -39,6 +40,7 @@ import lombok.RequiredArgsConstructor;
 public class ReservationController {
 
 	private final ReservationService reservationService;
+	private final QrEntranceApplicationService qrEntranceApplicationService;
 
 	/**
 	 *
@@ -81,7 +83,7 @@ public class ReservationController {
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.getMyReservationQrCode(resId, authorizationHeader)));
+			.body(ResponseDto.of(qrEntranceApplicationService.getMyReservationQrCode(resId, authorizationHeader)));
 	}
 
 	@Operation(summary = "단체 스터디룸 예약", description = "단체 단위로 스터디룸을 예약합니다.")
