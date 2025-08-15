@@ -1,13 +1,13 @@
 package com.ice.studyroom.domain.reservation.presentation;
 
 
+import com.ice.studyroom.domain.reservation.application.QrEntranceApplicationService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.ice.studyroom.domain.reservation.application.ReservationService;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/api/qr")
 @RequiredArgsConstructor
 public class QrController {
-	private final ReservationService reservationService;
+	private final QrEntranceApplicationService qrEntranceApplicationService;
 
 	@Operation(summary = "예약 QR 코드 인식", description = "QR 코드를 이용하여 입실을 시도합니다.")
 	@ApiResponse(responseCode = "200", description = "정상 출석 혹은 지각")
@@ -33,6 +33,6 @@ public class QrController {
 		@Valid @RequestBody QrEntranceRequest request) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
-			.body(ResponseDto.of(reservationService.qrEntrance(request)));
+			.body(ResponseDto.of(qrEntranceApplicationService.qrEntrance(request)));
 	}
 }
