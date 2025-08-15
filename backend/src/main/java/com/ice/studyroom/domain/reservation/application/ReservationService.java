@@ -20,10 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.ObjectUtils;
 
 import com.ice.studyroom.domain.admin.domain.type.RoomType;
-import com.ice.studyroom.domain.reservation.infrastructure.redis.QRCodeService;
 import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
 import com.ice.studyroom.global.security.service.TokenService;
-import com.ice.studyroom.domain.reservation.infrastructure.util.QRCodeUtil;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
@@ -37,17 +35,14 @@ import com.ice.studyroom.domain.reservation.domain.type.ScheduleSlotStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.CreateReservationRequest;
-import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.CancelReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetMostRecentReservationResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.GetReservationsResponse;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.ParticipantResponse;
-import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
 import com.ice.studyroom.global.dto.request.EmailRequest;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.service.EmailService;
 import com.ice.studyroom.global.type.StatusCode;
-import com.ice.studyroom.global.util.SecureTokenUtil;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,7 +52,6 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class ReservationService {
 
-	private final QRCodeUtil qrCodeUtil;
 	private final TokenService tokenService;
 	private final MemberRepository memberRepository;
 	private final ReservationRepository reservationRepository;
@@ -65,7 +59,6 @@ public class ReservationService {
 	private final ReservationConcurrencyService reservationConcurrencyService;
 	private final ReservationCompensationService reservationCompensationService;
 	private final ReservationValidator reservationValidator;
-	private final QRCodeService qrCodeService;
 	private final ScheduleCanceller scheduleCanceller;
 	private final PenaltyService penaltyService;
 	private final MemberDomainService memberDomainService;
@@ -122,61 +115,6 @@ public class ReservationService {
 			.map(reservation -> GetReservationsResponse.from(reservation, reservationParticipantsMap.get(
 				reservation.getRoomNumber() + "_" + reservation.getScheduleDate() + "_" + reservation.getStartTime())))
 			.collect(Collectors.toList());
-	}
-
-	@Transactional
-	public String getMyReservationQrCode(Long reservationId, String authorizationHeader) {
-		ReservationLogUtil.log("QR코드 요청 수신", "예약 ID: " + reservationId);
-
-		String requesterEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
-
-		// 예약이 유효한지 확인
-		Reservation reservation = reservationRepository.findById(reservationId)
-			.orElseThrow(() -> {
-				return new ReservationNotFoundException(ReservationNotFoundReason.NOT_FOUND, reservationId, requesterEmail, ReservationActionType.ISSUE_QR_CODE);
-			});
-
-		reservation.validateForQrIssuance(); // QR 코드를 발급하기 위해 유효한 예약 상태를 가지고 있는지 검증
-		reservation.validateOwnership(requesterEmail, ReservationActionType.ISSUE_QR_CODE);	// 요청한 사용자가 해당 예약에 접근할 수 있는지 검증
-
-		String token = reservation.issueQrToken(() -> SecureTokenUtil.generate(10));
-
-		qrCodeService.storeToken(token, reservation.getId());
-		String qrCode = qrCodeUtil.generateQRCodeFromToken(token);
-		ReservationLogUtil.log("QR 토큰 저장 및 생성 완료", "예약 ID: " + reservationId);
-		return qrCode;
-	}
-
-	@Transactional
-	public QrEntranceResponse qrEntrance(QrEntranceRequest request) {
-		String token = request.qrToken();
-		Long reservationId = qrCodeService.getReservationIdByToken(token);
-		ReservationLogUtil.log("QR 입장 요청 수신", "예약 ID: " + reservationId);
-
-		Reservation reservation = reservationRepository.findById(reservationId)
-			.orElseThrow(() -> {
-				return new ReservationNotFoundException(ReservationNotFoundReason.NOT_FOUND, reservationId, "", ReservationActionType.ISSUE_QR_CODE);
-			});
-
-		// 입장 가능한 예약인지 먼저 확인
-		reservation.validateForEntrance();
-
-		// 가능하다면 현재 시간으로 입장 처리 진행
-		ReservationStatus status = reservation.processEntrance(LocalDateTime.now(clock));
-
-		// 입실 완료 이후에는 qr 무효화 진행
-		qrCodeService.invalidateToken(token);
-
-		Member reservationOwner = reservation.getMember();
-
-		if(status == ReservationStatus.LATE){
-			ReservationLogUtil.logWarn("지각 입장 - 패널티 부여", "예약 ID: " + reservationId,
-				"userId: " + reservationOwner.getEmail().getValue());
-			penaltyService.assignPenalty(reservationOwner, reservationId, PenaltyReasonType.LATE);
-		}
-
-		ReservationLogUtil.log("QR 입장 처리 완료", "예약 ID: " + reservationId);
-		return new QrEntranceResponse(status, reservationOwner.getName(), reservationOwner.getStudentNum());
 	}
 
 	@Transactional

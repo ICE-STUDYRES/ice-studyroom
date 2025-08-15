@@ -12,8 +12,6 @@ import java.util.Optional;
 
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
-import com.ice.studyroom.domain.reservation.domain.service.ReservationValidator;
-import com.ice.studyroom.domain.schedule.domain.service.ScheduleCanceller;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -23,40 +21,28 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
-import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
-import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
-import com.ice.studyroom.domain.reservation.infrastructure.persistence.ScheduleRepository;
 import com.ice.studyroom.domain.reservation.infrastructure.redis.QRCodeService;
 import com.ice.studyroom.domain.reservation.infrastructure.util.QRCodeUtil;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
-import com.ice.studyroom.global.service.EmailService;
 
 @ExtendWith(MockitoExtension.class)
 class QrEntranceTest {
 
 	@InjectMocks
-	private ReservationService reservationService;
+	private QrEntranceApplicationService qrEntranceApplicationService;
 
 	@Mock private QRCodeUtil qrCodeUtil;
 	@Mock private TokenService tokenService;
-	@Mock private MemberRepository memberRepository;
 	@Mock private ReservationRepository reservationRepository;
-	@Mock private ScheduleRepository scheduleRepository;
-	@Mock private ReservationConcurrencyService reservationConcurrencyService;
-	@Mock private ReservationCompensationService reservationCompensationService;
-	@Mock private ReservationValidator reservationValidator;
 	@Mock private QRCodeService qrCodeService;
 	@Mock private PenaltyService penaltyService;
-	@Mock private MemberDomainService memberDomainService;
-	@Mock private EmailService emailService;
-	@Mock private ScheduleCanceller scheduleCanceller;
 
 	private final String TOKEN = "valid-token";
 	private final Long RESERVATION_ID = 1L;
@@ -72,10 +58,8 @@ class QrEntranceTest {
 			LocalDateTime.of(2025, 4, 4, 17, 5).atZone(ZoneId.systemDefault()).toInstant(),
 			ZoneId.systemDefault()
 		);
-		reservationService = new ReservationService(
-			qrCodeUtil, tokenService, memberRepository, reservationRepository,
-			scheduleRepository, reservationConcurrencyService, reservationCompensationService, reservationValidator, qrCodeService, scheduleCanceller, penaltyService,
-			memberDomainService, emailService, clock
+		qrEntranceApplicationService = new QrEntranceApplicationService(
+			tokenService, penaltyService, qrCodeService, qrCodeUtil, reservationRepository, clock
 		);
 	}
 
@@ -114,7 +98,7 @@ class QrEntranceTest {
 
 		mockQrFlow(reservation);
 
-		QrEntranceResponse response = reservationService.qrEntrance(new QrEntranceRequest(TOKEN));
+		QrEntranceResponse response = qrEntranceApplicationService.qrEntrance(new QrEntranceRequest(TOKEN));
 
 		assertThat(response.status()).isEqualTo(ReservationStatus.ENTRANCE);
 		verify(qrCodeService).invalidateToken(TOKEN);
@@ -155,10 +139,10 @@ class QrEntranceTest {
 
 		mockQrFlow(reservation);
 
-		QrEntranceResponse response = reservationService.qrEntrance(new QrEntranceRequest(TOKEN));
+		QrEntranceResponse response = qrEntranceApplicationService.qrEntrance(new QrEntranceRequest(TOKEN));
 
 		assertThat(response.status()).isEqualTo(ReservationStatus.LATE);
-		verify(penaltyService).assignPenalty(member, RESERVATION_ID, PenaltyReasonType.LATE);
+		verify(penaltyService).assignPenalty(member, reservation.getId(), PenaltyReasonType.LATE);
 		verify(qrCodeService).invalidateToken(TOKEN);
 	}
 
@@ -193,7 +177,7 @@ class QrEntranceTest {
 
 		mockQrFlow(reservation);
 
-		assertThatThrownBy(() -> reservationService.qrEntrance(new QrEntranceRequest(TOKEN)))
+		assertThatThrownBy(() -> qrEntranceApplicationService.qrEntrance(new QrEntranceRequest(TOKEN)))
 			.isInstanceOf(InvalidEntranceTimeException.class)
 			.hasMessageContaining("출석 시간이 아닙니다");
 
@@ -233,7 +217,7 @@ class QrEntranceTest {
 
 		mockQrFlow(reservation);
 
-		assertThatThrownBy(() -> reservationService.qrEntrance(new QrEntranceRequest(TOKEN)))
+		assertThatThrownBy(() -> qrEntranceApplicationService.qrEntrance(new QrEntranceRequest(TOKEN)))
 			.isInstanceOf(InvalidEntranceTimeException.class)
 			.hasMessageContaining("출석 시간이 만료되었습니다");
 
@@ -269,7 +253,7 @@ class QrEntranceTest {
 
 		mockQrFlow(reservation);
 
-		assertThatThrownBy(() -> reservationService.qrEntrance(new QrEntranceRequest(TOKEN)))
+		assertThatThrownBy(() -> qrEntranceApplicationService.qrEntrance(new QrEntranceRequest(TOKEN)))
 			.isInstanceOf(InvalidEntranceAttemptException.class)
 			.hasMessageContaining("이미 입실 처리 된 예약입니다");
 
@@ -305,7 +289,7 @@ class QrEntranceTest {
 
 		mockQrFlow(reservation);
 
-		assertThatThrownBy(() -> reservationService.qrEntrance(new QrEntranceRequest(TOKEN)))
+		assertThatThrownBy(() -> qrEntranceApplicationService.qrEntrance(new QrEntranceRequest(TOKEN)))
 			.isInstanceOf(InvalidEntranceAttemptException.class)
 			.hasMessageContaining("취소된 예약입니다");
 
@@ -316,16 +300,13 @@ class QrEntranceTest {
 	// ========== 헬퍼 메서드 ==========
 
 	private void mockQrFlow(Reservation reservation) {
-		given(qrCodeService.getReservationIdByToken(TOKEN)).willReturn(RESERVATION_ID);
-		given(reservationRepository.findById(RESERVATION_ID)).willReturn(Optional.of(reservation));
+		given(reservationRepository.findByQrToken(TOKEN)).willReturn(Optional.of(reservation));
 	}
 
 	private void setClock(LocalDateTime dateTime) {
 		this.clock = Clock.fixed(dateTime.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
-		reservationService = new ReservationService(
-			qrCodeUtil, tokenService, memberRepository, reservationRepository,
-			scheduleRepository, reservationConcurrencyService, reservationCompensationService, reservationValidator, qrCodeService, scheduleCanceller, penaltyService,
-			memberDomainService, emailService, clock
+		qrEntranceApplicationService = new QrEntranceApplicationService(
+			tokenService, penaltyService, qrCodeService, qrCodeUtil, reservationRepository, clock
 		);
 	}
 

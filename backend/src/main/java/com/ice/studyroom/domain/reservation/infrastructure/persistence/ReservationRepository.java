@@ -23,9 +23,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
 
 	List<Reservation> findByFirstScheduleId(Long firstScheduleId);
 
-	// @Query("SELECT r FROM Reservation r WHERE r.userEmail = :email ORDER BY r.createdAt DESC LIMIT 1")
-	// Optional<Reservation> findLatestReservationByUserEmail(@Param("email") String email);
-	//
+	Optional<Reservation> findByQrToken(String qrToken);
 
 	@Query("SELECT r FROM Reservation r WHERE r.member.email = :email ORDER BY r.createdAt DESC LIMIT 1")
 	Optional<Reservation> findLatestReservationByMemberEmail(@Param("email") Email email);
