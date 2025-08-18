@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef } from 'react';
-import { useTokenHandler } from '../Mainpage/handlers/TokenHandler';
 
 const AttendanceHandler = () => {
   const [scanState, setScanState] = useState('initial'); 
@@ -8,9 +7,6 @@ const AttendanceHandler = () => {
   const [sentQRCode, setSentQRCode] = useState('');
   const qrBufferRef = useRef("");
   const isFirstKeyRef = useRef(true);
-  const {
-    refreshTokens,
-  } = useTokenHandler();
   
   // QR 스캐너 키보드 이벤트 리스너
   useEffect(() => {
@@ -32,30 +28,13 @@ const AttendanceHandler = () => {
         }
     
         try {
-          let accessToken = sessionStorage.getItem("accessToken");
           let response = await fetch(`/api/qr/recognize`, {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${accessToken}`,
               "Content-Type": "application/json",
             },
             body: JSON.stringify({ qrToken: qrData }),
           });
-    
-          // 401 에러 처리: refreshTokens 실행 후 다시 요청
-          if (!response.ok && response.status === 401) {
-            accessToken = await refreshTokens();
-    
-            // 새 토큰으로 재요청
-            response = await fetch(`/api/qr/recognize`, {
-              method: "POST",
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ qrToken: qrData }),
-            });
-          }
     
           let responseData;
           const contentType = response.headers.get("content-type");
@@ -79,11 +58,16 @@ const AttendanceHandler = () => {
               setStudentData({ name: responseData.data.userName || "학생", studentId: responseData.data.userNumber });
               setScanState("complete-late");
             }
+          } else if (response.status === 401) {
+            setStudentData({ name: "입실 불가", message: "스터디룸 예약 종료 시간이 지났습니다." });
+            setScanState("complete-error");
+          } else if (response.status === 403) {
+            setStudentData({ name: "입실 불가", message: "스터디룸 예약 시작 전입니다." });
+            setScanState("complete-error");
           } else {
             setStudentData({ name: "오류 발생", message: "잠시 후 다시 이용해주세요." });
             setScanState("complete-error");
           }
-    
           setSentQRCode(qrData);
         } catch (error) {
         }
