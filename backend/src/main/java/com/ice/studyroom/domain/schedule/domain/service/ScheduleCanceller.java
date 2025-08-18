@@ -32,7 +32,11 @@ public class ScheduleCanceller {
 		schedule.cancel();
 		// 배포할 경우 주석 제거
 //		if (schedule.getCapacity() - schedule.getCurrentRes() == 1) {
-//			vacancyNotificationProducer.sendVacancyNotificationToSubscribers(scheduleId, schedule.getRoomNumber());
+//			vacancyNotificationProducer.sendVacancyNotificationToSubscribers(
+//				scheduleId,
+//				schedule.getRoomNumber(),
+//				schedule.getStartTime(),
+//				schedule.getEndTime());
 //		}
 	}
 }
