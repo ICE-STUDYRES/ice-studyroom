@@ -4,10 +4,12 @@ import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.Re
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationNotFoundReason;
 import com.ice.studyroom.global.exception.BusinessException;
 import com.ice.studyroom.global.type.StatusCode;
+import lombok.Getter;
 
 /**
  * 요청한 Member 의 소유가 아닌 Reservation인 경우에는 접근할 수 없기에 예외 발생
  */
+@Getter
 public class ReservationNotFoundException extends BusinessException {
 	/**
 	 * 어떤 기능을 서빙하다가 발생한 예외인지
@@ -28,10 +30,4 @@ public class ReservationNotFoundException extends BusinessException {
 		this.reservationId = reservationId;
 		this.requesterEmail = requesterEmail;
 	}
-
-	public Long getReservationId() {
-		return reservationId;
-	}
-	public String getRequesterEmail() { return requesterEmail; }
-	public String getDescription() { return description; }
 }

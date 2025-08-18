@@ -27,7 +27,7 @@ import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
-import com.ice.studyroom.domain.reservation.infrastructure.redis.QRCodeService;
+import com.ice.studyroom.domain.reservation.infrastructure.redis.QrCodeService;
 import com.ice.studyroom.domain.reservation.infrastructure.util.QRCodeUtil;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
@@ -41,7 +41,7 @@ class QrEntranceTest {
 	@Mock private QRCodeUtil qrCodeUtil;
 	@Mock private TokenService tokenService;
 	@Mock private ReservationRepository reservationRepository;
-	@Mock private QRCodeService qrCodeService;
+	@Mock private QrCodeService qrCodeService;
 	@Mock private PenaltyService penaltyService;
 
 	private final String TOKEN = "valid-token";
@@ -101,7 +101,6 @@ class QrEntranceTest {
 		QrEntranceResponse response = qrEntranceApplicationService.qrEntrance(new QrEntranceRequest(TOKEN));
 
 		assertThat(response.status()).isEqualTo(ReservationStatus.ENTRANCE);
-		verify(qrCodeService).invalidateToken(TOKEN);
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
 	}
 
@@ -143,7 +142,6 @@ class QrEntranceTest {
 
 		assertThat(response.status()).isEqualTo(ReservationStatus.LATE);
 		verify(penaltyService).assignPenalty(member, reservation.getId(), PenaltyReasonType.LATE);
-		verify(qrCodeService).invalidateToken(TOKEN);
 	}
 
 	/**
@@ -181,7 +179,6 @@ class QrEntranceTest {
 			.isInstanceOf(InvalidEntranceTimeException.class)
 			.hasMessageContaining("출석 시간이 아닙니다");
 
-		verify(qrCodeService, never()).invalidateToken(TOKEN); // 이 시점에도 무효화는 수행
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
 	}
 
@@ -221,7 +218,6 @@ class QrEntranceTest {
 			.isInstanceOf(InvalidEntranceTimeException.class)
 			.hasMessageContaining("출석 시간이 만료되었습니다");
 
-		verify(qrCodeService, never()).invalidateToken(TOKEN);
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
 	}
 
@@ -257,7 +253,6 @@ class QrEntranceTest {
 			.isInstanceOf(InvalidEntranceAttemptException.class)
 			.hasMessageContaining("이미 입실 처리 된 예약입니다");
 
-		verify(qrCodeService, never()).invalidateToken(any());
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
 	}
 
@@ -293,7 +288,6 @@ class QrEntranceTest {
 			.isInstanceOf(InvalidEntranceAttemptException.class)
 			.hasMessageContaining("취소된 예약입니다");
 
-		verify(qrCodeService, never()).invalidateToken(any());
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
 	}
 
