@@ -4,6 +4,7 @@ import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.QrTokenFieldNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationNotFoundReason;
@@ -15,7 +16,6 @@ import com.ice.studyroom.domain.reservation.infrastructure.util.QRCodeUtil;
 import com.ice.studyroom.domain.reservation.presentation.dto.request.QrEntranceRequest;
 import com.ice.studyroom.domain.reservation.presentation.dto.response.QrEntranceResponse;
 import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
-import com.ice.studyroom.global.exception.token.InvalidQrTokenException;
 import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.global.util.SecureTokenUtil;
 
@@ -81,7 +81,7 @@ public class QrEntranceApplicationService {
 		ReservationLogUtil.log("QR 입장 요청 수신", "QR 토큰: " + qrToken);
 
 		Reservation reservation = reservationRepository.findByQrToken(qrToken)
-			.orElseThrow(() -> new InvalidQrTokenException("유효하지않은 토큰입니다."));
+			.orElseThrow(() -> new QrTokenFieldNotFoundException("유효하지않은 토큰입니다."));
 
 		// 입장 가능한 예약인지 먼저 확인
 		reservation.validateForEntrance();
