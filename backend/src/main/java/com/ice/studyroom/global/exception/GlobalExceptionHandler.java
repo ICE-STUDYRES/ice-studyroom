@@ -6,13 +6,10 @@ import java.util.stream.Collectors;
 import com.ice.studyroom.domain.membership.domain.exception.member.MemberNotFoundException;
 import com.ice.studyroom.domain.membership.domain.exception.member.MemberPenaltyException;
 import com.ice.studyroom.domain.reservation.application.exception.ParticipantAlreadyReservedException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.InvalidCancelAttemptException;
+import com.ice.studyroom.domain.reservation.domain.exception.reservation.*;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.QrIssuanceNotAllowedException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
-import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationScheduleNotFoundException;
 import com.ice.studyroom.domain.reservation.util.ReservationLogUtil;
 import com.ice.studyroom.domain.schedule.domain.exception.schedule.ScheduleNotFoundException;
 import com.ice.studyroom.global.exception.token.InvalidQrTokenException;
@@ -176,6 +173,14 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(ParticipantAlreadyReservedException.class)
 	public ResponseEntity<ResponseDto<Object>> handleParticipantAlreadyReserved(ParticipantAlreadyReservedException ex) {
 		ReservationLogUtil.logWarn("단체 예약 실패 - 중복된 참여자 이메일", "이메일: " + ex.getEmail());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	@ExceptionHandler(QrTokenFieldNotFoundException.class)
+	public ResponseEntity<ResponseDto<Object>> handleQrTokenFieldNotFound(QrTokenFieldNotFoundException ex) {
+		log.error("QR 토큰으로 레코드 조회 실패 : {}", ex.getMessage());
 		return ResponseEntity
 			.status(ex.getStatusCode().getStatus())
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
