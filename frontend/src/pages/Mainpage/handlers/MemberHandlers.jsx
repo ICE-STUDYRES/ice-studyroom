@@ -180,8 +180,6 @@ export const useMemberHandlers = () => {
     
                 if (role === 'ROLE_ADMIN') {
                     navigate('/adminpage');
-                } else if (role == 'ROLE_ATTENDANT') {
-                    navigate('/attendance')
                 } else {
                     const errorMessage = '로그인 중 오류가 발생했습니다.';
                     setLoginError(errorMessage);
