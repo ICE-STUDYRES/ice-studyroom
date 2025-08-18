@@ -1,9 +1,8 @@
-import React from 'react';
 import { CheckCircle, Loader, QrCode, X } from 'lucide-react';
 import AttendanceHandler from './AttendanceHandler';
 
 const QRAttendanceUI = () => {
-  const { scanState, studentData, currentTime, sentQRCode } = AttendanceHandler();
+  const { scanState, studentData, currentTime } = AttendanceHandler();
   
   // Render different UI based on scan state
   const renderContent = () => {
