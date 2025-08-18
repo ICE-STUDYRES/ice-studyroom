@@ -107,7 +107,7 @@ public class Schedule extends BaseTimeEntity {
 		}
 
 		this.currentRes--;
-		updateStatusIfEmpty();
+		updateStatusIfAvailable();
 	}
 
 	public void validateForIndividualReservation() {
@@ -122,8 +122,8 @@ public class Schedule extends BaseTimeEntity {
 		}
 	}
 
-	private void updateStatusIfEmpty() {
-		if (this.currentRes == 0) {
+	private void updateStatusIfAvailable() {
+		if (this.currentRes < this.capacity) {
 			this.status = ScheduleSlotStatus.AVAILABLE;
 		}
 	}
