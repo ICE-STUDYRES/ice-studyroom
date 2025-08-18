@@ -4,10 +4,11 @@ import com.ice.studyroom.domain.reservation.domain.exception.reservation.Reserva
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationAccessDeniedReason;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
+import com.ice.studyroom.domain.reservation.infrastructure.redis.exception.QrTokenNotFoundInCacheException;
 import com.ice.studyroom.global.security.service.TokenService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.infrastructure.persistence.ReservationRepository;
-import com.ice.studyroom.domain.reservation.infrastructure.redis.QRCodeService;
+import com.ice.studyroom.domain.reservation.infrastructure.redis.QrCodeService;
 import com.ice.studyroom.domain.reservation.infrastructure.util.QRCodeUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +34,7 @@ class GetMyReservationQrCodeTest {
 
 	@Mock private ReservationRepository reservationRepository;
 	@Mock private TokenService tokenService;
-	@Mock private QRCodeService qrCodeService;
+	@Mock private QrCodeService qrCodeService;
 	@Mock private QRCodeUtil qrCodeUtil;
 
 	private Long reservationId;
@@ -94,7 +95,7 @@ class GetMyReservationQrCodeTest {
 
 		assertThat(result).isEqualTo(qrImage);
 
-		verify(qrCodeService).storeToken(tokenCaptor.capture(), idCaptor.capture());
+		verify(qrCodeService).storeToken(idCaptor.capture(), tokenCaptor.capture());
 
 		String capturedToken = tokenCaptor.getValue();
 		Long capturedId = idCaptor.getValue();
@@ -104,25 +105,24 @@ class GetMyReservationQrCodeTest {
 	}
 
 	/**
-	 * 📌 테스트명: QR_토큰이_이미_있는_예약의_QR_요청은_기존_토큰으로_QR_반환
+	 * 📌 테스트명: 예약_소유자가_아닌_경우_예외_발생
 	 *
 	 * ✅ 목적:
-	 *   - 이미 QR 토큰이 존재하는 예약은 토큰을 재사용하여 QR 코드를 반환하는지 검증한다.
+	 *   - 본인의 예약이 아닐 경우 QR 코드 요청이 차단되는지 검증한다.
 	 *
 	 * 🧪 시나리오 설명:
-	 *   1. 예약은 존재하며 사용자가 소유함
-	 *   2. QR 토큰이 이미 존재함
-	 *   3. 새 토큰 생성 없이 기존 토큰으로 QR 코드 생성
+	 *   1. Redis에서 토큰 미발견 (QrTokenNotFoundInCacheException)
+	 *   2. DB에서 예약 조회 성공
+	 *   3. reservation.validateOwnership() → 예외 발생
 	 *
 	 * 📌 관련 비즈니스 규칙:
-	 *   - QR 토큰이 있으면 새로 생성하지 않고 재사용
+	 *   - QR 요청은 예약 소유자만 가능
 	 *
 	 * 🧩 검증 포인트:
-	 *   - reservationRepository.save(...) 호출되지 않아야 함
-	 *   - 기존 토큰으로 QR 생성됨
+	 *   - ReservationAccessDeniedException 예외 발생 여부
 	 *
 	 * ✅ 기대 결과:
-	 *   - QR 이미지 반환
+	 *   - 예외 메시지에 "접근할 수 없습니다" 포함
 	 */
 	@Test
 	@DisplayName("QR 토큰이 이미 있는 예약은 기존 토큰으로 QR 반환")
@@ -135,7 +135,7 @@ class GetMyReservationQrCodeTest {
 		String result = qrEntranceApplicationService.getMyReservationQrCode(reservationId, authHeader);
 
 		assertThat(result).isEqualTo(qrImage);
-		verify(qrCodeService).storeToken(token, reservationId);
+		verify(qrCodeService).storeToken(reservationId, token);
 		verify(reservationRepository, never()).save(any());
 	}
 
@@ -146,14 +146,14 @@ class GetMyReservationQrCodeTest {
 	 *   - 예약 ID가 잘못되었을 때 예외가 발생하는지 검증한다.
 	 *
 	 * 🧪 시나리오 설명:
-	 *   1. 이메일은 정상적으로 추출됨
-	 *   2. reservationRepository.findById() 결과가 empty
+	 *   1. Redis에서 토큰 미발견 (QrTokenNotFoundInCacheException)
+	 *   2. DB에서 예약 조회 실패 (Optional.empty())
 	 *
 	 * 📌 관련 비즈니스 규칙:
 	 *   - 존재하지 않는 예약에는 QR을 생성할 수 없음
 	 *
 	 * 🧩 검증 포인트:
-	 *   - BusinessException 예외 발생 여부
+	 *   - ReservationNotFoundException 예외 발생 여부
 	 *
 	 * ✅ 기대 결과:
 	 *   - 예외 메시지에 "존재하지 않는 예약" 포함
@@ -161,6 +161,11 @@ class GetMyReservationQrCodeTest {
 	@Test
 	@DisplayName("존재하지 않는 예약 ID는 예외 발생")
 	void 존재하지_않는_예약_ID는_예외_발생() {
+		// Redis에서 토큰 미발견 설정
+		given(qrCodeService.getTokenByReservationId(reservationId))
+			.willThrow(new QrTokenNotFoundInCacheException("[캐시 미스 발생] 예약 ID가 존재하지않습니다."));
+
+		// 토큰 추출은 성공하지만 DB에서 예약 찾기 실패
 		given(tokenService.extractEmailFromAccessToken(authHeader)).willReturn(email);
 		given(reservationRepository.findById(reservationId)).willReturn(Optional.empty());
 
@@ -193,6 +198,12 @@ class GetMyReservationQrCodeTest {
 	@DisplayName("예약 소유자가 아닌 경우 예외 발생")
 	void 예약_소유자가_아닌_경우_예외_발생() {
 		Reservation reservation = 예약_모킹_설정(null, false);
+
+		// Redis에서 토큰 미발견 설정
+		given(qrCodeService.getTokenByReservationId(reservationId))
+			.willThrow(new QrTokenNotFoundInCacheException("[캐시 미스 발생] 예약 ID가 존재하지않습니다."));
+
+		// DB에서 예약 조회는 성공하지만 소유자 검증에서 실패
 		토큰_추출과_예약_조회_설정(reservation);
 
 		ReservationAccessDeniedException ex = assertThrows(ReservationAccessDeniedException.class, () ->
