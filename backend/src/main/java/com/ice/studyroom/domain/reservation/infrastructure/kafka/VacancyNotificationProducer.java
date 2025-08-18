@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -32,7 +33,7 @@ public class VacancyNotificationProducer {
 	private final Clock clock;
 
 	@Async("vacancyNotificationExecutor")
-	public void sendVacancyNotificationToSubscribers(Long scheduleId, String roomName) {
+	public void sendVacancyNotificationToSubscribers(Long scheduleId, String roomName, LocalTime startTime, LocalTime endTime) {
 		String redisKey = REDIS_KEY_PREFIX + scheduleId;
 
 		Set<Object> subscriberObjects = redisTemplate.opsForHash().keys(redisKey);
@@ -49,8 +50,21 @@ public class VacancyNotificationProducer {
 		log.info("빈자리 알림 이메일 전송 프로세스 수행, 인원: {} 방 번호: {}", subscribers.size(), roomName);
 		String formattedDate = LocalDateTime.now(clock).format(DATE_FORMATTER);
 
+		long currentTimestamp = System.currentTimeMillis();
+
+		String starTimeStr = startTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+		String endTimeStr = endTime.format(DateTimeFormatter.ofPattern("HH:mm"));
+
 		for (String email : subscribers) {
-			VacancyNotificationRequest request = new VacancyNotificationRequest(email, roomName, formattedDate);
+			VacancyNotificationRequest request = new VacancyNotificationRequest(
+				email,
+				roomName,
+				formattedDate,
+				scheduleId,
+				currentTimestamp,
+				starTimeStr,
+				endTimeStr
+			);
 			sendSingleNotification(request);
 		}
 	}

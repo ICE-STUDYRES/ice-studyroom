@@ -13,4 +13,8 @@ public class VacancyNotificationRequest {
 	private String email;
 	private String roomName;
 	private String eventDate;
+	private Long scheduleId;
+	private long timestamp;
+	private String startTime;
+	private String endTime;
 }
