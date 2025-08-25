@@ -1,8 +1,15 @@
 import React from 'react';
-import { CheckCircle, Clock, XCircle, UserPlus } from 'lucide-react';
+import { CheckCircle, Clock, XCircle, UserPlus, QrCode } from 'lucide-react';
 
 //  알림 메시지 (카테고리별 success / error)
 export const NOTIFICATION_MESSAGES = {
+  qr: {
+    error: {
+      type: 'qr',
+      title: 'QR 코드 오류',
+      status: 'error',
+    }
+  },
   penalty: {
     error: {
       type: 'penalty',
@@ -124,6 +131,8 @@ const getIcon = (category) => {
       return <XCircle className="w-5 h-5" />;
     case 'attendance':
       return <CheckCircle className="w-5 h-5" />;
+    case 'qr':
+      return <QrCode className="w-5 h-5" />;
     default:
       return null;
   }

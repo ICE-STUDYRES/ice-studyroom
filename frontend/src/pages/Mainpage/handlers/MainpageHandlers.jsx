@@ -2,10 +2,10 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useNotification } from '../../Notification/Notification';
 import { usePenaltyHandlers } from './PenaltyHandlers.jsx';
-import useQRCodeFetcher from '../components/QRCodeFetcher';
 import { useUser } from "../handlers/UserContext";
+import { useTokenHandler } from "./TokenHandler";
 
-export const useMainpageHandlers = (resId) => {
+export const useMainpageHandlers = (resId, myReservations) => {
     const {
       setPenaltyEndAt,
       setPenaltyReason,
@@ -17,9 +17,10 @@ export const useMainpageHandlers = (resId) => {
     const [showNotice, setShowNotice] = useState(false);
     const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
     const [showQRModal, setShowQRModal] = useState(false);
+    const [qrToken, setQrToken] = useState(null);
     const { addNotification } = useNotification();
+    const { refreshTokens } = useTokenHandler();
     let accessToken = sessionStorage.getItem('accessToken');
-    const { qrStatus } = useQRCodeFetcher(resId);  
 
     useEffect(() => {
       if (userData) {
@@ -73,20 +74,57 @@ export const useMainpageHandlers = (resId) => {
       }
     };
     const handleClosePenaltyPopup = () => setShowPenaltyPopup(false);
-    const handleQRClick = () => {
-      if (qrStatus === 418) {
-        addNotification("penalty", "error");
-        return;
+    
+    const handleQRClick = async (retry = true) => {
+      let currentResId = resId;
+      if (!currentResId) {
+          if (!myReservations || myReservations.length === 0 || !myReservations[0].id) {
+              addNotification('qr', 'error', '예약 정보를 불러올 수 없습니다.');
+              return;
+          }
+          currentResId = myReservations[0].id;
       }
-      setShowQRModal(true);
-    };
-    const handleCloseQRModal = () => setShowQRModal(false);
+
+      try {
+          let currentAccessToken = sessionStorage.getItem('accessToken');
+          const response = await fetch(`/api/reservations/my/${currentResId}`, {
+              method: 'GET',
+              headers: {
+                  'Authorization': `Bearer ${currentAccessToken}`,
+                  'Content-Type': 'application/json'
+              }
+          });
+
+          if (response.status === 401 && retry) {
+              currentAccessToken = await refreshTokens();
+              if (currentAccessToken) {
+                  return handleQRClick(false); // 재시도
+              }
+          }
+
+          const result = await response.json();
+
+          if (!response.ok) {
+              addNotification('qr', 'error', result.message || 'QR 코드 발급에 실패했습니다.');
+              return;
+          }
+
+          setQrToken(result.data);
+          setShowQRModal(true);
+
+      } catch (error) {
+          addNotification('qr', 'error', '네트워크 오류가 발생했습니다.');
+      }
+  };
+
+  const handleCloseQRModal = () => setShowQRModal(false);
 
     return {
       // 팝업
       showNotice,
       showPenaltyPopup,
       showQRModal,
+      qrToken,
       handleNoticeClick,
       handleCloseNotice,
       handlePenaltyClick,

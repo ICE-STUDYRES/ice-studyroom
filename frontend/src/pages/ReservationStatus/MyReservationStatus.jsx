@@ -23,7 +23,7 @@ const MyReservationStatus = () => {
     showQRModal,
     handleQRClick,
     handleCloseQRModal,
-  } = useMainpageHandlers(resId);
+  } = useMainpageHandlers(resId, myReservations);
   
 
   useEffect(() => {
