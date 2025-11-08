@@ -37,7 +37,8 @@ public class TextToSqlController {
 			QueryResponse.success(
 				result.sql(),
 				result.data(),
-				result.executionTimeMs()
+				result.executionTimeMs(),
+				result.attempts()
 			)
 		);
 	}

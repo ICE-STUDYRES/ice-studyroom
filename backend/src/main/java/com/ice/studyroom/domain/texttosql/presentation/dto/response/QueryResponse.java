@@ -27,9 +27,13 @@ public record QueryResponse(
 
 	@Schema(description = "실행 시간 (ms)")
 	@JsonProperty("executionTimeMs")
-	Long executionTimeMs
+	Long executionTimeMs,
+
+	@Schema(description = "시도 횟수")
+	@JsonProperty("attempts")
+	int attempts
 ) {
-	public static QueryResponse success(String sql, List<Map<String, Object>> data, Long executionTimeMs) {
-		return new QueryResponse(true, sql, data, data.size(), executionTimeMs);
+	public static QueryResponse success(String sql, List<Map<String, Object>> data, Long executionTimeMs, int attempts) {
+		return new QueryResponse(true, sql, data, data.size(), executionTimeMs, attempts);
 	}
 }
