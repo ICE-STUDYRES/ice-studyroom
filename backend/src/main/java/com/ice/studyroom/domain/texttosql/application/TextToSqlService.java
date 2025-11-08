@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -19,6 +20,7 @@ public class TextToSqlService {
 	private final SqlValidationService sqlValidationService;
 	private final SqlRetryService sqlRetryService;
 	private final FewShotExampleService fewShotExampleService;
+	private final QueryCacheService queryCacheService;
 	private final ChatClient chatClient;
 
 	public TextToSqlService(
@@ -27,6 +29,7 @@ public class TextToSqlService {
 		SqlValidationService sqlValidationService,
 		SqlRetryService sqlRetryService,
 		FewShotExampleService fewShotExampleService,
+		QueryCacheService queryCacheService,
 		ChatModel chatModel
 	) {
 		this.jdbcTemplate = jdbcTemplate;
@@ -34,6 +37,7 @@ public class TextToSqlService {
 		this.sqlValidationService = sqlValidationService;
 		this.sqlRetryService = sqlRetryService;
 		this.fewShotExampleService = fewShotExampleService;
+		this.queryCacheService = queryCacheService;
 		this.chatClient = ChatClient.builder(chatModel).build();
 
 	}
@@ -43,6 +47,21 @@ public class TextToSqlService {
 		long startTime = System.currentTimeMillis();
 
 		try {
+			Optional<QueryResult> cached = queryCacheService.get(userQuery);
+			if (cached.isPresent()) {
+				long cacheTime = System.currentTimeMillis() - startTime;
+				log.info("캐시에서 반환 ({}ms)", cacheTime);
+
+				// 캐시 결과에 새로운 실행 시간 반영
+				QueryResult cachedResult = cached.get();
+				return new QueryResult(
+					cachedResult.sql(),
+					cachedResult.data(),
+					cacheTime,  // 캐시 조회 시간
+					0  // 캐시는 시도 횟수 0
+				);
+			}
+
 			SqlRetryService.RetryResult retryResult = sqlRetryService.executeWithRetry(
 				// SQL 생성 로직
 				(query) -> {
@@ -65,12 +84,16 @@ public class TextToSqlService {
 				log.info("쿼리 실행 성공. 결과 행 수: {}, 실행 시간: {}ms, 시도 횟수: {}",
 				retryResult.data().size(), executionTime, retryResult.attempts());
 
-				return new QueryResult(
+				QueryResult result = new QueryResult(
 					retryResult.sql(),
 					retryResult.data(),
 					executionTime,
 					retryResult.attempts()
 				);
+
+				queryCacheService.put(userQuery, result);
+
+				return result;
 			} else {
 				log.error("모든 재시도 실패: {}", retryResult.error());
 				throw new RuntimeException("SQL 생성 실패: " + retryResult.error());

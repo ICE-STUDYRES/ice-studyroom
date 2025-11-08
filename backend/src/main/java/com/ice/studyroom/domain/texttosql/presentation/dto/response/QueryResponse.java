@@ -31,9 +31,13 @@ public record QueryResponse(
 
 	@Schema(description = "시도 횟수")
 	@JsonProperty("attempts")
-	int attempts
+	int attempts,
+
+	@Schema(description = "캐시 여부")
+	@JsonProperty("cached")
+	boolean cached
 ) {
 	public static QueryResponse success(String sql, List<Map<String, Object>> data, Long executionTimeMs, int attempts) {
-		return new QueryResponse(true, sql, data, data.size(), executionTimeMs, attempts);
+		return new QueryResponse(true, sql, data, data.size(), executionTimeMs, attempts, attempts == 0);
 	}
 }
