@@ -49,6 +49,7 @@ public class SecurityConfig {
 
 				// ADMIN 역할만 접근 가능
 				.requestMatchers("/api/admin/**").hasRole("ADMIN")
+				.requestMatchers("/api/query/**").hasRole("ADMIN")
 
 				// 인증 없이 접근 가능한 엔드포인트
 				.requestMatchers(HttpMethod.POST, "/api/users").permitAll() // 회원가입
