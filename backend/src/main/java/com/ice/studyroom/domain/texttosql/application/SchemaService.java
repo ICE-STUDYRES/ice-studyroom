@@ -97,15 +97,46 @@ public class SchemaService {
 	 */
 	public String getRelationshipInfo() {
 		return """
-            ## 테이블 관계
-            - reservation.member_id → member.id
-            - reservation.schedule_id → schedule.id
-            - schedule.room_time_slot_id → room_time_slot.id
+           ## 테이블 간 관계
 
-            ## 중요 비즈니스 규칙
-            - 그룹 예약: first_schedule_id가 같은 reservation들은 하나의 그룹
-            - 입실 확인: is_entered = true인 예약만 실제 사용
-            - 예약 상태: COMPLETED는 완료된 예약, CANCELLED는 취소된 예약
-            """;
+           1. **reservation ↔ member**
+              - reservation.member_id → member.id
+              - 한 회원은 여러 예약을 가질 수 있음
+
+           2. **reservation ↔ schedule**
+              - reservation.first_schedule_id → schedule.id (메인 스케줄)
+              - reservation.second_schedule_id → schedule.id (선택적, 2시간 예약 시 사용)
+
+           3. **reservation 자체 보유 정보**
+              - schedule_date: 예약 날짜 (DATE)
+              - room_number: 방 번호 (VARCHAR)
+              - start_time, end_time: 예약 시간 (TIME)
+              대부분의 쿼리에서 schedule 테이블 JOIN 불필요!
+
+           ## 중요 비즈니스 규칙
+
+           1. **그룹 예약**
+              - 같은 first_schedule_id를 가진 예약들은 하나의 그룹
+              - is_holder = 1인 예약이 그룹의 대표자
+
+           2. **예약 상태 (status ENUM)**
+              - RESERVED: 예약됨 (기본값)
+              - ENTRANCE: 입실함
+              - LATE: 지각 (입실 시간 초과)
+              - NO_SHOW: 노쇼 (입실 안 함)
+              - CANCELLED: 취소됨
+              - COMPLETED: 완료됨
+
+           3. **입실/퇴실 시간**
+              - enter_time: 실제 입실 시간 (NULL 가능)
+              - exit_time: 실제 퇴실 시간 (NULL 가능)
+              - status = 'ENTRANCE'인 예약만 실제 사용 중
+
+           4. **날짜/시간 쿼리 예시**
+              - 오늘 예약: WHERE schedule_date = CURDATE()
+              - 어제 예약: WHERE schedule_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+              - 특정 시간대: WHERE start_time >= '14:00:00' AND end_time <= '16:00:00'
+
+           """;
 	}
 }
