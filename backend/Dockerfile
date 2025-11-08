@@ -1,9 +1,11 @@
 # 1. 사용할 기본 이미지 (OpenJDK 17 JRE)
-FROM openjdk:17-slim
+FROM eclipse-temurin:17-jre-alpine
 
 # 2. 타임존 설정 추가
 ENV TZ=Asia/Seoul
-RUN ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+RUN apk add --no-cache tzdata && \
+    ln -sf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone
 
 # 3. 작업 디렉토리 설정
 WORKDIR /app
