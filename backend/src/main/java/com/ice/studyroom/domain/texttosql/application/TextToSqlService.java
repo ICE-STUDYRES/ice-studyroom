@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Slf4j
 @Service
@@ -21,6 +22,7 @@ public class TextToSqlService {
 	private final SqlRetryService sqlRetryService;
 	private final FewShotExampleService fewShotExampleService;
 	private final QueryCacheService queryCacheService;
+	private final VectorSearchService vectorSearchService;
 	private final ChatClient chatClient;
 
 	public TextToSqlService(
@@ -30,6 +32,7 @@ public class TextToSqlService {
 		SqlRetryService sqlRetryService,
 		FewShotExampleService fewShotExampleService,
 		QueryCacheService queryCacheService,
+		VectorSearchService vectorSearchService,
 		ChatModel chatModel
 	) {
 		this.jdbcTemplate = jdbcTemplate;
@@ -38,6 +41,7 @@ public class TextToSqlService {
 		this.sqlRetryService = sqlRetryService;
 		this.fewShotExampleService = fewShotExampleService;
 		this.queryCacheService = queryCacheService;
+		this.vectorSearchService = vectorSearchService;
 		this.chatClient = ChatClient.builder(chatModel).build();
 
 	}
@@ -112,10 +116,14 @@ public class TextToSqlService {
 				throw new IllegalStateException("FewShotExampleService가 주입되지 않았습니다");
 			}
 
+			Set<String> relevantTables = vectorSearchService.findRelevantTables(userQuery, 2);
+			log.info("Vector Search 선택 테이블 ({}개): {}", relevantTables.size(), relevantTables);
+
+			String schemaInfo = schemaService.getSchemaInfo(relevantTables);
+			String relationshipInfo = schemaService.getRelationshipInfo(relevantTables);
+
 			List<SqlExample> examples = fewShotExampleService.findRelevantExamples(userQuery, 3);
 			String examplesPrompt = fewShotExampleService.formatExamplesForPrompt(examples);
-			String schemaInfo = schemaService.getSchemaInfo();
-			String relationshipInfo = schemaService.getRelationshipInfo();
 
 			String promptTemplate = """
                 당신은 MySQL 쿼리 전문가입니다.
