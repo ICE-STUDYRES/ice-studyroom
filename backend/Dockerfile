@@ -1,5 +1,5 @@
 # 1. 사용할 기본 이미지 (OpenJDK 17 JRE)
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:17-jre
 
 # 2. 필수 라이브러리 추가 (C++ 표준 라이브러리)
 RUN apk add --no-cache libstdc++
