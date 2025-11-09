@@ -1,142 +1,225 @@
 package com.ice.studyroom.domain.texttosql.application;
 
+import jakarta.annotation.PostConstruct;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import java.util.*;
+
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class SchemaService {
 
-	@Qualifier("readOnlyJdbcTemplate")
 	private final JdbcTemplate jdbcTemplate;
 
-	public SchemaService(JdbcTemplate jdbcTemplate) {
-		this.jdbcTemplate = jdbcTemplate;
+	// 전체 스키마 캐시 (서버 시작 시 한 번만 로드)
+	private Map<String, String> schemaCache;
+
+	/**
+	 * 서버 시작 시 스키마 캐시 로드
+	 */
+	@PostConstruct
+	public void init() {
+		loadSchemaCache();
 	}
 
 	/**
-	 * DB 스키마 정보를 문자열로 반환합니다.
-	 * LLM 프롬프트에 포함될 스키마 정보입니다.
+	 * 특정 테이블들의 스키마만 반환 (RAG)
+	 */
+	public String getSchemaInfo(Set<String> relevantTables) {
+		if (schemaCache == null) {
+			loadSchemaCache();
+		}
+
+		StringBuilder schema = new StringBuilder();
+		schema.append("## 데이터베이스 스키마:\n\n");
+
+		for (String tableName : relevantTables) {
+			String tableSchema = schemaCache.get(tableName);
+			if (tableSchema != null) {
+				schema.append(tableSchema).append("\n");
+			} else {
+				log.warn("테이블 '{}' 스키마를 찾을 수 없음", tableName);
+			}
+		}
+
+		log.debug("선택된 스키마 ({}개 테이블): {}", relevantTables.size(), relevantTables);
+		return schema.toString();
+	}
+
+	/**
+	 * 기존 메서드 (전체 스키마) - 하위 호환성 유지
 	 */
 	public String getSchemaInfo() {
+		if (schemaCache == null) {
+			loadSchemaCache();
+		}
+
 		StringBuilder schema = new StringBuilder();
+		schema.append("## 데이터베이스 스키마:\n\n");
 
-		schema.append("## 데이터베이스 스키마 정보\n\n");
-
-		// 주요 테이블 정보
-		schema.append(getReservationTableSchema());
-		schema.append(getScheduleTableSchema());
-		schema.append(getRoomTableSchema());
-		schema.append(getMemberTableSchema());
+		for (String tableSchema : schemaCache.values()) {
+			schema.append(tableSchema).append("\n");
+		}
 
 		return schema.toString();
 	}
 
-	private String getReservationTableSchema() {
-		return """
-            ### 1. reservation (예약 테이블)
-            - id: BIGINT (PK) - 예약 ID
-            - member_id: BIGINT (FK) - 회원 ID
-            - schedule_id: BIGINT (FK) - 스케줄 ID
-            - first_schedule_id: BIGINT - 첫 스케줄 ID (그룹 예약용)
-            - status: VARCHAR - 예약 상태 (PENDING, CONFIRMED, COMPLETED, CANCELLED)
-            - is_entered: BOOLEAN - 입실 여부
-            - created_at: DATETIME - 생성일시
-            - updated_at: DATETIME - 수정일시
+	/**
+	 * 특정 테이블들의 관계 정보만 반환
+	 */
+	public String getRelationshipInfo(Set<String> relevantTables) {
+		StringBuilder relationships = new StringBuilder();
+		relationships.append("\n## 테이블 간 관계:\n\n");
 
-            """;
+		// reservation과 member 관계
+		if (relevantTables.contains("reservation") && relevantTables.contains("member")) {
+			relationships.append("""
+                1. **reservation ↔ member**
+                   - reservation.member_id → member.id
+                   - 한 회원은 여러 예약을 가질 수 있음
+
+                """);
+		}
+
+		// reservation 테이블 상세 정보
+		if (relevantTables.contains("reservation")) {
+			relationships.append("""
+                2. **reservation 테이블 주요 컬럼:**
+                   - first_schedule_id, second_schedule_id: schedule 참조
+                   - schedule_date: 예약 날짜 (DATE)
+                   - room_number: 방 번호 (VARCHAR)
+                   - start_time, end_time: 예약 시간 (TIME)
+                   - status: ENUM('RESERVED','ENTRANCE','LATE','NO_SHOW','CANCELLED','COMPLETED')
+                   - enter_time, exit_time: 입실/퇴실 시간 (DATETIME)
+
+                """);
+		}
+
+		// schedule과 room_time_slot 관계
+		if (relevantTables.contains("schedule") && relevantTables.contains("room_time_slot")) {
+			relationships.append("""
+            3. **schedule ↔ room_time_slot**
+               - schedule.room_time_slot_id → room_time_slot.id
+               - schedule에는 특정 날짜의 예약 가능 정보 포함
+               - room_time_slot에는 방 정보(room_number, capacity)와 요일별 시간대 정보 포함
+
+            """);
+		}
+
+		// penalty와 member, reservation 관계
+		if (relevantTables.contains("penalty")) {
+			relationships.append("""
+            4. **penalty ↔ member, reservation**
+               - penalty.member_id → member.id
+               - penalty.reservation_id → reservation.id
+               - 패널티 사유: CANCEL, LATE, NO_SHOW, ADMIN
+
+            """);
+		}
+
+		return relationships.toString();
 	}
 
-	private String getScheduleTableSchema() {
+	/**
+	 * 기존 메서드 (전체 관계) - 하위 호환성 유지
+	 */
+	public String getRelationshipInfo() {
 		return """
-            ### 2. schedule (스케줄 테이블)
-            - id: BIGINT (PK) - 스케줄 ID
-            - room_time_slot_id: BIGINT (FK) - 룸 타임슬롯 ID
-            - schedule_date: DATE - 스케줄 날짜
-            - start_time: TIME - 시작 시간
-            - end_time: TIME - 종료 시간
-            - status: VARCHAR - 상태 (AVAILABLE, RESERVED, UNAVAILABLE)
-            - current_res: INT - 현재 예약 수
-            - capacity: INT - 수용 인원
+            ## 테이블 간 관계:
 
-            """;
-	}
+            1. **reservation ↔ member**
+               - reservation.member_id → member.id
+               - 한 회원은 여러 예약을 가질 수 있음
 
-	private String getRoomTableSchema() {
-		return """
-            ### 3. room_time_slot (룸 타임슬롯 테이블)
-            - id: BIGINT (PK)
-            - room_number: VARCHAR - 방 번호 (예: 201, 202)
-            - room_type: VARCHAR - 방 타입 (INDIVIDUAL, GROUP)
-            - start_time: TIME - 시작 시간
-            - end_time: TIME - 종료 시간
-            - capacity: INT - 수용 인원
-            - min_res: INT - 최소 예약 인원
-            - day_of_week: VARCHAR - 요일
+            2. **reservation 테이블 주요 컬럼:**
+               - first_schedule_id, second_schedule_id: schedule 참조
+               - schedule_date: 예약 날짜 (DATE)
+               - room_number: 방 번호 (VARCHAR)
+               - start_time, end_time: 예약 시간 (TIME)
+               - status: ENUM('RESERVED','ENTRANCE','LATE','NO_SHOW','CANCELLED','COMPLETED')
 
-            """;
-	}
-
-	private String getMemberTableSchema() {
-		return """
-            ### 4. member (회원 테이블) - 민감정보 제외
-            - id: BIGINT (PK) - 회원 ID
-            - email: VARCHAR - 이메일
-            - name: VARCHAR - 이름
-            - is_penalty: BOOLEAN - 패널티 여부
-            - created_at: DATETIME - 가입일시
-            ⚠️ password 컬럼은 조회 불가능
+            3. **중요: reservation은 schedule 정보를 자체적으로 보유**
+               - schedule 테이블과 JOIN 불필요한 경우가 많음
+               - 날짜/시간은 reservation 테이블에서 직접 조회
 
             """;
 	}
 
 	/**
-	 * 테이블 간 관계 정보를 반환합니다.
+	 * 스키마 캐시 로드 (서버 시작 시 한 번)
 	 */
-	public String getRelationshipInfo() {
-		return """
-           ## 테이블 간 관계
+	private void loadSchemaCache() {
+		log.info("스키마 정보 캐싱 시작...");
+		schemaCache = new LinkedHashMap<>();
 
-           1. **reservation ↔ member**
-              - reservation.member_id → member.id
-              - 한 회원은 여러 예약을 가질 수 있음
+		try {
+			String sql = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = DATABASE()";
+			List<String> tables = jdbcTemplate.queryForList(sql, String.class);
 
-           2. **reservation ↔ schedule**
-              - reservation.first_schedule_id → schedule.id (메인 스케줄)
-              - reservation.second_schedule_id → schedule.id (선택적, 2시간 예약 시 사용)
+			for (String tableName : tables) {
+				String tableSchema = loadTableSchema(tableName);
+				schemaCache.put(tableName, tableSchema);
+			}
 
-           3. **reservation 자체 보유 정보**
-              - schedule_date: 예약 날짜 (DATE)
-              - room_number: 방 번호 (VARCHAR)
-              - start_time, end_time: 예약 시간 (TIME)
-              대부분의 쿼리에서 schedule 테이블 JOIN 불필요!
+			log.info("스키마 정보 캐싱 완료: {}개 테이블", schemaCache.size());
 
-           ## 중요 비즈니스 규칙
+		} catch (Exception e) {
+			log.error("스키마 캐싱 실패", e);
+			schemaCache = new LinkedHashMap<>(); // 빈 캐시로 초기화
+		}
+	}
 
-           1. **그룹 예약**
-              - 같은 first_schedule_id를 가진 예약들은 하나의 그룹
-              - is_holder = 1인 예약이 그룹의 대표자
+	/**
+	 * 특정 테이블의 스키마 정보 로드
+	 */
+	private String loadTableSchema(String tableName) {
+		StringBuilder tableInfo = new StringBuilder();
+		tableInfo.append(String.format("### %s 테이블:\n", tableName));
 
-           2. **예약 상태 (status ENUM)**
-              - RESERVED: 예약됨 (기본값)
-              - ENTRANCE: 입실함
-              - LATE: 지각 (입실 시간 초과)
-              - NO_SHOW: 노쇼 (입실 안 함)
-              - CANCELLED: 취소됨
-              - COMPLETED: 완료됨
+		try {
+			String sql = """
+                SELECT COLUMN_NAME, COLUMN_TYPE, IS_NULLABLE, COLUMN_KEY, COLUMN_DEFAULT, EXTRA
+                FROM INFORMATION_SCHEMA.COLUMNS
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+                ORDER BY ORDINAL_POSITION
+                """;
 
-           3. **입실/퇴실 시간**
-              - enter_time: 실제 입실 시간 (NULL 가능)
-              - exit_time: 실제 퇴실 시간 (NULL 가능)
-              - status = 'ENTRANCE'인 예약만 실제 사용 중
+			List<Map<String, Object>> columns = jdbcTemplate.queryForList(sql, tableName);
 
-           4. **날짜/시간 쿼리 예시**
-              - 오늘 예약: WHERE schedule_date = CURDATE()
-              - 어제 예약: WHERE schedule_date = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
-              - 특정 시간대: WHERE start_time >= '14:00:00' AND end_time <= '16:00:00'
+			for (Map<String, Object> column : columns) {
+				String columnName = (String) column.get("COLUMN_NAME");
+				String columnType = (String) column.get("COLUMN_TYPE");
+				String nullable = (String) column.get("IS_NULLABLE");
+				String key = (String) column.get("COLUMN_KEY");
+				String extra = (String) column.get("EXTRA");
 
-           """;
+				tableInfo.append(String.format("  - %s: %s", columnName, columnType));
+
+				if ("NO".equals(nullable)) {
+					tableInfo.append(" (NOT NULL)");
+				}
+				if ("PRI".equals(key)) {
+					tableInfo.append(" (PRIMARY KEY)");
+				}
+				if ("MUL".equals(key)) {
+					tableInfo.append(" (FOREIGN KEY)");
+				}
+				if (extra != null && !extra.isEmpty()) {
+					tableInfo.append(String.format(" (%s)", extra));
+				}
+
+				tableInfo.append("\n");
+			}
+
+		} catch (Exception e) {
+			log.error("테이블 '{}' 스키마 로드 실패", tableName, e);
+			tableInfo.append("  - (스키마 정보 로드 실패)\n");
+		}
+
+		return tableInfo.toString();
 	}
 }
