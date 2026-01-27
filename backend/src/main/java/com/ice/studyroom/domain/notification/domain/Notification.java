@@ -1,6 +1,6 @@
-package com.ice.studyroom.domain.notification.domain.entity;
+package com.ice.studyroom.domain.notification.domain;
 
-import com.ice.studyroom.domain.notification.domain.type.NotificationEventType;
+import com.ice.studyroom.domain.notification.type.NotificationEventType;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
