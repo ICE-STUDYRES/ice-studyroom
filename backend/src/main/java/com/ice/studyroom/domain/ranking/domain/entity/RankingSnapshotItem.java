@@ -27,4 +27,18 @@ public class RankingSnapshotItem extends BaseTimeEntity {
 
 	@Column(nullable = false)
 	private int score;
+
+	public static RankingSnapshotItem create(
+		Long snapshotId,
+		Long memberId,
+		int rank,
+		int score
+	) {
+		RankingSnapshotItem item = new RankingSnapshotItem();
+		item.snapshotId = snapshotId;
+		item.memberId = memberId;
+		item.rank = rank;
+		item.score = score;
+		return item;
+	}
 }
