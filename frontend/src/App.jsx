@@ -12,6 +12,7 @@ import Signin from './pages/Mainpage/components/Signin';
 import AdminSignin from './pages/Mainpage/components/AdminSignin';
 import Signup from './pages/Mainpage/components/Signup';
 import { UserProvider } from './pages/Mainpage/handlers/UserContext';
+import Chatbot from './pages/Chatbot/Chatbot';
 import './main.css';
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
       <Notification>
         <Router>
           <Routes>
+            {/* 기존 라우트들 */}
             <Route path="/" element={<MainPage />} />
             <Route path="/reservation/room" element={<StudyRoomBooking />} />
             <Route path="/adminpage" element={<Adminpage />} />
@@ -30,6 +32,8 @@ function App() {
             <Route path="/auth/signin" element={<Signin />} />
             <Route path="/auth/signup" element={<Signup />} />
             <Route path="/auth/admin-signin" element={<AdminSignin />} />
+            {/* 홈 페이지 버튼 연결 완료 후 제거 예정 */} 
+            <Route path="/chatbot" element={<Chatbot />} />
           </Routes>
         </Router> 
       </Notification>
