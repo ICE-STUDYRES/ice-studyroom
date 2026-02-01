@@ -155,6 +155,7 @@ public class MembershipController {
 
 	@Operation(summary = "비밀번호 찾기를 위한 이메일 인증 메일 전송", description = "이메일 인증 메일 전송 요청을 처리합니다.")
 	@ApiResponse(responseCode = "200", description = "이메일 전송 성공")
+	@ApiResponse(responseCode = "400", description = "잘못된 형식의 이메일 전달")
 	@ApiResponse(responseCode = "404", description = "존재하지 않는 이메일로 요청했을 경우")
 	@ApiResponse(responseCode = "500", description = "이메일 발송 실패")
 	@PostMapping("/password-reset/email-verification")
