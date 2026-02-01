@@ -142,14 +142,25 @@ public class MembershipService {
 			.orElseGet(() -> MemberLookupResponse.of(email, userName));
 	}
 
-	public MemberEmailResponse sendMail(EmailVerificationRequest request) {
+	private MemberEmailResponse sendMail(EmailVerificationRequest request) {
 		MembershipLogUtil.log("이메일 인증 요청", "email: " + request.email());
 
-		memberEmailService.ensureEmailIsUnique(Email.of(request.email()));
 		emailVerificationService.sendCodeToEmail(request.email());
 
 		MembershipLogUtil.log("이메일 인증 코드 전송 완료", "email: " + request.email());
 		return MemberEmailResponse.of("인증 메일이 전송되었습니다.");
+	}
+
+	public MemberEmailResponse sendSignupVerificationEmail(EmailVerificationRequest request) {
+		MembershipLogUtil.log("회원등록을 위한 이메일 전송 요청 수행");
+		memberEmailService.ensureEmailIsUnique(Email.of(request.email()));
+		return sendMail(request);
+	}
+
+	public MemberEmailResponse sendPasswordResetEmail(EmailVerificationRequest request) {
+		MembershipLogUtil.log("비밀번호 재설정을 위한 이메일 전송 요청 수행");
+		memberEmailService.ensureEmailExists(Email.of(request.email()));
+		return sendMail(request);
 	}
 
 	public MemberEmailResponse checkEmailVerification(MemberEmailVerificationRequest request) {

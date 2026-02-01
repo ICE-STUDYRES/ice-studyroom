@@ -55,7 +55,8 @@ public class SecurityConfig {
 				.requestMatchers(HttpMethod.POST, "/api/users").permitAll() // 회원가입
 				.requestMatchers(HttpMethod.POST, "/api/users/login").permitAll() // 로그인
 				.requestMatchers(HttpMethod.POST, "/api/qr/recognize").permitAll() // qr 인증
-				.requestMatchers(HttpMethod.POST, "/api/users/email-verification").permitAll() // 이메일 인증 메일 전송
+				.requestMatchers(HttpMethod.POST, "/api/users/email-verification").permitAll() // 회원 등록을 위한 이메일 인증 메일 전송
+				.requestMatchers(HttpMethod.POST, "/api/users/password-reset/email-verification").permitAll() // 비밀번호 찾기를 위한 이메일 인증 메일 전송
 				.requestMatchers(HttpMethod.POST, "/api/users/email-verification/confirm").permitAll() // 이메일 인증 코드 검증
 
 				//Refresh Token 검증을 위한 별도 처리
