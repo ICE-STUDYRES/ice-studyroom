@@ -144,9 +144,8 @@ public class MembershipController {
 	@Operation(summary = "회원 등록을 위한 이메일 인증 메일 전송", description = "이메일 인증 메일 전송 요청을 처리합니다.")
 	@ApiResponse(responseCode = "200", description = "이메일 전송 성공")
 	@ApiResponse(responseCode = "409", description = "이미 가입된 이메일일 경우")
-	@ApiResponse(responseCode = "429", description = "중복으로 이메일 인증을 요청했을 경우")
 	@ApiResponse(responseCode = "500", description = "이메일 발송 실패")
-	@PostMapping("/email-verification") // 추후 경로 변경 예정 -> /email-verification/signup
+	@PostMapping("/email-verification") // 추후 경로 변경 예정 -> /signup/email-verification
 	public ResponseEntity<ResponseDto<MemberEmailResponse>> sendSignupVerificationEmail(
 		@Valid @RequestBody EmailVerificationRequest request) {
 		return ResponseEntity
@@ -156,9 +155,9 @@ public class MembershipController {
 
 	@Operation(summary = "비밀번호 찾기를 위한 이메일 인증 메일 전송", description = "이메일 인증 메일 전송 요청을 처리합니다.")
 	@ApiResponse(responseCode = "200", description = "이메일 전송 성공")
-	@ApiResponse(responseCode = "429", description = "중복으로 이메일 인증을 요청했을 경우")
+	@ApiResponse(responseCode = "404", description = "존재하지 않는 이메일로 요청했을 경우")
 	@ApiResponse(responseCode = "500", description = "이메일 발송 실패")
-	@PostMapping("/email-verification/password-reset")
+	@PostMapping("/password-reset/email-verification")
 	public ResponseEntity<ResponseDto<MemberEmailResponse>> sendPasswordResetEmail(
 		@Valid @RequestBody EmailVerificationRequest request) {
 		return ResponseEntity
