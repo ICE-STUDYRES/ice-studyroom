@@ -21,11 +21,6 @@ public class EmailVerificationService {
 	private final VerificationCodeCacheService verificationCodeService;
 
 	public void sendCodeToEmail(String email) {
-		if (verificationCodeService.existsVerificationCode(email)) {
-			log.warn("이메일 인증 중복 요청 차단 - email: {}", email);
-			throw new BusinessException(StatusCode.DUPLICATE_REQUEST, "인증 메일이 이미 발송되었습니다.");
-		}
-
 		String title = "[ICE-STUDYRES] 이메일 인증 코드입니다.";
 		String authCode = generateVerificationCode();
 		String body = buildVerificationEmailBody(authCode);

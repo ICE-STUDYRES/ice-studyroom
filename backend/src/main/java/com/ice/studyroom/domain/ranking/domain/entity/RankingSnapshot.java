@@ -29,4 +29,11 @@ public class RankingSnapshot {
 	@CreationTimestamp
 	@Column(name = "created_at", nullable = false, updatable = false)
 	private LocalDateTime createdAt;
+
+	public static RankingSnapshot create(RankingPeriod period, String periodKey) {
+		RankingSnapshot snapshot = new RankingSnapshot();
+		snapshot.period = period;
+		snapshot.periodKey = periodKey;
+		return snapshot;
+	}
 }

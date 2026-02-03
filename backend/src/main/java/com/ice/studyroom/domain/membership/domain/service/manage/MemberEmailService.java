@@ -22,10 +22,10 @@ public class MemberEmailService {
 	 * 회원가입을 위해 이메일 자격을 검증합니다.
 	 * 이메일 인증 여부, 이메일 중복 여부, 인증 코드 유효성을 모두 검증합니다.
 	 *
-	 * @param email               회원가입을 시도하는 사용자의 이메일
-	 * @param isAuthenticated     이메일 인증 완료 여부
-	 * @param authenticationCode  사용자가 입력한 이메일 인증 코드
-	 * @throws BusinessException  인증 실패, 중복 이메일, 인증 코드 불일치 시 예외를 발생시킵니다.
+	 * @param email              회원가입을 시도하는 사용자의 이메일
+	 * @param isAuthenticated    이메일 인증 완료 여부
+	 * @param authenticationCode 사용자가 입력한 이메일 인증 코드
+	 * @throws BusinessException 인증 실패, 중복 이메일, 인증 코드 불일치 시 예외를 발생시킵니다.
 	 */
 	public void verifyEmailForRegistration(Email email, boolean isAuthenticated, String authenticationCode) {
 		assertEmailAuthenticated(isAuthenticated);
@@ -34,14 +34,23 @@ public class MemberEmailService {
 	}
 
 	/**
-	 * 이메일이 DB에 존재하는지 여부를 검증합니다.
-	 * 외부 서비스에서도 사용할 수 있는 유틸성 메서드입니다.
+	 * 이메일이 DB에 존재하지 않는지 검증합니다.
 	 *
-	 * @param email  중복 여부를 검사할 이메일
-	 * @throws BusinessException  이메일이 이미 존재할 경우 예외를 발생시킵니다.
+	 * @param email 중복 여부를 검사할 이메일
+	 * @throws BusinessException 이메일이 이미 존재할 경우 (CONFLICT)
 	 */
 	public void ensureEmailIsUnique(Email email) {
 		verifyEmailUniqueness(email);
+	}
+
+	/**
+	 * 이메일이 DB에 존재하는지 검증합니다.
+	 *
+	 * @param email 존재 여부를 검사할 이메일
+	 * @throws BusinessException 이메일이 존재하지 않을 경우 (NOT_FOUND)
+	 */
+	public void ensureEmailExists(Email email) {
+		verifyEmailExists(email);
 	}
 
 	/**
@@ -69,6 +78,20 @@ public class MemberEmailService {
 		if (memberRepository.existsByEmail(email)) {
 			MembershipLogUtil.logWarn("회원 등록 실패 - 중복 이메일", "email: " + email.getValue());
 			throw new BusinessException(StatusCode.CONFLICT, "이미 사용 중인 이메일입니다.");
+		}
+	}
+
+	/**
+	 * 내부용 이메일 존재 여부 검증입니다.
+	 * 주로 외부 메서드를 통해 호출됩니다.
+	 *
+	 * @param email  존재 여부를 검사할 이메일
+	 * @throws BusinessException 이메일이 존재하지 않을 경우 (NOT_FOUND)
+	 */
+	private void verifyEmailExists(Email email) {
+		if (!memberRepository.existsByEmail(email)) {
+			MembershipLogUtil.logWarn("비밀번호 찾기 실패 - 존재하지않는 이메일", "email: " + email.getValue());
+			throw new BusinessException(StatusCode.NOT_FOUND, "이메일 정보를 확인해주세요");
 		}
 	}
 
