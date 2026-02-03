@@ -3,3 +3,13 @@
   width: 100%;
   height: 100%;
 }
+/* 스크롤은 되지만 스크롤바는 안 보이게 */
+.chat-scroll {
+  overflow-y: auto;
+  -ms-overflow-style: none; /* IE, Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.chat-scroll::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
