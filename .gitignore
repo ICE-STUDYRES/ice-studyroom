@@ -44,6 +44,3 @@ frontend/!.env.example
 # OS
 .DS_Store
 Thumbs.db
-
-# 주소
-/frontend/vite.config.js
