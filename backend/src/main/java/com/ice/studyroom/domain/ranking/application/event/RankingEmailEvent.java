@@ -2,7 +2,7 @@ package com.ice.studyroom.domain.ranking.application.event;
 
 import java.util.UUID;
 
-public record RankingEmailEvent (
+public record RankingEmailEvent(
 
 	String eventId,
 	RankingEventType eventType,
@@ -13,6 +13,7 @@ public record RankingEmailEvent (
 
 	int currentRank,
 	int previousRank,
+
 	Integer gapWithUpper
 ) {
 
