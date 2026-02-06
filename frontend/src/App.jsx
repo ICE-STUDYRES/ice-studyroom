@@ -13,6 +13,7 @@ import AdminSignin from './pages/Mainpage/components/AdminSignin';
 import Signup from './pages/Mainpage/components/Signup';
 import { UserProvider } from './pages/Mainpage/handlers/UserContext';
 import Chatbot from './pages/Chatbot/Chatbot';
+import EmailVerify from './pages/PasswordReset/components/EmailVerify';
 import './main.css';
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
             <Route path="/auth/signin" element={<Signin />} />
             <Route path="/auth/signup" element={<Signup />} />
             <Route path="/auth/admin-signin" element={<AdminSignin />} />
+            <Route path="/password-reset/email" element={<EmailVerify />} />
             {/* 홈 페이지 버튼 연결 완료 후 제거 예정 */} 
             <Route path="/chatbot" element={<Chatbot />} />
           </Routes>
