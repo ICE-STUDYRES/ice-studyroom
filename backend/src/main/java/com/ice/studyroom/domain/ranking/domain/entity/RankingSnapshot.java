@@ -1,6 +1,7 @@
 package com.ice.studyroom.domain.ranking.domain.entity;
 
 import com.ice.studyroom.domain.ranking.domain.type.RankingPeriod;
+import com.ice.studyroom.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -13,7 +14,7 @@ import java.time.LocalDateTime;
 @Table(name = "ranking_snapshot")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class RankingSnapshot {
+public class RankingSnapshot extends BaseTimeEntity {
 
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,10 +26,6 @@ public class RankingSnapshot {
 
 	@Column(name = "period_key", nullable = false, length = 20)
 	private String periodKey;
-
-	@CreationTimestamp
-	@Column(name = "created_at", nullable = false, updatable = false)
-	private LocalDateTime createdAt;
 
 	public static RankingSnapshot create(RankingPeriod period, String periodKey) {
 		RankingSnapshot snapshot = new RankingSnapshot();
