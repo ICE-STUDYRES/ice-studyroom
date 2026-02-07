@@ -1,9 +1,10 @@
-const ChatbotFaqButtons = ({ faqs }) => {
+const ChatbotFaqButtons = ({ faqs, onSelectFaq }) => {
   return (
     <div className="mt-6 mb-4 space-y-2">
       {faqs.map((question, idx) => (
         <button
           key={idx}
+          onClick={() => onSelectFaq(question)}
           className="
             w-full
             flex items-center justify-between
