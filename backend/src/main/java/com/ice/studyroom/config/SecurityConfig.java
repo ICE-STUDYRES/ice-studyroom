@@ -66,7 +66,8 @@ public class SecurityConfig {
 				.requestMatchers(
 					"/api/users/**",
 					"/api/schedules/**",
-					"/api/reservations/**"
+					"/api/reservations/**",
+					"/api/v2/chatbot/**"
 				).authenticated()
 
 				// Swagger 관련 경로 허용
