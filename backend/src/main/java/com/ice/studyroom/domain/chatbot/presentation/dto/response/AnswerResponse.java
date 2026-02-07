@@ -21,6 +21,7 @@ public record AnswerResponse (
 	){}
 	public record Support(
 		String openChatUrl,
+		String managerName,
 		String managerPhone
 	){}
 }
