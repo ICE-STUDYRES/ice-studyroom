@@ -108,7 +108,7 @@ const SignInPage = () => {
 
                     <button 
                         className="w-full p-3 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
-                        onClick={() => navigate("/password-reset/email")}
+                        onClick={() => navigate("/auth/signup")}
                     >
                         비밀번호 찾기
                     </button>

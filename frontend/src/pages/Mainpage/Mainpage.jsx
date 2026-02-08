@@ -7,6 +7,7 @@ import { NoticePopup, PasswordChangePopup } from "./components/Popups.jsx";
 import { LogIn, Home, QrCode } from 'lucide-react';
 import alertImage from "../../assets/images/Alert.png";
 import { useTokenHandler } from "./handlers/TokenHandler";
+import ChatbotButton from './components/ChatbotButton';
 
 const MainPage = () => {
     const {
@@ -261,6 +262,8 @@ const MainPage = () => {
         passwordChangeForm={passwordChangeForm} 
         passwordChangeError={passwordChangeError} 
       />
+      {/* Chatbot 버튼 추가 */}
+      <ChatbotButton />
     </div>
   );
 };
