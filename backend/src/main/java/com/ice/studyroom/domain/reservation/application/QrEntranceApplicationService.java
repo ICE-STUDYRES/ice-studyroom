@@ -3,6 +3,7 @@ package com.ice.studyroom.domain.reservation.application;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.penalty.application.PenaltyService;
 import com.ice.studyroom.domain.penalty.domain.type.PenaltyReasonType;
+import com.ice.studyroom.domain.ranking.application.checkin.RankingCheckInApplicationService;
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.QrTokenFieldNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
@@ -36,6 +37,8 @@ public class QrEntranceApplicationService {
 	private final QRCodeUtil qrCodeUtil;
 	private final ReservationRepository reservationRepository;
 	private final Clock clock;
+	private final RankingCheckInApplicationService rankingCheckInApplicationService;
+
 
 	@Transactional
 	public String getMyReservationQrCode(Long reservationId, String authorizationHeader) {
@@ -88,6 +91,10 @@ public class QrEntranceApplicationService {
 
 		// 가능하다면 현재 시간으로 입장 처리 진행
 		ReservationStatus status = reservation.processEntrance(LocalDateTime.now(clock));
+
+		if (status == ReservationStatus.ENTRANCE || status == ReservationStatus.LATE) {
+			rankingCheckInApplicationService.handleCheckIn(reservation, status);
+		}
 
 		Member reservationOwner = reservation.getMember();
 
