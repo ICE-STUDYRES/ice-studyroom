@@ -59,6 +59,7 @@ public class SecurityConfig {
 				.requestMatchers(HttpMethod.POST, "/api/users/password-reset/email-verification").permitAll() // 비밀번호 찾기를 위한 이메일 인증 메일 전송
 				.requestMatchers(HttpMethod.POST, "/api/users/email-verification/confirm").permitAll() // 이메일 인증 코드 검증
 
+
 				//Refresh Token 검증을 위한 별도 처리
 				.requestMatchers(HttpMethod.POST, "/api/users/auth/refresh").permitAll() // Refresh Token 발급
 
@@ -67,7 +68,8 @@ public class SecurityConfig {
 					"/api/users/**",
 					"/api/schedules/**",
 					"/api/reservations/**",
-					"/api/v2/chatbot/**"
+					"/api/v2/chatbot/**",
+					"/api/notifications/**"
 				).authenticated()
 
 				// Swagger 관련 경로 허용
@@ -82,6 +84,7 @@ public class SecurityConfig {
 					"/actuator/prometheus",
 					"/actuator/**"
 				).permitAll()
+
 			)
 			.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
 			.build();
