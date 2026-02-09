@@ -1,28 +1,26 @@
-const buttons = [
-  "예약",
-  "체크인(QR)",
-  "연장",
-  "취소 / 변경",
-  "이용시간 / 규정",
-  "패널티 / 제재",
-  "시설 / 장비",
-  "기타",
+const categoryButtons = [
+  { id: "RESERVATION", name: "예약" },
+  { id: "CHECKIN_QR", name: "체크인(QR)" },
+  { id: "EXTEND", name: "연장" },
+  { id: "CANCEL_CHANGE", name: "취소 / 변경" },
+  { id: "RULES", name: "이용시간 / 규정" },
+  { id: "PENALTY", name: "패널티 / 제재" },
+  { id: "FACILTY", name: "시설 / 장비" },
+  { id: "ETC", name: "기타" },
 ];
 
-const ChatbotButtons = ({ onSelect }) => {
-  return (
+const ChatbotButtons = ({ categories, onSelect }) => (
     <div className="grid grid-cols-2 gap-3 mt-6 mb-4">
-      {buttons.map((text) => (
+      {categories.map((cat) => (
         <button
-          key={text}
-          onClick={() => onSelect(text)}
-          className="border border-gray-300 rounded-xl py-3 text-xs font-medium bg-white hover:bg-gray-50 transition"
+          key={cat.id}
+          onClick={() => onSelect(cat)}
+          className="faq-button"
         >
-          {text}
+          {cat.name}
         </button>
       ))}
     </div>
   );
-};
 
 export default ChatbotButtons;
