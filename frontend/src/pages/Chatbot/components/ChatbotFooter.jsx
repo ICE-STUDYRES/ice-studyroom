@@ -1,4 +1,4 @@
-const ChatbotFooter = ({ onResetCategory }) => {
+const ChatbotFooter = ({ onResetCategory, onShowFaqAgain }) => {
   return (
     <div className="border-t bg-gray-50 px-4 py-4 text-xs text-gray-600">
       
@@ -12,7 +12,8 @@ const ChatbotFooter = ({ onResetCategory }) => {
         <button onClick={onResetCategory} className="flex items-center gap-1">
           🔮 카테고리 변경하기
         </button>
-        <button className="flex items-center gap-1">
+
+        <button onClick={onShowFaqAgain} className="flex items-center gap-1">
           🔍 대표 질문 다시 보기
         </button>
       </div>
