@@ -3,7 +3,7 @@ package com.ice.studyroom.domain.notification.application;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import com.ice.studyroom.domain.notification.infrastructure.NotificationRepository;
-import com.ice.studyroom.domain.notification.presentation.dto.NotificationResponse;
+import com.ice.studyroom.domain.notification.presentation.dto.response.NotificationResponse;
 import com.ice.studyroom.global.security.service.TokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -29,7 +29,7 @@ public class NotificationQueryService {
 			.getId();
 
 		return notificationRepository
-			.findByMemberIdAndIsReadFalseOrderByCreatedAtDesc(memberId)
+			.findUnreadByMemberId(memberId)
 			.stream()
 			.map(NotificationResponse::from)
 			.toList();
