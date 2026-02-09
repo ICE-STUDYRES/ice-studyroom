@@ -13,6 +13,10 @@ import AdminSignin from './pages/Mainpage/components/AdminSignin';
 import Signup from './pages/Mainpage/components/Signup';
 import { UserProvider } from './pages/Mainpage/handlers/UserContext';
 import Chatbot from './pages/Chatbot/Chatbot';
+import EmailVerify from './pages/PasswordReset/components/EmailVerify';
+import CodeVerify from './pages/PasswordReset/components/CodeVerify';
+import ResetPassword from './pages/PasswordReset/components/ResetPassword';
+import ResetComplete from './pages/PasswordReset/components/ResetComplete';
 import './main.css';
 
 function App() {
@@ -31,7 +35,12 @@ function App() {
             <Route path="/reservation/my-status" element={<MyReservationStatus />} />
             <Route path="/auth/signin" element={<Signin />} />
             <Route path="/auth/signup" element={<Signup />} />
-            <Route path="/auth/admin-signin" element={<AdminSignin />} /> 
+            <Route path="/auth/admin-signin" element={<AdminSignin />} />
+            <Route path="/password-reset/email" element={<EmailVerify />} />
+            <Route path="/password-reset/code" element={<CodeVerify />} />
+            <Route path="/password-reset/new" element={<ResetPassword />} />
+            <Route path="/password-reset/complete" element={<ResetComplete />} />
+            {/* 홈 페이지 버튼 연결 완료 후 제거 예정 */}
             <Route path="/chatbot" element={<Chatbot />} />
           </Routes>
         </Router> 
