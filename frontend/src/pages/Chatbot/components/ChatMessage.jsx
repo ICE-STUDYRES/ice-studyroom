@@ -4,7 +4,7 @@ const ChatMessage = ({
   children,
   showActions = false,
   onActionClick,
-  ansewerCard,
+  answerCard,
 }) => {
   return (
     <div
