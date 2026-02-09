@@ -1,8 +1,9 @@
+{/* 이메일 입력 페이지 */}
+
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 
-//더미 이메일 DB
 const DUMMY_EMAILS = [
   "test@hufs.ac.kr"
 ];
@@ -33,7 +34,7 @@ const EmailVerify = () => {
     }
 
     //3.성공->인증번호 입력 페이지 이동
-    navigate("/auth/signin", { state: { email } });
+    navigate("/password-reset/code", { state: { email } });
   };
 
   return (
@@ -68,8 +69,8 @@ const EmailVerify = () => {
         </label>
         <input
           type="email"
-          value={email} //입력값을 state와 연결
-          onChange={(e) => { //이메일을 입력할 때마다 이메일 state 갱신,에러 메시지 자동 제거
+          value={email}
+          onChange={(e) => {
             setEmail(e.target.value);
             setError("");
           }}
@@ -86,7 +87,7 @@ const EmailVerify = () => {
 
         {/* 버튼 */}
         <button
-          onClick={handleNext} //클릭 시 handleNext 실행,위에서 만든 로직이 여기서 동작
+          onClick={handleNext}
           className="w-full mt-6 p-3 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors"
         >
           다음
