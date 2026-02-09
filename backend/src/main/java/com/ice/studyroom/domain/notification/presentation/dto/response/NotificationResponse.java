@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.notification.presentation.dto;
+package com.ice.studyroom.domain.notification.presentation.dto.response;
 
 import com.ice.studyroom.domain.notification.domain.Notification;
 import lombok.Builder;
