@@ -1,7 +1,7 @@
 package com.ice.studyroom.domain.notification.presentation.controller;
 
 import com.ice.studyroom.domain.notification.application.NotificationQueryService;
-import com.ice.studyroom.domain.notification.presentation.dto.NotificationResponse;
+import com.ice.studyroom.domain.notification.presentation.dto.response.NotificationResponse;
 import com.ice.studyroom.global.dto.response.ResponseDto;
 import com.ice.studyroom.global.type.StatusCode;
 import io.swagger.v3.oas.annotations.Operation;
