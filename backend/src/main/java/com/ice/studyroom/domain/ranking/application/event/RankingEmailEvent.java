@@ -14,7 +14,7 @@ public record RankingEmailEvent(
 	int currentRank,
 	int previousRank,
 
-	Integer gapWithUpper
+	Integer gapWithUpper // 알림 판단을 위한 정보
 ) {
 
 	public static RankingEmailEvent of(
