@@ -8,20 +8,13 @@ import java.util.Optional;
 @Service
 public class RankingEventPolicy {
 
-	public Optional<RankingEventType> determine(
-		int previousRank,
-		int currentRank
-	) {
-		if (previousRank > 5 && currentRank <= 5) {
-			return Optional.of(RankingEventType.TOP5_ENTER);
-		}
-
-		if (previousRank <= 5 && currentRank <= 5 && previousRank != currentRank) {
+	public Optional<RankingEventType> determine(int previousRank, int currentRank) {
+		if (previousRank <= 5 || currentRank <= 5) {
 			return Optional.of(RankingEventType.TOP5_RANK_CHANGED);
 		}
 
-		if (previousRank <= 5 && currentRank > 5) {
-			return Optional.of(RankingEventType.TOP5_EXIT);
+		if (previousRank <= 10 || currentRank <= 10) {
+			return Optional.of(RankingEventType.TOP6_10_RANK_CHANGED);
 		}
 
 		return Optional.empty();
