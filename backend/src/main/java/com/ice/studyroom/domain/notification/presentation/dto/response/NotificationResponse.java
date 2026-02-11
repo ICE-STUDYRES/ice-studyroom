@@ -1,6 +1,6 @@
 package com.ice.studyroom.domain.notification.presentation.dto.response;
 
-import com.ice.studyroom.domain.notification.domain.Notification;
+import com.ice.studyroom.domain.notification.domain.entity.Notification;
 import lombok.Builder;
 import lombok.Getter;
 
