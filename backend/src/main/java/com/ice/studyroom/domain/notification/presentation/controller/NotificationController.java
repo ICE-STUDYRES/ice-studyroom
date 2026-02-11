@@ -8,11 +8,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.PathVariable;
 import java.util.List;
 
 @RestController
@@ -40,6 +41,25 @@ public class NotificationController {
 					"안 읽은 알림 조회 성공"
 				)
 			);
+	}
+
+	@Operation(
+		summary = "사용자 개별 알림 읽음 처리",
+		description = "현재 로그인한 사용자의 알림을 단건으로 읽음 처리합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "알림 읽음 처리 성공")
+	@ApiResponse(responseCode = "404", description = "해당 알림을 찾을 수 없음")
+	@ApiResponse(responseCode = "500", description = "알림 읽음 처리 실패")
+	@PatchMapping("/{notificationId}/read")
+	public ResponseEntity<ResponseDto<String>> readNotification(
+		@PathVariable Long notificationId,
+		@RequestHeader("Authorization") String authorizationHeader
+	) {
+		return ResponseEntity
+			.status(StatusCode.OK.getStatus())
+			.body(ResponseDto.of(
+				notificationQueryService.readNotification(notificationId, authorizationHeader)
+			));
 	}
 
 }
