@@ -19,13 +19,12 @@ public class RankingCheckInApplicationService {
 	private final RankingStore rankingStore;
 	private final RankingEventTriggerService rankingEventTriggerService;
 
-	private static final int TOP_N = 5;
-
 	public void handleCheckIn(Reservation reservation, ReservationStatus status) {
 
 		// 점수 계산
 		int score = rankingScoreCalculator.calculate(reservation, status);
 
+		// 랭킹 점수가 발생하지 않은 경우에는 랭킹 갱신 및 이벤트 처리가 필요 없으므로 return
 		if (score <= 0) {
 			return;
 		}
@@ -51,17 +50,13 @@ public class RankingCheckInApplicationService {
 			return;
 		}
 
-		// gapWithUpper 계산 (Top5 내부만 의미 있음)
 		Integer gapWithUpper = null;
-
-		if (currentRank <= TOP_N) {
-			Integer upperScore = rankingStore.getUpperScore(eventPeriod, memberId);
-			Integer myScore = rankingStore.getScore(eventPeriod, memberId);
+		Integer upperScore = rankingStore.getUpperScore(eventPeriod, memberId);
+		Integer myScore = rankingStore.getScore(eventPeriod, memberId);
 
 			if (upperScore != null && myScore != null) {
 				gapWithUpper = upperScore - myScore;
 			}
-		}
 
 		// Context 생성
 		Member member = reservation.getMember();
