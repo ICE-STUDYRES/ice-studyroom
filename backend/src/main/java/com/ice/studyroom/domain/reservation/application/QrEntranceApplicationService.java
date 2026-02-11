@@ -39,7 +39,6 @@ public class QrEntranceApplicationService {
 	private final Clock clock;
 	private final RankingCheckInApplicationService rankingCheckInApplicationService;
 
-
 	@Transactional
 	public String getMyReservationQrCode(Long reservationId, String authorizationHeader) {
 		ReservationLogUtil.log("QR코드 요청 수신", "예약 ID: " + reservationId);
