@@ -68,28 +68,4 @@ public class RedisRankingStore implements RankingStore {
 		Double score = upper.iterator().next().getScore();
 		return score == null ? null : score.intValue();
 	}
-
-	@Override
-	public Integer getLowerScore(RankingPeriod period, Long memberId) {
-
-		Long rank = redisTemplate.opsForZSet()
-			.reverseRank(key(period), memberId.toString());
-
-		if (rank == null) {
-			return null;
-		}
-
-		// 바로 아래 순위 (1위면 2위)
-		Set<ZSetOperations.TypedTuple<String>> lower =
-			redisTemplate.opsForZSet()
-				.reverseRangeWithScores(key(period), rank + 1, rank + 1);
-
-		if (lower == null || lower.isEmpty()) {
-			return null;
-		}
-
-		Double score = lower.iterator().next().getScore();
-
-		return score == null ? null : score.intValue();
-	}
 }

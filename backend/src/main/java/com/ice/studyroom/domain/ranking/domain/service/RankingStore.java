@@ -24,9 +24,4 @@ public interface RankingStore {
 	 * - 1위거나 랭킹 외면 null
 	 */
 	Integer getUpperScore(RankingPeriod period, Long memberId);
-
-	/**
-	 * 바로 아래 순위 사용자 점수 조회
-	 */
-	Integer getLowerScore(RankingPeriod period, Long memberId);
 }
