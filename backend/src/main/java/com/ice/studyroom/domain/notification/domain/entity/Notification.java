@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.notification.domain;
+package com.ice.studyroom.domain.notification.domain.entity;
 
 import com.ice.studyroom.domain.notification.type.NotificationEventType;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
@@ -24,7 +24,7 @@ public class Notification extends BaseTimeEntity {
 	@Column(name = "event_type", nullable = false, length = 30)
 	private NotificationEventType eventType;
 
-	@Column(nullable = false)
+	@Column(name = "`rank`", nullable = false)
 	private int rank;
 
 	@Column(name = "previous_rank")
@@ -38,4 +38,10 @@ public class Notification extends BaseTimeEntity {
 
 	@Column(name = "gap_with_upper")
 	private Integer gapWithUpper;
+
+
+	public void markAsRead() {
+		this.isRead = true;
+	}
+
 }
