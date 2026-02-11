@@ -1,10 +1,12 @@
 package com.ice.studyroom.domain.notification.infrastructure;
 
-import com.ice.studyroom.domain.notification.domain.Notification;
+import com.ice.studyroom.domain.notification.domain.entity.Notification;
+import io.lettuce.core.dynamic.annotation.Param;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
@@ -17,5 +19,18 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
         order by n.createdAt desc
     """)
 	List<Notification> findUnreadByMemberId(Long memberId);
+
+	// 단건 읽음처리를 위한 알림 하나 가져오기
+	@Query("""
+		select n
+		from Notification n
+		where n.id = :notificationId
+		  and n.memberId = :memberId
+	""")
+	Optional<Notification> findForRead(
+		@Param("notificationId") Long notificationId,
+		@Param("memberId") Long memberId
+	);
+
 }
 
