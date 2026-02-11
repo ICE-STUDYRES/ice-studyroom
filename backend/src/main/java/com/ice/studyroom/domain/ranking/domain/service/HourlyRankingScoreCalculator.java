@@ -2,6 +2,7 @@ package com.ice.studyroom.domain.ranking.domain.service;
 
 import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
+import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -34,4 +35,23 @@ public class HourlyRankingScoreCalculator implements RankingScoreCalculator {
 
 		return (int) hours * SCORE_PER_HOUR;
 	}
+
+	@Override
+	public int calculateForSchedule(Schedule schedule) {
+
+		LocalDateTime start = LocalDateTime.of(
+				schedule.getScheduleDate(),
+				schedule.getStartTime()
+		);
+
+		LocalDateTime end = LocalDateTime.of(
+				schedule.getScheduleDate(),
+				schedule.getEndTime()
+		);
+
+		long hours = Duration.between(start, end).toHours();
+
+		return (int) hours * SCORE_PER_HOUR;
+	}
+
 }
