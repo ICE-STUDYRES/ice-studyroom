@@ -10,6 +10,7 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Optional;
 
+import com.ice.studyroom.domain.ranking.application.checkin.RankingCheckInApplicationService;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceAttemptException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.qr.InvalidEntranceTimeException;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,6 +44,8 @@ class QrEntranceTest {
 	@Mock private ReservationRepository reservationRepository;
 	@Mock private QrCodeService qrCodeService;
 	@Mock private PenaltyService penaltyService;
+	@Mock private RankingCheckInApplicationService rankingCheckInApplicationService;
+
 
 	private final String TOKEN = "valid-token";
 	private final Long RESERVATION_ID = 1L;
@@ -59,7 +62,7 @@ class QrEntranceTest {
 			ZoneId.systemDefault()
 		);
 		qrEntranceApplicationService = new QrEntranceApplicationService(
-			tokenService, penaltyService, qrCodeService, qrCodeUtil, reservationRepository, clock
+			tokenService, penaltyService, qrCodeService, qrCodeUtil, reservationRepository, clock, rankingCheckInApplicationService
 		);
 	}
 
@@ -300,7 +303,7 @@ class QrEntranceTest {
 	private void setClock(LocalDateTime dateTime) {
 		this.clock = Clock.fixed(dateTime.atZone(ZoneId.systemDefault()).toInstant(), ZoneId.systemDefault());
 		qrEntranceApplicationService = new QrEntranceApplicationService(
-			tokenService, penaltyService, qrCodeService, qrCodeUtil, reservationRepository, clock
+			tokenService, penaltyService, qrCodeService, qrCodeUtil, reservationRepository, clock, rankingCheckInApplicationService
 		);
 	}
 
