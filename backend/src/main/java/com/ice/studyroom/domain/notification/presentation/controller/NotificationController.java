@@ -52,13 +52,13 @@ public class NotificationController {
 	@ApiResponse(responseCode = "500", description = "알림 읽음 처리 실패")
 	@PatchMapping("/{Id}")
 	public ResponseEntity<ResponseDto<String>> readNotification(
-		@PathVariable Long notificationId,
+		@PathVariable Long Id,
 		@RequestHeader("Authorization") String authorizationHeader
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
 			.body(ResponseDto.of(
-				notificationQueryService.readNotification(notificationId, authorizationHeader)
+				notificationQueryService.readNotification(Id, authorizationHeader)
 			));
 	}
 
