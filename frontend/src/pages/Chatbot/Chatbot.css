@@ -1,3 +1,17 @@
+@font-face {
+    font-family: 'DulgiMayo';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/Dovemayo-Medium.woff') format('woff');
+    font-weight: 500;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'DulgiMayo';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_four@1.0/Dovemayo-Bold.woff') format('woff');
+    font-weight: 700;
+    font-display: swap;
+}
+
 .chat-scroll {
   overflow-y: auto;
   -ms-overflow-style: none;
@@ -19,4 +33,8 @@
 }
 .faq-button:hover {
   background: #f3f4f6;
+}
+
+.chat-container {
+  font-family: 'DulgiMayo', sans-serif;
 }
