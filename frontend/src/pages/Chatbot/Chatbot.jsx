@@ -99,11 +99,14 @@ const ChatbotPage = () => {
       const answer = res.data.data;
       setAnswerCard(answer);
 
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
       setMessages((prev) => [
         ...prev,
         { text: answer.summary, isUser: false, showActions: true,},
       ]);
     } catch (e) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       setMessages((prev) => [
         ...prev,
         { text: "답변을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.", isUser: false, },
