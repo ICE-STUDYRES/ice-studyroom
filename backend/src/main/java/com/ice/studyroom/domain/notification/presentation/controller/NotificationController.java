@@ -29,7 +29,7 @@ public class NotificationController {
 	)
 	@ApiResponse(responseCode = "200", description = "안 읽은 알림 조회 성공")
 	@ApiResponse(responseCode = "500", description = "안 읽은 알림 조회 실패")
-	@GetMapping("/unread")
+	@GetMapping
 	public ResponseEntity<ResponseDto<List<NotificationResponse>>> getUnreadNotifications(
 		@RequestHeader("Authorization") String authorizationHeader
 	) {
@@ -50,16 +50,35 @@ public class NotificationController {
 	@ApiResponse(responseCode = "200", description = "알림 읽음 처리 성공")
 	@ApiResponse(responseCode = "404", description = "해당 알림을 찾을 수 없음")
 	@ApiResponse(responseCode = "500", description = "알림 읽음 처리 실패")
-	@PatchMapping("/{notificationId}/read")
+	@PatchMapping("/{Id}")
 	public ResponseEntity<ResponseDto<String>> readNotification(
-		@PathVariable Long notificationId,
+		@PathVariable Long Id,
 		@RequestHeader("Authorization") String authorizationHeader
 	) {
 		return ResponseEntity
 			.status(StatusCode.OK.getStatus())
 			.body(ResponseDto.of(
-				notificationQueryService.readNotification(notificationId, authorizationHeader)
+				notificationQueryService.readNotification(Id, authorizationHeader)
 			));
 	}
+
+	@Operation(
+		summary = "사용자 전체 알림 읽음 처리",
+		description = "현재 로그인한 사용자의 모든 미읽음 알림을 읽음 처리합니다."
+	)
+	@ApiResponse(responseCode = "200", description = "전체 알림 읽음 처리 성공")
+	@ApiResponse(responseCode = "404", description = "존재하지 않는 사용자")
+	@ApiResponse(responseCode = "500", description = "전체 알림 읽음 처리 실패")
+	@PatchMapping
+	public ResponseEntity<ResponseDto<String>> readAllNotifications(
+		@RequestHeader("Authorization") String authorizationHeader
+	) {
+		return ResponseEntity
+			.status(StatusCode.OK.getStatus())
+			.body(ResponseDto.of(
+				notificationQueryService.readAllNotifications(authorizationHeader)
+			));
+	}
+
 
 }
