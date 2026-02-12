@@ -26,7 +26,7 @@ const initialFaqByCategory = {
     { id: 201, text: "QR 예약은?" },
     { id: 202, text: "예약 불가한 경우는?" },
     { id: 203, text: "예약 변경은 어떻게 하나요?" },
-    { id: 204, text: "예약 확인은?" }
+    { id: 204, text: "예약 확인은?" },
   ],
   CHECKIN_QR: [
     { id: 301, text: "체크인 마감 시간은?" },
@@ -46,8 +46,8 @@ const initialMessages = [
 ];
 
 const ChatbotPage = () => {
-  const [categories] = useState(initialCategories);
-  const [faqsByCategory] = useState(initialFaqByCategory);
+  const [categories, setCategories] = useState(initialCategories);
+  const [faqsByCategory, setFaqsByCategory] = useState(initialFaqByCategory);
 
   const [messages, setMessages] = useState(initialMessages);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -82,6 +82,10 @@ const ChatbotPage = () => {
     setSelectedCategory(category.id);
     setLastSelectedCategory(category.id);
     setShowCategoryButtons(false);
+    setFaqsByCategory(prev => ({
+      ...prev,
+      [category.id]: initialFaqByCategory[category.id] || [],
+    }));
   };
 
   /* FAQ 선택 */
@@ -104,6 +108,7 @@ const ChatbotPage = () => {
         ...prev,
         { text: "답변을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.", isUser: false, },
       ]);
+      console.error("답변 API 호출 실패", e);
     } finally {
       setLoading(false);
     }
@@ -122,6 +127,11 @@ const ChatbotPage = () => {
 
     setSelectedCategory(lastSelectedCategory);
     setShowCategoryButtons(false);
+
+    setFaqsByCategory((prev) => ({
+      ...prev,
+      [lastSelectedCategory]: initialFaqByCategory[lastSelectedCategory] || [],
+    }));
   };
 
   return (
@@ -151,10 +161,7 @@ const ChatbotPage = () => {
           )}
 
           {showCategoryButtons && (
-            <ChatbotButtons
-              categories={categories}
-              onSelect={handleCategorySelect}
-            />
+            <ChatbotButtons categories={categories} onSelect={handleCategorySelect} />
           )}
 
           {!showCategoryButtons && selectedCategory && (
@@ -211,14 +218,7 @@ const ChatbotPage = () => {
             )}
 
             <button
-              className="absolute top-4 right-4
-                        w-8 h-8
-                        flex items-center justify-center
-                        rounded-full
-                        text-gray-400
-                        hover:bg-gray-100
-                        hover:text-gray-700
-                        transition"
+              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
               onClick={() => setModalType(null)}
             >
               <span className="text-sm">✕</span>
