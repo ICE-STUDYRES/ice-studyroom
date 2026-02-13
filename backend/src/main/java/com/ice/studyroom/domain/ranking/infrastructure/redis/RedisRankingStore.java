@@ -68,4 +68,10 @@ public class RedisRankingStore implements RankingStore {
 		Double score = upper.iterator().next().getScore();
 		return score == null ? null : score.intValue();
 	}
+
+	// 테스트용
+	public void clear(RankingPeriod period) {
+		redisTemplate.delete(key(period));
+	}
+
 }

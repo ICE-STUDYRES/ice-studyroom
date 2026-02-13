@@ -148,6 +148,10 @@ class QrEntranceTest {
 
 		assertThat(response.status()).isEqualTo(ReservationStatus.LATE);
 		verify(penaltyService).assignPenalty(member, reservation.getId(), PenaltyReasonType.LATE);
+
+		verify(rankingCheckInApplicationService)
+			.handleCheckIn(any(), eq(ReservationStatus.LATE));
+
 	}
 
 	/**
@@ -186,6 +190,10 @@ class QrEntranceTest {
 			.hasMessageContaining("출석 시간이 아닙니다");
 
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
+
+		verify(rankingCheckInApplicationService, never())
+			.handleCheckIn(any(), any());
+
 	}
 
 	/**
@@ -225,6 +233,10 @@ class QrEntranceTest {
 			.hasMessageContaining("출석 시간이 만료되었습니다");
 
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
+
+		verify(rankingCheckInApplicationService, never())
+			.handleCheckIn(any(), any());
+
 	}
 
 	/**
@@ -260,6 +272,10 @@ class QrEntranceTest {
 			.hasMessageContaining("이미 입실 처리 된 예약입니다");
 
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
+
+		verify(rankingCheckInApplicationService, never())
+			.handleCheckIn(any(), any());
+
 	}
 
 	/**
@@ -295,6 +311,10 @@ class QrEntranceTest {
 			.hasMessageContaining("취소된 예약입니다");
 
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
+
+		verify(rankingCheckInApplicationService, never())
+			.handleCheckIn(any(), any());
+
 	}
 
 	// ========== 헬퍼 메서드 ==========
