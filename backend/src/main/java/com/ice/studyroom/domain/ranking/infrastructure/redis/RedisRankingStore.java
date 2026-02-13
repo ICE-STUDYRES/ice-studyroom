@@ -34,15 +34,6 @@ public class RedisRankingStore implements RankingStore {
 	}
 
 	@Override
-	public Integer getRank(RankingPeriod period, Long memberId) {
-		Long rank = redisTemplate.opsForZSet()
-			.reverseRank(key(period), memberId.toString());
-
-		// redis는 0-based → 도메인은 1-based
-		return rank == null ? null : rank.intValue() + 1;
-	}
-
-	@Override
 	public Integer getUpperScore(RankingPeriod period, Long memberId) {
 
 		Long currentRank = redisTemplate.opsForZSet()
@@ -67,6 +58,18 @@ public class RedisRankingStore implements RankingStore {
 
 		Double score = upper.iterator().next().getScore();
 		return score == null ? null : score.intValue();
+	}
+
+	@Override
+	public Integer getRank(RankingPeriod period, Long memberId) {
+
+		Integer myScore = getScore(period, memberId);
+		if (myScore == null) return null;
+
+		Long higherCount = redisTemplate.opsForZSet()
+				.count(key(period), myScore + 1, Double.POSITIVE_INFINITY);
+
+		return higherCount.intValue() + 1;
 	}
 
 	// 테스트용
