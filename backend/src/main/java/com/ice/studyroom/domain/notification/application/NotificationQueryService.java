@@ -61,4 +61,19 @@ public class NotificationQueryService {
 		return "알림 읽음 처리 성공";
 	}
 
+	@Transactional
+	public String readAllNotifications(String authorizationHeader) {
+
+		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
+
+		Member member = memberRepository.findByEmail(Email.of(email))
+			.orElseThrow(() ->
+				new BusinessException(StatusCode.NOT_FOUND, "존재하지 않는 사용자입니다.")
+			);
+
+		int updatedCount = notificationRepository.markAllAsRead(member.getId());
+
+		return updatedCount + "개의 알림이 읽음 처리되었습니다.";
+	}
+
 }
