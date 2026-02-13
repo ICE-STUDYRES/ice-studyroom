@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.ice.studyroom.domain.chatbot.presentation.dto.response.GetCategoryResponse;
 import com.ice.studyroom.domain.chatbot.presentation.dto.response.GetCategoryQuestionsResponse;
 import com.ice.studyroom.domain.chatbot.domain.category.ChatbotCategoryRepository;
+import com.ice.studyroom.domain.chatbot.domain.exception.ChatbotCategoryNotFoundException;
 import com.ice.studyroom.domain.chatbot.domain.question.ChatbotQuestion;
 import com.ice.studyroom.domain.chatbot.domain.question.ChatbotQuestionRepository;
 
@@ -35,6 +36,10 @@ public class ChatbotQueryService {
     }
 
     public GetCategoryQuestionsResponse getCategoryQuestions(String categoryId, boolean includeClickCount) {
+        if (!categoryRepository.existsById(categoryId)) {
+            throw new ChatbotCategoryNotFoundException();
+        }
+
         List<ChatbotQuestion> questions =
             questionRepository.findQuestionsByCategoryId(categoryId);
 
