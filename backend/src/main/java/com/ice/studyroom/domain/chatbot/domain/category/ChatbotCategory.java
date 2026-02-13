@@ -21,4 +21,10 @@ public class ChatbotCategory extends BaseTimeEntity {
 
     @Column(name = "label", length = 50, nullable = false)
     private String label;
+
+	@Column(name = "route", length = 100)
+	private String route;
+
+	@Column(name = "notion_url", length = 255)
+	private String notionUrl;
 }
