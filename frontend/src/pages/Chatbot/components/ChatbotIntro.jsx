@@ -8,7 +8,7 @@ const ChatbotIntro = () => {
       </ChatMessage>
 
       <ChatMessage>
-        문의 내용을 하단에 입력하거나 아래의 선택지 중 하나를 클릭해주세요.
+        궁금한 내용을 선택하시면 바로 안내해드릴게요!
       </ChatMessage>
     </>
   );
