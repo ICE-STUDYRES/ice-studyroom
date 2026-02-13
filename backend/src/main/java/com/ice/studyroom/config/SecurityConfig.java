@@ -85,11 +85,6 @@ public class SecurityConfig {
 					"/actuator/**"
 				).permitAll()
 
-				// 챗봇 관련 비로그인 시에도 경로 허용
-				.requestMatchers(
-					"/api/v2/chatbot/**"
-				).permitAll()
-
 			)
 			.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class)
 			.build();
