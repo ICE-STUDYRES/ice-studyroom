@@ -83,4 +83,18 @@ class RankingEventPolicyTest {
 
 		assertThat(result).isEmpty();
 	}
+
+	@Test
+	@DisplayName("공동 5등 → 6등 : TOP5_RANK_CHANGED")
+	void determine_joint5_to_6() {
+		assertThat(policy.determine(5, 6))
+			.contains(RankingEventType.TOP5_RANK_CHANGED);
+	}
+
+	@Test
+	@DisplayName("공동 6등 → 5등 : TOP5_RANK_CHANGED")
+	void determine_6_to_joint5() {
+		assertThat(policy.determine(6, 5))
+			.contains(RankingEventType.TOP5_RANK_CHANGED);
+	}
 }

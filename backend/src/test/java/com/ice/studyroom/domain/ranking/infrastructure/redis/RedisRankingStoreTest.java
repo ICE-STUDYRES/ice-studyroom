@@ -18,118 +18,116 @@ class RedisRankingStoreTest {
 
 	@BeforeEach
 	void setUp() {
-		// 테스트 전에 키 초기화
 		redisRankingStore.clear(PERIOD);
 	}
 
+	// 1️⃣ 기본 순위 검증
 	@Test
-	void 점수_증가_및_랭크_확인() {
+	void 점수_증가_및_공동순위_확인() {
 
 		redisRankingStore.increaseScore(PERIOD, 1L, 10);
 		redisRankingStore.increaseScore(PERIOD, 2L, 20);
 
-		Integer rank1 = redisRankingStore.getRank(PERIOD, 1L);
-		Integer rank2 = redisRankingStore.getRank(PERIOD, 2L);
-
-		assertThat(rank2).isEqualTo(1);
-		assertThat(rank1).isEqualTo(2);
+		assertThat(redisRankingStore.getRank(PERIOD, 2L)).isEqualTo(1);
+		assertThat(redisRankingStore.getRank(PERIOD, 1L)).isEqualTo(2);
 	}
 
+	// 2️⃣ 동점자 → 공동 1등
 	@Test
-	void 동점자_정렬_기본_검증() {
-
-		redisRankingStore.clear(PERIOD);
+	void 동점자_공동1등_검증() {
 
 		redisRankingStore.increaseScore(PERIOD, 2L, 50);
 		redisRankingStore.increaseScore(PERIOD, 10L, 50);
 
-		Integer rank2 = redisRankingStore.getRank(PERIOD, 2L);
-		Integer rank10 = redisRankingStore.getRank(PERIOD, 10L);
-
-		assertThat(rank2).isEqualTo(1);
-		assertThat(rank10).isEqualTo(2);
+		assertThat(redisRankingStore.getRank(PERIOD, 2L)).isEqualTo(1);
+		assertThat(redisRankingStore.getRank(PERIOD, 10L)).isEqualTo(1);
 	}
 
+	// 3️⃣ 동점자 3명 → 모두 1등
 	@Test
-	void 동점자_정렬_확인() {
-
-		redisRankingStore.increaseScore(PERIOD, 2L, 20);
-		redisRankingStore.increaseScore(PERIOD, 10L, 20);
-
-		Integer rank2 = redisRankingStore.getRank(PERIOD, 2L);
-		Integer rank10 = redisRankingStore.getRank(PERIOD, 10L);
-
-		System.out.println("2L rank = " + rank2);
-		System.out.println("10L rank = " + rank10);
-
-		assertThat(rank2).isNotEqualTo(rank10);
-	}
-
-	@Test
-	void 동점자_3명_정렬_검증() {
-
-		redisRankingStore.clear(PERIOD);
+	void 동점자_3명_모두_1등() {
 
 		redisRankingStore.increaseScore(PERIOD, 30L, 100);
 		redisRankingStore.increaseScore(PERIOD, 2L, 100);
 		redisRankingStore.increaseScore(PERIOD, 15L, 100);
 
 		assertThat(redisRankingStore.getRank(PERIOD, 2L)).isEqualTo(1);
-		assertThat(redisRankingStore.getRank(PERIOD, 15L)).isEqualTo(2);
-		assertThat(redisRankingStore.getRank(PERIOD, 30L)).isEqualTo(3);
+		assertThat(redisRankingStore.getRank(PERIOD, 15L)).isEqualTo(1);
+		assertThat(redisRankingStore.getRank(PERIOD, 30L)).isEqualTo(1);
 	}
 
+	// 4️⃣ 상위 점수 존재 + 동점 그룹 → 다음은 4등
 	@Test
-	void 동점자_상위점수존재_케이스() {
+	void 공동1등_3명_다음은_4등() {
 
-		redisRankingStore.clear(PERIOD);
-
-		// 1위
-		redisRankingStore.increaseScore(PERIOD, 99L, 200);
-
-		// 동점 그룹
-		redisRankingStore.increaseScore(PERIOD, 3L, 100);
+		// 공동 1등
 		redisRankingStore.increaseScore(PERIOD, 1L, 100);
 		redisRankingStore.increaseScore(PERIOD, 2L, 100);
+		redisRankingStore.increaseScore(PERIOD, 3L, 100);
+
+		// 그 다음 점수
+		redisRankingStore.increaseScore(PERIOD, 4L, 90);
+
+		assertThat(redisRankingStore.getRank(PERIOD, 1L)).isEqualTo(1);
+		assertThat(redisRankingStore.getRank(PERIOD, 2L)).isEqualTo(1);
+		assertThat(redisRankingStore.getRank(PERIOD, 3L)).isEqualTo(1);
+
+		assertThat(redisRankingStore.getRank(PERIOD, 4L)).isEqualTo(4);
+	}
+
+	// 5️⃣ 1 2 2 2 8 형태 검증
+	@Test
+	void rank_1_2_2_2_8_형태_검증() {
+
+		// 1등
+		redisRankingStore.increaseScore(PERIOD, 99L, 200);
+
+		// 공동 2등 (3명)
+		redisRankingStore.increaseScore(PERIOD, 1L, 100);
+		redisRankingStore.increaseScore(PERIOD, 2L, 100);
+		redisRankingStore.increaseScore(PERIOD, 3L, 100);
+
+		// 그 다음
+		redisRankingStore.increaseScore(PERIOD, 4L, 50);
 
 		assertThat(redisRankingStore.getRank(PERIOD, 99L)).isEqualTo(1);
 
 		assertThat(redisRankingStore.getRank(PERIOD, 1L)).isEqualTo(2);
-		assertThat(redisRankingStore.getRank(PERIOD, 2L)).isEqualTo(3);
-		assertThat(redisRankingStore.getRank(PERIOD, 3L)).isEqualTo(4);
+		assertThat(redisRankingStore.getRank(PERIOD, 2L)).isEqualTo(2);
+		assertThat(redisRankingStore.getRank(PERIOD, 3L)).isEqualTo(2);
+
+		assertThat(redisRankingStore.getRank(PERIOD, 4L)).isEqualTo(5);
 	}
 
+	// 6️⃣ 동점 상태에서 한 명 점수 상승
 	@Test
 	void 동점상태에서_한명_점수상승시_재정렬() {
-
-		redisRankingStore.clear(PERIOD);
 
 		redisRankingStore.increaseScore(PERIOD, 1L, 100);
 		redisRankingStore.increaseScore(PERIOD, 2L, 100);
 
-		// 동점 → 1L이 1위
 		assertThat(redisRankingStore.getRank(PERIOD, 1L)).isEqualTo(1);
-		assertThat(redisRankingStore.getRank(PERIOD, 2L)).isEqualTo(2);
+		assertThat(redisRankingStore.getRank(PERIOD, 2L)).isEqualTo(1);
 
-		// 2L 점수 +1
+		// 2번이 1점 추가
 		redisRankingStore.increaseScore(PERIOD, 2L, 1);
 
 		assertThat(redisRankingStore.getRank(PERIOD, 2L)).isEqualTo(1);
 		assertThat(redisRankingStore.getRank(PERIOD, 1L)).isEqualTo(2);
 	}
 
+	// 7️⃣ upperScore 검증 (동점일 경우 null)
 	@Test
-	void 동점자_getUpperScore_검증() {
-
-		redisRankingStore.clear(PERIOD);
+	void upperScore_동점일경우_null() {
 
 		redisRankingStore.increaseScore(PERIOD, 1L, 100);
 		redisRankingStore.increaseScore(PERIOD, 2L, 100);
 		redisRankingStore.increaseScore(PERIOD, 3L, 90);
 
-		// 2L은 1L과 동점 → 위 점수는 100이어야 함
-		Integer upperScore = redisRankingStore.getUpperScore(PERIOD, 2L);
+		// 2L은 공동 1등 → 위 점수 없음
+		assertThat(redisRankingStore.getUpperScore(PERIOD, 2L)).isNull();
 
-		assertThat(upperScore).isEqualTo(100);
+		// 3L은 위 점수 100
+		assertThat(redisRankingStore.getUpperScore(PERIOD, 3L)).isEqualTo(100);
 	}
 }
