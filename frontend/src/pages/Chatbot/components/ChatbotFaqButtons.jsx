@@ -1,23 +1,19 @@
-const ChatbotFaqButtons = ({ faqs }) => {
+const ChatbotFaqButtons = ({ faqs, categoryId, onSelectFaq }) => {
   return (
-    <div className="mt-6 mb-4 space-y-2">
-      {faqs.map((question, idx) => (
+    <div className="grid grid-cols-1 gap-3 mt-4">
+      {faqs.map((faq) => (
         <button
-          key={idx}
-          className="
-            w-full
-            flex items-center justify-between
-            px-4 py-3
-            border border-gray-200
-            rounded-lg
-            bg-white
-            text-xs text-gray-800
-            hover:bg-gray-50
-            transition
-          "
+          key={faq.id}
+          onClick={() =>
+            onSelectFaq({
+              categoryId,
+              questionId: faq.id,
+              text: faq.text,
+            })
+          }
+          className="border border-gray-300 rounded-xl py-3 text-sm font-medium bg-white hover:bg-gray-50 transition"
         >
-          <span className="flex-1 text-center">{question}</span>
-          <span className="text-gray-400 text-base">›</span>
+          {faq.text}
         </button>
       ))}
     </div>
