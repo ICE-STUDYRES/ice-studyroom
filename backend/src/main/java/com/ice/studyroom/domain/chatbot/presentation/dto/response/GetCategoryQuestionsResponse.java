@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.chatbot.application.dto;
+package com.ice.studyroom.domain.chatbot.presentation.dto.response;
 
 import java.util.List;
 

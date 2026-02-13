@@ -14,7 +14,8 @@ import lombok.NoArgsConstructor;
 public class ChatbotQuestion extends BaseTimeEntity {
 
     @Id
-    @Column(name = "question_id", nullable = false)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "question_id")
     private Long questionId;
 
     @ManyToOne(fetch = FetchType.LAZY)
