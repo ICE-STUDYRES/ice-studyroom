@@ -2,6 +2,8 @@ package com.ice.studyroom.domain.ranking.domain.service;
 
 import com.ice.studyroom.domain.ranking.domain.type.RankingPeriod;
 
+import java.util.List;
+
 public interface RankingStore {
 
 	/**
@@ -26,4 +28,8 @@ public interface RankingStore {
 	 */
 	Integer getRank(RankingPeriod period, Long memberId);
 
+	/**
+	 * 해당 기간(period)의 전체 랭킹을 점수 기준 내림차순으로 조회한다.
+	 */
+	List<RankingEntry> getAllRankings(RankingPeriod period);
 }

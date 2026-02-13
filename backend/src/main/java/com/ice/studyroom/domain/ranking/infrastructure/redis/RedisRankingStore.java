@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.ranking.infrastructure.redis;
 
+import com.ice.studyroom.domain.ranking.domain.service.RankingEntry;
 import com.ice.studyroom.domain.ranking.domain.service.RankingStore;
 import com.ice.studyroom.domain.ranking.domain.type.RankingPeriod;
 import lombok.RequiredArgsConstructor;
@@ -7,6 +8,7 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.ZSetOperations;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Set;
 
 @Component
@@ -72,9 +74,27 @@ public class RedisRankingStore implements RankingStore {
 		return higherCount.intValue() + 1;
 	}
 
-	// 테스트용
+	@Override
+	public List<RankingEntry> getAllRankings(RankingPeriod period) {
+
+		Set<ZSetOperations.TypedTuple<String>> tuples =
+				redisTemplate.opsForZSet()
+						.reverseRangeWithScores(key(period), 0, -1);
+
+		if (tuples == null || tuples.isEmpty()) {
+			return List.of();
+		}
+
+		return tuples.stream()
+				.map(tuple -> new RankingEntry(
+						Long.valueOf(tuple.getValue()),
+						tuple.getScore().intValue()
+				))
+				.toList();
+	}
+
+
 	public void clear(RankingPeriod period) {
 		redisTemplate.delete(key(period));
 	}
-
 }
