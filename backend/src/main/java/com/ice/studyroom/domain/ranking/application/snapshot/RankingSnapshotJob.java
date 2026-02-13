@@ -1,6 +1,7 @@
 package com.ice.studyroom.domain.ranking.application.snapshot;
 
 import com.ice.studyroom.domain.ranking.domain.service.RankingEntry;
+import com.ice.studyroom.domain.ranking.domain.service.RankingStore;
 import com.ice.studyroom.domain.ranking.domain.type.RankingPeriod;
 import com.ice.studyroom.domain.ranking.infrastructure.redis.RedisRankingStore;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RankingSnapshotJob {
 
-	private final RedisRankingStore rankingStore;
+	private final RankingStore rankingStore;
 	private final RankingSnapshotService snapshotService;
 
 	@Transactional

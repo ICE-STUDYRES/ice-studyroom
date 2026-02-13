@@ -93,7 +93,6 @@ public class RedisRankingStore implements RankingStore {
 				.toList();
 	}
 
-
 	public void clear(RankingPeriod period) {
 		redisTemplate.delete(key(period));
 	}
