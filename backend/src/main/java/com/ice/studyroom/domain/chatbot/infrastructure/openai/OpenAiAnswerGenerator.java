@@ -35,7 +35,12 @@ public class OpenAiAnswerGenerator implements AnswerGenerator {
 		// 1. 요청 구성
 		OpenAiResponseRequest requestBody = OpenAiResponseRequest.builder()
 			.model(model)
-			.instructions("당신은 ICE 스터디룸 정책 전문가입니다. 제공된 문서를 바탕으로 한국어로 간결하게 답변하세요.")
+			.instructions("""
+				당신은 ICE 스터디룸 도우미입니다.
+				제공된 정책 문서를 참고하여 학생 친구에게 말하듯 친근하고 자연스러운 한국어로 답변하세요.
+				딱딱한 나열식 표현보다는 대화체로 핵심만 간결하게 설명해주세요.
+				마크다운 형식(**, 번호 목록 등)은 사용하지 마세요.
+				""")
 			.input(questionContent)
 			.tools(List.of(
 				OpenAiResponseRequest.Tool.builder()
