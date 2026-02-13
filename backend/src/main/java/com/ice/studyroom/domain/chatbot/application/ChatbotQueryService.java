@@ -37,7 +37,7 @@ public class ChatbotQueryService {
 
     public GetCategoryQuestionsResponse getCategoryQuestions(String categoryId, boolean includeClickCount) {
         if (!categoryRepository.existsById(categoryId)) {
-            throw new ChatbotCategoryNotFoundException();
+            throw new ChatbotCategoryNotFoundException(categoryId);
         }
 
         List<ChatbotQuestion> questions =
