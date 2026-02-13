@@ -5,8 +5,8 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.ice.studyroom.domain.chatbot.application.dto.GetCategoryResponse;
-import com.ice.studyroom.domain.chatbot.application.dto.GetCategoryQuestionsResponse;
+import com.ice.studyroom.domain.chatbot.presentation.dto.response.GetCategoryResponse;
+import com.ice.studyroom.domain.chatbot.presentation.dto.response.GetCategoryQuestionsResponse;
 import com.ice.studyroom.domain.chatbot.domain.category.ChatbotCategoryRepository;
 import com.ice.studyroom.domain.chatbot.domain.question.ChatbotQuestion;
 import com.ice.studyroom.domain.chatbot.domain.question.ChatbotQuestionRepository;
@@ -36,7 +36,7 @@ public class ChatbotQueryService {
 
     public GetCategoryQuestionsResponse getCategoryQuestions(String categoryId, boolean includeClickCount) {
         List<ChatbotQuestion> questions =
-            questionRepository.findByCategory_CategoryIdOrderByQuestionIdAsc(categoryId);
+            questionRepository.findQuestionsByCategoryId(categoryId);
 
         return GetCategoryQuestionsResponse.builder()
             .categoryId(categoryId)
