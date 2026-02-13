@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.chatbot.infrastructure.openai;
 
+import com.ice.studyroom.domain.chatbot.domain.exception.OpenAiApiException;
 import com.ice.studyroom.domain.chatbot.domain.service.AnswerGenerator;
 import com.ice.studyroom.domain.chatbot.infrastructure.openai.dto.OpenAiResponseRequest;
 import com.ice.studyroom.domain.chatbot.infrastructure.openai.dto.OpenAiResponseResult;
@@ -9,6 +10,7 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -50,9 +52,12 @@ public class OpenAiAnswerGenerator implements AnswerGenerator {
 
 		// 3. API 호출
 		HttpEntity<OpenAiResponseRequest> entity = new HttpEntity<>(requestBody, headers);
-		OpenAiResponseResult result = restTemplate.postForObject(
-			responseUrl, entity, OpenAiResponseResult.class
-		);
+		OpenAiResponseResult result;
+		try {
+			result = restTemplate.postForObject(responseUrl, entity, OpenAiResponseResult.class);
+		} catch (HttpClientErrorException e) {
+			throw new OpenAiApiException("OpenAI API 호출 실패: " + e.getStatusCode());
+		}
 
 		// 4. 응답 파싱
 		String summary = extractSummary(result);

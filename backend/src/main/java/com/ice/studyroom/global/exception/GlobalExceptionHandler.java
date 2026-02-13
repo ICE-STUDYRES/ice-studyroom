@@ -3,6 +3,9 @@ package com.ice.studyroom.global.exception;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.ice.studyroom.domain.chatbot.domain.exception.ChatbotCategoryNotFoundException;
+import com.ice.studyroom.domain.chatbot.domain.exception.ChatbotQuestionNotFoundException;
+import com.ice.studyroom.domain.chatbot.domain.exception.OpenAiApiException;
 import com.ice.studyroom.domain.membership.domain.exception.member.MemberNotFoundException;
 import com.ice.studyroom.domain.membership.domain.exception.member.MemberPenaltyException;
 import com.ice.studyroom.domain.reservation.application.exception.ParticipantAlreadyReservedException;
@@ -189,6 +192,31 @@ public class GlobalExceptionHandler {
 	@ExceptionHandler(MemberPenaltyException.class)
 	public ResponseEntity<ResponseDto<Object>> handleMemberPenalty(MemberPenaltyException ex) {
 		ReservationLogUtil.logWarn("단체 예약 실패 - 패널티 상태의 참여자 존재", "이메일: " + ex.getEmail());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	// 챗봇(OpenAI) 예외 처리
+	@ExceptionHandler(ChatbotQuestionNotFoundException.class)
+	public ResponseEntity<ResponseDto<Object>> handleChatbotQuestionNotFound(ChatbotQuestionNotFoundException ex) {
+		log.warn("챗봇 질문 없음 - questionId: {}", ex.getQuestionId());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	@ExceptionHandler(ChatbotCategoryNotFoundException.class)
+	public ResponseEntity<ResponseDto<Object>> handleChatbotCategoryNotFound(ChatbotCategoryNotFoundException ex) {
+		log.warn("챗봇 카테고리 없음 - categoryId: {}", ex.getCategoryId());
+		return ResponseEntity
+			.status(ex.getStatusCode().getStatus())
+			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
+	}
+
+	@ExceptionHandler(OpenAiApiException.class)
+	public ResponseEntity<ResponseDto<Object>> handleOpenAiApi(OpenAiApiException ex) {
+		log.error("OpenAI API 오류 발생: {}", ex.getMessage());
 		return ResponseEntity
 			.status(ex.getStatusCode().getStatus())
 			.body(ResponseDto.error(ex.getStatusCode(), ex.getMessage()));
