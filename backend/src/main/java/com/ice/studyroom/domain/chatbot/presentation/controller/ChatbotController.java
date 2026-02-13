@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/v2/chatbot")
-@Tag(name = "Chatbot", description = "챗봇 API")
+@Tag(name = "Chatbot", description = "ICE 스터디룸 정책 기반 챗봇 관련 API")
 public class ChatbotController {
 
     private final ChatbotQueryService chatbotQueryService;
@@ -73,6 +73,7 @@ public class ChatbotController {
     )
     @ApiResponse(responseCode = "200", description = "답변 생성 성공")
     @ApiResponse(responseCode = "400", description = "잘못된 요청")
+	@ApiResponse(responseCode = "404", description = "질문 또는 카테고리를 찾을 수 없음")
     @ApiResponse(responseCode = "500", description = "서버 오류")
     @PostMapping("/answers")
     public ResponseEntity<ResponseDto<AnswerResponse>> getAnswer(
