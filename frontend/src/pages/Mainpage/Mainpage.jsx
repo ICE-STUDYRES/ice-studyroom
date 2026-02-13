@@ -8,8 +8,14 @@ import { LogIn, Home, QrCode } from 'lucide-react';
 import alertImage from "../../assets/images/Alert.png";
 import { useTokenHandler } from "./handlers/TokenHandler";
 import ChatbotButton from './components/ChatbotButton';
+import RankingSection from './components/RankingSection';
+import NotificationBell from './components/NotificationBell';
+import NotificationPage from './components/NotificationPage';
+import {useNavigate} from 'react-router-dom';
 
 const MainPage = () => {
+  const navigate = useNavigate();
+
     const {
         showNotice,
         handleReservationClick,
@@ -42,12 +48,21 @@ const MainPage = () => {
         refreshTokens,
       } = useTokenHandler();
       
-      const accessToken = sessionStorage.getItem('accessToken');
+      {/* commit하기 전에 지움! 아래 코드로 다시 바꾸기 */}
+      const accessToken = "test-token";
+      //const accessToken = sessionStorage.getItem('accessToken');
+
       const [recentReservation, setRecentReservation] = useState({
         date: null,
         roomNumber: null,
       });
       const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
+
+     {/* 테스트 Id(서버 연결하면 지움) */}
+     const currentMemberId = 1;
+     //{/* UserContext에서 전체 유저 데이터를 꺼내옴 */}
+     //const userData = useUser();
+     //const currentMemberId = userData?.id;
 
       useEffect(() => {
         const getRecentReservation = async () => {
@@ -106,7 +121,15 @@ const MainPage = () => {
           <h1 className="font-semibold text-gray-900">정보통신공학과</h1>
         </div>
         {accessToken ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
+
+            <NotificationBell 
+                isLoggedIn={!!accessToken}
+                memberId={currentMemberId}
+                onClick={() => navigate('/notifications')}
+                className="w-1 h-1"
+            />
+
             <ProfileDropdown
               userName={loginForm.email}
               userEmail={loginForm.email}
@@ -246,6 +269,8 @@ const MainPage = () => {
           </button>
         </div>
       </div>
+
+      <RankingSection isLoggedIn={!!accessToken} />
       
       <NoticePopup 
         showNotice={showNotice} 
