@@ -29,6 +29,12 @@ public class ChatbotController {
     private final ChatbotService chatbotService;
 
     // 1. 카테고리 목록조회
+    @Operation(
+        summary = "카테고리 목록 조회",
+        description = "챗봇에서 사용되는 전체 카테고리 목록을 조회합니다."
+    )
+    @ApiResponse(responseCode = "200", description = "카테고리 조회 성공")
+    @ApiResponse(responseCode = "500", description = "서버 오류")
     @GetMapping("/categories")
     public ResponseEntity<ResponseDto<GetCategoryResponse>> getCategories() {
         return ResponseEntity
@@ -36,7 +42,18 @@ public class ChatbotController {
             .body(ResponseDto.of(chatbotQueryService.getCategories()));
     }
 
-    // 2. 카테고리 별 대표질문 목록조회
+    // 2. 카테고리별 대표 질문 목록조회
+    @Operation(
+        summary = "카테고리별 대표 질문 목록 조회",
+        description = """
+            특정 카테고리에 속한 대표 질문 목록을 조회합니다.
+            includeClickCount=true일 경우 clickCount 필드를 포함하여 반환합니다.
+            기본값은 false입니다.
+            """
+    )
+    @ApiResponse(responseCode = "200", description = "대표 질문 조회 성공")
+    @ApiResponse(responseCode = "400", description = "잘못된 categoryId 요청")
+    @ApiResponse(responseCode = "500", description = "서버 오류")
     @GetMapping("/categories/{categoryId}/questions")
     public ResponseEntity<ResponseDto<GetCategoryQuestionsResponse>> getCategoryQuestions(
         @PathVariable String categoryId,
@@ -44,7 +61,9 @@ public class ChatbotController {
     ) {
         return ResponseEntity
             .status(StatusCode.OK.getStatus())
-            .body(ResponseDto.of(chatbotQueryService.getCategoryQuestions(categoryId, includeClickCount)));
+            .body(ResponseDto.of(
+                chatbotQueryService.getCategoryQuestions(categoryId, includeClickCount)
+            ));
     }
 
     // 3. 챗봇 답변 생성/조회
@@ -62,4 +81,5 @@ public class ChatbotController {
         AnswerResponse response = chatbotService.getAnswer(request);
         return ResponseEntity.ok(ResponseDto.of(response));
     }
+
 }
