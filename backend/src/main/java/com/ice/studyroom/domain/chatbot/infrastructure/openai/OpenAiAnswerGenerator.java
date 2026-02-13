@@ -75,6 +75,7 @@ public class OpenAiAnswerGenerator implements AnswerGenerator {
 	private String extractSummary(OpenAiResponseResult result) {
 		return result.getOutput().stream()
 			.filter(item -> "message".equals(item.getType()))
+			.filter(item -> item.getContent() != null)
 			.flatMap(item -> item.getContent().stream())
 			.filter(content -> "output_text".equals(content.getType()))
 			.map(OpenAiResponseResult.ContentItem::getText)
@@ -85,6 +86,7 @@ public class OpenAiAnswerGenerator implements AnswerGenerator {
 	private List<String> extractSnippets(OpenAiResponseResult result) {
 		return result.getOutput().stream()
 			.filter(item -> "file_search_call".equals(item.getType()))
+			.filter(item -> item.getResults() != null)
 			.flatMap(item -> item.getResults().stream())
 			.map(OpenAiResponseResult.SearchResult::getText)
 			.collect(Collectors.toList());
