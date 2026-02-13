@@ -62,7 +62,7 @@ public class OpenAiAnswerGenerator implements AnswerGenerator {
 
 		// 4. 응답 파싱
 		String summary = extractSummary(result);
-		List<String> snippets = extractSnippets(result);
+		List<String> snippets = extractSnippets(result, questionContent);
 
 		return new AnswerResponse(
 			categoryId,
@@ -84,12 +84,43 @@ public class OpenAiAnswerGenerator implements AnswerGenerator {
 			.orElse("답변을 생성할 수 없습니다.");
 	}
 
-	private List<String> extractSnippets(OpenAiResponseResult result) {
+	private List<String> extractSnippets(OpenAiResponseResult result, String questionContent) {
 		return result.getOutput().stream()
 			.filter(item -> "file_search_call".equals(item.getType()))
 			.filter(item -> item.getResults() != null)
 			.flatMap(item -> item.getResults().stream())
-			.map(OpenAiResponseResult.SearchResult::getText)
+			.map(r -> extractRelevantPart(r.getText(), questionContent))
+			.filter(s -> !s.isEmpty())
 			.collect(Collectors.toList());
+	}
+
+	private String extractRelevantPart(String text, String questionContent) {
+		if (text == null) return "";
+
+		// 1. "질문:" 기준으로 Q&A 섹션 분리
+		String[] parts = text.split("(?=질문:)");
+
+		// 2. 질문 키워드 추출
+		String[] keywords = questionContent.replaceAll("[^가-힣a-zA-Z0-9\\s]", "").split("\\s+");
+
+		// 3. 키워드 매칭 점수가 가장 높은 섹션 선택
+		String bestPart = "";
+		int bestScore = 0;
+
+		for (String part : parts) {
+			int score = 0;
+			for (String keyword : keywords) {
+				if (keyword.length() > 1 && part.contains(keyword)) {
+					score++;
+				}
+			}
+			if (score > bestScore) {
+				bestScore = score;
+				bestPart = part;
+			}
+		}
+
+		String relevant = bestPart.isEmpty() ? text : bestPart;
+		return relevant.trim().length() <= 300 ? relevant.trim() : relevant.trim().substring(0, 300) + "...";
 	}
 }
