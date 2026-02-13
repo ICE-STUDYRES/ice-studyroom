@@ -12,6 +12,7 @@ public class OpenAiResponseRequest {
 	private String instructions;
 	private String input;
 	private List<Tool> tools;
+	private List<String> include;
 
 	@Getter
 	@Builder

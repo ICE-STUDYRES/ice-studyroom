@@ -43,6 +43,7 @@ public class OpenAiAnswerGenerator implements AnswerGenerator {
 					.vectorStoreIds(List.of(vectorStoreId))
 					.build()
 			))
+			.include(List.of("file_search_call.results"))
 			.build();
 
 		// 2. 헤더 구성
