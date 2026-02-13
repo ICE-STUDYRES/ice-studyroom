@@ -105,6 +105,9 @@ class QrEntranceTest {
 
 		assertThat(response.status()).isEqualTo(ReservationStatus.ENTRANCE);
 		verify(penaltyService, never()).assignPenalty(any(), any(), any());
+
+		verify(rankingCheckInApplicationService)
+			.handleCheckIn(any(), eq(ReservationStatus.ENTRANCE));
 	}
 
 	/**

@@ -11,6 +11,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
+import com.ice.studyroom.domain.ranking.application.checkin.RankingCheckInApplicationService;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationAccessDeniedReason;
 import com.ice.studyroom.domain.reservation.domain.exception.type.reservation.ReservationActionType;
@@ -51,6 +52,10 @@ public class ReservationExtendTest {
 
 	@InjectMocks
 	private ReservationService reservationService;
+
+	@Mock
+	private RankingCheckInApplicationService rankingCheckInApplicationService;
+
 
 	@Mock
 	private Reservation reservation;
@@ -687,6 +692,10 @@ public class ReservationExtendTest {
 		for (Reservation res : reservations) {
 			verify(res).extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 		}
+
+		verify(rankingCheckInApplicationService, times(reservations.size()))
+			.handleExtension(any(), eq(nextSchedule));
+
 	}
 
 	/**
@@ -735,6 +744,10 @@ public class ReservationExtendTest {
 			if(res.getStatus() == ReservationStatus.CANCELLED) continue;
 			verify(res).extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 		}
+
+		verify(rankingCheckInApplicationService, times(1))
+			.handleExtension(any(), eq(nextSchedule));
+
 	}
 
 	/**
@@ -788,6 +801,9 @@ public class ReservationExtendTest {
 		verify(reservation).extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 		verify(nextSchedule).reserve();
 		verify(nextSchedule, never()).updateStatus(ScheduleSlotStatus.RESERVED);
+		verify(rankingCheckInApplicationService)
+			.handleExtension(reservation, nextSchedule);
+
 	}
 
 	private void 통과된_기본_예약_검증_셋업(Long reservationId, String token, String email) {
