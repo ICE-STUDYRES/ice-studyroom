@@ -22,7 +22,7 @@ public class RankingSnapshotItem extends BaseTimeEntity {
 	@Column(name = "member_id", nullable = false)
 	private Long memberId;
 
-	@Column(nullable = false)
+	@Column(name = "rank_position", nullable = false)
 	private int rank;
 
 	@Column(nullable = false)

@@ -7,6 +7,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import com.ice.studyroom.domain.membership.domain.exception.member.MemberNotFoundException;
+import com.ice.studyroom.domain.ranking.application.checkin.RankingCheckInApplicationService;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationAccessDeniedException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationNotFoundException;
 import com.ice.studyroom.domain.reservation.domain.exception.reservation.ReservationProcessException;
@@ -58,12 +59,14 @@ public class ReservationService {
 	private final ScheduleRepository scheduleRepository;
 	private final ReservationConcurrencyService reservationConcurrencyService;
 	private final ReservationCompensationService reservationCompensationService;
+	private final RankingCheckInApplicationService rankingCheckInApplicationService;
 	private final ReservationValidator reservationValidator;
 	private final ScheduleCanceller scheduleCanceller;
 	private final PenaltyService penaltyService;
 	private final MemberDomainService memberDomainService;
 	private final EmailService emailService;
 	private final Clock clock;
+
 
 	public Optional<GetMostRecentReservationResponse> getMyMostRecentReservation(String authorizationHeader) {
 		String reservationOwnerEmail = tokenService.extractEmailFromAccessToken(authorizationHeader);
@@ -336,6 +339,7 @@ public class ReservationService {
 				if (res.getStatus() == ReservationStatus.CANCELLED) continue;
 				res.extendReservation(nextSchedule.getId(), nextSchedule.getEndTime());
 				nextSchedule.reserve();
+				rankingCheckInApplicationService.handleExtension(res, nextSchedule);
 				ReservationLogUtil.log("그룹 예약 연장 완료", "참여자 이메일: " + res.getMember().getEmail(), "예약 ID: " + res.getId());
 			}
 			nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
@@ -357,6 +361,7 @@ public class ReservationService {
 			if (!nextSchedule.isCurrentResLessThanCapacity()){
 				nextSchedule.updateStatus(ScheduleSlotStatus.RESERVED);
 			}
+			rankingCheckInApplicationService.handleExtension(reservation, nextSchedule);
 		}
 
 		ReservationLogUtil.log("예약 연장 최종 완료", "예약자 이메일: " + reservationOwnerEmail);

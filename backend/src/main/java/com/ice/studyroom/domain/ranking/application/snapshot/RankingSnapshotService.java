@@ -39,9 +39,9 @@ public class RankingSnapshotService {
 		rankingSnapshotItemRepository.saveAll(items);
 	}
 
-	public static class SnapshotData {
-		Long memberId;
-		int rank;
-		int score;
-	}
+	public record SnapshotData(
+		Long memberId,
+		int rank,
+		int score
+	) {}
 }
