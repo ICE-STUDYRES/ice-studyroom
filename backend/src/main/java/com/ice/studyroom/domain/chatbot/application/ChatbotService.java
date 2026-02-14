@@ -21,7 +21,8 @@ public class ChatbotService {
 	private final ChatbotCategoryRepository categoryRepository;
 
 	public AnswerResponse getAnswer(AnswerRequest request) {
-		ChatbotQuestion question = questionRepository.findById(request.questionId())
+		ChatbotQuestion question = questionRepository.findByQuestionIdAndCategory_CategoryId(
+				request.questionId(), request.categoryId())
 			.orElseThrow(() -> new ChatbotQuestionNotFoundException(request.questionId()));
 
 		ChatbotCategory category = categoryRepository.findById(request.categoryId())
