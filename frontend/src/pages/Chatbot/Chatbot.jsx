@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Chatbot.css";
 import axios from "axios";
 
@@ -15,9 +16,11 @@ const initialMessages = [
 ];
 
 const ChatbotPage = () => {
+  const navigate = useNavigate();
+  const [isAuthorized, setIsAuthorized] = useState(false);
+
   const [categories, setCategories] = useState([]);
   const [faqsByCategory, setFaqsByCategory] = useState({});
-
   const [messages, setMessages] = useState(initialMessages);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [answerCard, setAnswerCard] = useState(null);
@@ -32,9 +35,11 @@ const ChatbotPage = () => {
     const token = sessionStorage.getItem("accessToken");
     if (!token) {
       alert("로그인이 필요합니다.");
-      window.location.href = "/auth/signin";
+      navigate("/auth/signin");
+    } else {
+      setIsAuthorized(true);
     }
-  }, []);
+  }, [navigate]);
 
   /* 스크롤 자동 이동 */
   const scrollToBottom = () => {
@@ -46,6 +51,32 @@ const ChatbotPage = () => {
     return () => clearTimeout(timer);
   }, [messages, selectedCategory, showCategoryButtons]);
 
+  /* 사용자 이벤트 로그 전송 */
+  const sendChatbotEvent = async ({
+    eventType,
+    categoryId = null,
+    questionId = null,
+    buttonType = null,
+  }) => {
+    try {
+      const accessToken = sessionStorage.getItem("accessToken");
+      await axios.post(
+        "/api/v2/chatbot/events",
+        {
+          eventType,
+          categoryId,
+          questionId,
+          buttonType,
+          screen: "CHATBOT_CHAT_PAGE",
+          occurredAt: new Date().toISOString().slice(0, 19),
+        },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+    } catch (e) {
+      console.error("챗봇 이벤트 전송 실패", e);
+    }
+  };
+
   /* 카테고리 조회 */
   const fetchCategories = async () => {
     try {
@@ -54,12 +85,10 @@ const ChatbotPage = () => {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       const serverCategories = res.data.data.categories ?? [];
-
       const mapped = serverCategories.map((cat) => ({
         id: cat.categoryId,
         name: cat.label,
       }));
-
       setCategories(mapped);
     } catch (error) {
       console.error("카테고리 조회 실패", error);
@@ -80,12 +109,18 @@ const ChatbotPage = () => {
     );
   };
 
-  /* 카테고리 선택 - 서버에서 FAQ 가져오기 */
+  /* 카테고리 선택 */
   const handleCategorySelect = async (category) => {
     setMessages((prev) => [...prev, { text: category.name, isUser: true }]);
     setSelectedCategory(category.id);
     setLastSelectedCategory(category.id);
     setShowCategoryButtons(false);
+
+    await sendChatbotEvent({
+      eventType: "CATEGORY_SELECT",
+      categoryId: category.id,
+    });
+
     try {
       const accessToken = sessionStorage.getItem("accessToken");
       const res = await axios.get(
@@ -112,13 +147,19 @@ const ChatbotPage = () => {
   };
 
   /* FAQ 선택 */
-  const handleFaqSelect = async ({ categoryId, id, text }) => {
+  const handleFaqSelect = async ({ categoryId, questionId, text }) => {
     setMessages((prev) => [...prev, { text, isUser: true }]);
     setSelectedCategory(null);
     setLoading(true);
 
+    await sendChatbotEvent({
+      eventType: "QUESTION_CLICK",
+      categoryId,
+      questionId,
+    });
+
     try {
-      const res = await fetchChatbotAnswer({ categoryId, questionId: id });
+      const res = await fetchChatbotAnswer({ categoryId, questionId });
       const answer = res.data.data;
       setAnswerCard(answer);
 
@@ -148,6 +189,11 @@ const ChatbotPage = () => {
     setSelectedCategory(null);
     setLastSelectedCategory(null);
     setShowCategoryButtons(true);
+    
+    sendChatbotEvent({
+      eventType: "CATEGORY_CHANGE",
+      categoryId: lastSelectedCategory,
+    });
   };
 
   /* 대표질문 다시보기 */
@@ -155,13 +201,18 @@ const ChatbotPage = () => {
     if (!lastSelectedCategory) return;
     setSelectedCategory(lastSelectedCategory);
     setShowCategoryButtons(false);
+
+    sendChatbotEvent({
+      eventType: "QUESTION_RELOAD",
+      categoryId: lastSelectedCategory,
+    });
   };
 
+  if (!isAuthorized) return null;
   return (
     <div className="chat-container min-h-screen bg-blue-50 flex items-center justify-center">
       <div className="w-full max-w-[460px] h-[98vh] bg-white rounded-xl shadow-md flex flex-col overflow-hidden">
         <ChatbotHeader />
-
         <div className="flex-1 px-4 py-4 chat-scroll bg-[#F9FAFC] overflow-y-auto">
           <ChatbotRobot />
 
@@ -171,7 +222,15 @@ const ChatbotPage = () => {
               isUser={msg.isUser}
               showActions={msg.showActions}
               answerCard={msg.showActions ? answerCard : null}
-              onActionClick={setModalType}
+              onActionClick={async (buttonType) => {
+                setModalType(buttonType);
+                await sendChatbotEvent({
+                  eventType: "BUTTON_CLICK",
+                  categoryId: answerCard?.categoryId,
+                  questionId: answerCard?.questionId,
+                  buttonType: buttonType.toUpperCase(),
+                });
+              }}
             >
               {msg.text}
             </ChatMessage>
