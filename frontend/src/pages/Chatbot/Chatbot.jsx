@@ -9,37 +9,6 @@ import ChatbotFaqButtons from "./components/ChatbotFaqButtons";
 import ChatbotFooter from "./components/ChatbotFooter";
 import ChatMessage from "./components/ChatMessage";
 
-/* 초기 카테고리 */
-const initialCategories = [
-  { id: "RESERVATION", name: "예약" },
-  { id: "CHECKIN_QR", name: "체크인(QR)" },
-  { id: "EXTEND", name: "연장" },
-  { id: "CANCEL_CHANGE", name: "취소 / 변경" },
-  { id: "RULES", name: "이용시간 / 규정" },
-  { id: "PENALTY", name: "패널티 / 제재" },
-  { id: "FACILITY", name: "시설 / 장비" },
-  { id: "ETC", name: "기타" },
-];
-
-const initialFaqByCategory = {
-  RESERVATION: [
-    { id: 201, text: "QR 예약은?" },
-    { id: 202, text: "예약 불가한 경우는?" },
-    { id: 203, text: "예약 변경은 어떻게 하나요?" },
-    { id: 204, text: "예약 확인은?" },
-  ],
-  CHECKIN_QR: [
-    { id: 301, text: "체크인 마감 시간은?" },
-    { id: 302, text: "QR 코드 인식이 안돼요." },
-    { id: 303, text: "체크인 방법은?" },
-  ],
-  EXTEND: [
-    { id: 401, text: "연장 방법은?" },
-    { id: 402, text: "연장 가능 시간은?" },
-    { id: 403, text: "연장 제한이 있나요?" },
-  ],
-};
-
 const initialMessages = [
   { text: "안녕하세요! 정보통신공학과 스터디룸 챗봇입니다.", isUser: false },
   { text: "궁금한 내용을 선택하시면 바로 안내해드릴게요!", isUser: false },
@@ -47,7 +16,7 @@ const initialMessages = [
 
 const ChatbotPage = () => {
   const [categories, setCategories] = useState([]);
-  const [faqsByCategory, setFaqsByCategory] = useState(initialFaqByCategory);
+  const [faqsByCategory, setFaqsByCategory] = useState({});
 
   const [messages, setMessages] = useState(initialMessages);
   const [selectedCategory, setSelectedCategory] = useState(null);
@@ -58,11 +27,12 @@ const ChatbotPage = () => {
   const [modalType, setModalType] = useState(null);
   const bottomRef = useRef(null);
 
+  /* 로그인 체크 */
   useEffect(() => {
     const token = sessionStorage.getItem("accessToken");
     if (!token) {
       alert("로그인이 필요합니다.");
-      window.location.href = "/login";
+      window.location.href = "/auth/signin";
     }
   }, []);
 
@@ -75,8 +45,8 @@ const ChatbotPage = () => {
     const timer = setTimeout(scrollToBottom, 80);
     return () => clearTimeout(timer);
   }, [messages, selectedCategory, showCategoryButtons]);
-  
-  /* API 호출 함수 */
+
+  /* 카테고리 조회 */
   const fetchCategories = async () => {
     try {
       const accessToken = sessionStorage.getItem("accessToken");
@@ -100,26 +70,45 @@ const ChatbotPage = () => {
     fetchCategories();
   }, []);
 
+  /* 답변 조회 */
   const fetchChatbotAnswer = async ({ categoryId, questionId }) => {
     const accessToken = sessionStorage.getItem("accessToken");
-    return axios.post("/api/v2/chatbot/answers", {
-      categoryId,
-      questionId,
-    }, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
+    return axios.post(
+      "/api/v2/chatbot/answers",
+      { categoryId, questionId },
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
   };
 
-  /* 대표질문 선택 */
-  const handleCategorySelect = (category) => {
+  /* 카테고리 선택 - 서버에서 FAQ 가져오기 */
+  const handleCategorySelect = async (category) => {
     setMessages((prev) => [...prev, { text: category.name, isUser: true }]);
     setSelectedCategory(category.id);
     setLastSelectedCategory(category.id);
     setShowCategoryButtons(false);
-    setFaqsByCategory(prev => ({
-      ...prev,
-      [category.id]: initialFaqByCategory[category.id] || [],
-    }));
+    try {
+      const accessToken = sessionStorage.getItem("accessToken");
+      const res = await axios.get(
+        `/api/v2/chatbot/categories/${category.id}/questions?includeClickCount=false`,
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+
+      const faqList = res.data.data.questions.map((q) => ({
+        id: q.questionId,
+        text: q.content,
+      }));
+
+      setFaqsByCategory((prev) => ({
+        ...prev,
+        [category.id]: faqList,
+      }));
+    } catch (e) {
+      console.error("FAQ 조회 실패", e);
+      setFaqsByCategory((prev) => ({
+        ...prev,
+        [category.id]: [{ id: 0, text: "FAQ를 불러올 수 없습니다." }],
+      }));
+    }
   };
 
   /* FAQ 선택 */
@@ -129,7 +118,7 @@ const ChatbotPage = () => {
     setLoading(true);
 
     try {
-      const res = await fetchChatbotAnswer({ categoryId, questionId: id, });
+      const res = await fetchChatbotAnswer({ categoryId, questionId: id });
       const answer = res.data.data;
       setAnswerCard(answer);
 
@@ -137,13 +126,16 @@ const ChatbotPage = () => {
 
       setMessages((prev) => [
         ...prev,
-        { text: answer.summary, isUser: false, showActions: true,},
+        { text: answer.summary, isUser: false, showActions: true },
       ]);
     } catch (e) {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       setMessages((prev) => [
         ...prev,
-        { text: "답변을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.", isUser: false, },
+        {
+          text: "답변을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
+          isUser: false,
+        },
       ]);
       console.error("답변 API 호출 실패", e);
     } finally {
@@ -151,7 +143,7 @@ const ChatbotPage = () => {
     }
   };
 
-  /* 카테고리 변경 */
+  /* 카테고리 초기화 */
   const handleResetCategory = () => {
     setSelectedCategory(null);
     setLastSelectedCategory(null);
@@ -161,14 +153,8 @@ const ChatbotPage = () => {
   /* 대표질문 다시보기 */
   const handleShowFaqAgain = () => {
     if (!lastSelectedCategory) return;
-
     setSelectedCategory(lastSelectedCategory);
     setShowCategoryButtons(false);
-
-    setFaqsByCategory((prev) => ({
-      ...prev,
-      [lastSelectedCategory]: initialFaqByCategory[lastSelectedCategory] || [],
-    }));
   };
 
   return (
@@ -193,12 +179,15 @@ const ChatbotPage = () => {
 
           {loading && (
             <div className="text-sm text-gray-400 mt-2">
-              답변을 불러오는 중입니다...
+              답변을 생각하는 중입니다...
             </div>
           )}
 
           {showCategoryButtons && categories.length > 0 && (
-            <ChatbotButtons categories={categories} onSelect={handleCategorySelect} />
+            <ChatbotButtons
+              categories={categories}
+              onSelect={handleCategorySelect}
+            />
           )}
 
           {!showCategoryButtons && selectedCategory && (
