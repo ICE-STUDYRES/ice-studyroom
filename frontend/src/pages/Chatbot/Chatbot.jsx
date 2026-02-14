@@ -68,7 +68,7 @@ const ChatbotPage = () => {
           questionId,
           buttonType,
           screen: "CHATBOT_CHAT_PAGE",
-          occurredAt: new Date().toISOString(),
+          occurredAt: new Date().toISOString().slice(0, 19),
         },
         { headers: { Authorization: `Bearer ${accessToken}` } }
       );
@@ -119,7 +119,6 @@ const ChatbotPage = () => {
     await sendChatbotEvent({
       eventType: "CATEGORY_SELECT",
       categoryId: category.id,
-      questionId: question.id,
     });
 
     try {
