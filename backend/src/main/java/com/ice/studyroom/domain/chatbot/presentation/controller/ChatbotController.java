@@ -2,6 +2,8 @@ package com.ice.studyroom.domain.chatbot.presentation.controller;
 
 import com.ice.studyroom.domain.chatbot.application.ChatbotQueryService;
 import com.ice.studyroom.domain.chatbot.application.ChatbotService;
+import com.ice.studyroom.domain.chatbot.application.ChatbotEventService;
+import com.ice.studyroom.domain.chatbot.presentation.dto.request.ChatbotEventRequest;
 import com.ice.studyroom.domain.chatbot.presentation.dto.request.AnswerRequest;
 import com.ice.studyroom.domain.chatbot.presentation.dto.response.AnswerResponse;
 import com.ice.studyroom.domain.chatbot.presentation.dto.response.GetCategoryQuestionsResponse;
@@ -27,6 +29,7 @@ public class ChatbotController {
 
     private final ChatbotQueryService chatbotQueryService;
     private final ChatbotService chatbotService;
+	private final ChatbotEventService chatbotEventService;
 
     // 1. 카테고리 목록조회
     @Operation(
@@ -83,4 +86,23 @@ public class ChatbotController {
         return ResponseEntity.ok(ResponseDto.of(response));
     }
 
+	@Operation(
+		summary = "사용자 이벤트 로그 수집",
+		description = """
+          챗봇 사용 중 발생하는 사용자 행동 이벤트를 수집합니다.
+          수집된 데이터는 사용자가 자주 묻는 질문, 선호하는 문의 유형 등을
+          분석하여 서비스 개선에 활용됩니다.
+          """
+	)
+	@ApiResponse(responseCode = "204", description = "이벤트 로그 저장 성공")
+	@ApiResponse(responseCode = "400", description = "잘못된 요청")
+	@ApiResponse(responseCode = "500", description = "서버 오류")
+	@PostMapping("/events")
+	// 4. 사용자 이벤트 로그 수집
+	public ResponseEntity<Void> logEvent(
+		@Valid @RequestBody ChatbotEventRequest request
+	) {
+		chatbotEventService.logEvent(request);
+		return ResponseEntity.noContent().build();
+	}
 }
