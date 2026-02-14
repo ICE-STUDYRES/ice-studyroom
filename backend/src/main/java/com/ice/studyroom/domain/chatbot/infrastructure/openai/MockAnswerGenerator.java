@@ -2,16 +2,16 @@ package com.ice.studyroom.domain.chatbot.infrastructure.openai;
 
 import com.ice.studyroom.domain.chatbot.domain.service.AnswerGenerator;
 import com.ice.studyroom.domain.chatbot.presentation.dto.response.AnswerResponse;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
-import org.springframework.context.annotation.Primary;
 import java.util.*;
 
 @Component
-@Primary
+@Profile("test")
 public class MockAnswerGenerator implements AnswerGenerator {
 
 	@Override
-	public AnswerResponse generate(String category, Long questionId){
+	public AnswerResponse generate(String category, Long questionId, String questionContent, String route, String notionUrl){
 		// 임시 더미 데이터 반환
 		return new AnswerResponse(
 			category,
