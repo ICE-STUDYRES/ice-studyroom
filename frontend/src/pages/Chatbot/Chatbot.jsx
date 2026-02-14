@@ -119,6 +119,7 @@ const ChatbotPage = () => {
     await sendChatbotEvent({
       eventType: "CATEGORY_SELECT",
       categoryId: category.id,
+      questionId: question.id,
     });
 
     try {
