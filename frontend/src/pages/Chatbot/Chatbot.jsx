@@ -46,7 +46,7 @@ const initialMessages = [
 ];
 
 const ChatbotPage = () => {
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState([]);
   const [faqsByCategory, setFaqsByCategory] = useState(initialFaqByCategory);
 
   const [messages, setMessages] = useState(initialMessages);
@@ -58,6 +58,14 @@ const ChatbotPage = () => {
   const [modalType, setModalType] = useState(null);
   const bottomRef = useRef(null);
 
+  useEffect(() => {
+    const token = sessionStorage.getItem("accessToken");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      window.location.href = "/login";
+    }
+  }, []);
+
   /* 스크롤 자동 이동 */
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -67,12 +75,38 @@ const ChatbotPage = () => {
     const timer = setTimeout(scrollToBottom, 80);
     return () => clearTimeout(timer);
   }, [messages, selectedCategory, showCategoryButtons]);
-
+  
   /* API 호출 함수 */
+  const fetchCategories = async () => {
+    try {
+      const accessToken = sessionStorage.getItem("accessToken");
+      const res = await axios.get("/api/v2/chatbot/categories", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const serverCategories = res.data.data.categories ?? [];
+
+      const mapped = serverCategories.map((cat) => ({
+        id: cat.categoryId,
+        name: cat.label,
+      }));
+
+      setCategories(mapped);
+    } catch (error) {
+      console.error("카테고리 조회 실패", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
   const fetchChatbotAnswer = async ({ categoryId, questionId }) => {
+    const accessToken = sessionStorage.getItem("accessToken");
     return axios.post("/api/v2/chatbot/answers", {
       categoryId,
       questionId,
+    }, {
+      headers: { Authorization: `Bearer ${accessToken}` },
     });
   };
 
@@ -163,7 +197,7 @@ const ChatbotPage = () => {
             </div>
           )}
 
-          {showCategoryButtons && (
+          {showCategoryButtons && categories.length > 0 && (
             <ChatbotButtons categories={categories} onSelect={handleCategorySelect} />
           )}
 
