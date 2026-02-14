@@ -41,8 +41,6 @@ const ChatbotPage = () => {
     }
   }, [navigate]);
 
-  if (!isAuthorized) return null;
-
   /* 스크롤 자동 이동 */
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -210,6 +208,7 @@ const ChatbotPage = () => {
     });
   };
 
+  if (!isAuthorized) return null;
   return (
     <div className="chat-container min-h-screen bg-blue-50 flex items-center justify-center">
       <div className="w-full max-w-[460px] h-[98vh] bg-white rounded-xl shadow-md flex flex-col overflow-hidden">
