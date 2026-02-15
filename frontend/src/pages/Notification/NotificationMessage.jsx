@@ -150,7 +150,7 @@ const getStyles = (status) => {
 // ✅ Notification 컨테이너 (UI)
 export const NotificationContainer = ({ notifications }) => {
   return (
-    <div className="fixed bottom-5 left-1/2 transform -translate-x-1/2 w-full max-w-xs space-y-2">
+    <div className="fixed bottom-24 left-1/2 transform -translate-x-1/2 w-full max-w-xs space-y-2 z-[9999]">
       {notifications.map((notification) => (
         <div
           key={notification.id}

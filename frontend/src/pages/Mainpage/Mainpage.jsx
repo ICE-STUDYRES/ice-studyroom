@@ -8,8 +8,15 @@ import { LogIn, Home, QrCode } from 'lucide-react';
 import alertImage from "../../assets/images/Alert.png";
 import { useTokenHandler } from "./handlers/TokenHandler";
 import ChatbotButton from './components/ChatbotButton';
+import RankingSection from './components/RankingSection';
+import NotificationBell from './components/NotificationBell';
+import NotificationPage from './components/NotificationPage';
+import {useNavigate} from 'react-router-dom';
+import { io } from 'socket.io-client';
 
 const MainPage = () => {
+  const navigate = useNavigate();
+
     const {
         showNotice,
         handleReservationClick,
@@ -43,11 +50,66 @@ const MainPage = () => {
       } = useTokenHandler();
       
       const accessToken = sessionStorage.getItem('accessToken');
+
+      {/* 테스트 Id(서버 연결하면 지움) */}
+      const currentMemberId = 1;
+      //{/* UserContext에서 전체 유저 데이터를 꺼내옴 */}
+      //const userData = useUser();
+      //const currentMemberId = userData?.id;
+
+      {/* 알림 빨간 점 상태 관리 */}
+      const [hasUnread, setHasUnread] = useState(false);
+
+      {/* 랭킹 리스트 관리 */}
+      const [weeklyRanking, setWeeklyRanking] = useState([]);
+
       const [recentReservation, setRecentReservation] = useState({
         date: null,
         roomNumber: null,
       });
       const [showPenaltyPopup, setShowPenaltyPopup] = useState(false);
+
+      useEffect(() => {
+        {/* 소켓 서버 연결(로그인 여부 상관없이 연결) */}
+        const socket = io("http://localhost:3001/ranking", { 
+          transports: ["websocket"]
+        });
+
+        socket.on("connect", () => {
+          console.log("소켓 연결 성공");
+
+          {/* 랭킹 데이터 요청(누구나 받음) */}
+          socket.emit("request-ranking");
+
+          if (accessToken && currentMemberId) {
+            console.log('개인 채널 입장: member:${currentMemberId}');
+            socket.emit("join", 'member:${currentMemberId}');
+          }
+        });
+
+        {/* 랭킹 업데이트, 백에서 보내준 이벤트 이름 ranking-update라고 가정 */}
+        socket.on("ranking-update", (data) => {
+          console.log("실시간 랭킹 업데이트:", data);
+          setWeeklyRanking(data); //받아온 데이터를 state에 저장
+        })
+
+        {/* 개인 알림 업데이트, 백에서 보내준 이벤트 이름 personal-notification라고 가정 */}
+        if (accessToken) {
+          socket.on("personal-notification", (data) => {
+          console.log("실시간 알림 도착:", data);
+          setHasUnread(true);  
+          });
+        }
+
+        {/* 컴포넌트 사라질 때 소켓 끊기 */}
+        return () => socket.disconnect();
+      }, [accessToken, currentMemberId]);
+
+      {/* 종 아이콘 클릭 핸들러 */}
+      const handleBellClick = () => {
+        setHasUnread(false); //빨간 점 끄기
+        navigate('/notifications'); //알림 페이지로 이동
+      };
 
       useEffect(() => {
         const getRecentReservation = async () => {
@@ -106,7 +168,13 @@ const MainPage = () => {
           <h1 className="font-semibold text-gray-900">정보통신공학과</h1>
         </div>
         {accessToken ? (
-          <div className="flex items-center gap-2">
+          <div className="flex items-center">
+
+            <NotificationBell
+                hasUnread={hasUnread} //빨간 점 상태 전달
+                onClick={handleBellClick} //클릭 시 실행할 함수 전달
+            />
+
             <ProfileDropdown
               userName={loginForm.email}
               userEmail={loginForm.email}
@@ -246,6 +314,12 @@ const MainPage = () => {
           </button>
         </div>
       </div>
+
+      {/* Ranking Section(데이터 전달) */}
+      <RankingSection
+      isLoggedIn={!!accessToken}
+      weeklyData={weeklyRanking}
+      />
       
       <NoticePopup 
         showNotice={showNotice} 
