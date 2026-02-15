@@ -49,9 +49,7 @@ const MainPage = () => {
         refreshTokens,
       } = useTokenHandler();
       
-      {/* commit하기 전에 지움! 아래 코드로 다시 바꾸기 */}
-      const accessToken = "test-token";
-      //const accessToken = sessionStorage.getItem('accessToken');
+      const accessToken = sessionStorage.getItem('accessToken');
 
       {/* 테스트 Id(서버 연결하면 지움) */}
       const currentMemberId = 1;
@@ -94,7 +92,7 @@ const MainPage = () => {
           console.log("실시간 랭킹 업데이트:", data);
           setWeeklyRanking(data); //받아온 데이터를 state에 저장
         })
-        
+
         {/* 개인 알림 업데이트, 백에서 보내준 이벤트 이름 personal-notification라고 가정 */}
         if (accessToken) {
           socket.on("personal-notification", (data) => {
