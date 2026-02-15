@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.ranking.presentation;
+package com.ice.studyroom.domain.ranking.presentation.dto.response;
 
 public record RankingResponse(
 
