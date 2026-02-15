@@ -1,16 +1,21 @@
 package com.ice.studyroom.domain.membership.domain.service.manage;
 
+import com.ice.studyroom.domain.identity.domain.application.EmailVerificationService;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
+import com.ice.studyroom.domain.membership.domain.exception.member.MemberNotFoundException;
 import com.ice.studyroom.domain.membership.domain.service.encrypt.PasswordEncryptor;
+import com.ice.studyroom.domain.membership.domain.vo.Email;
 import com.ice.studyroom.domain.membership.domain.vo.EncodedPassword;
 import com.ice.studyroom.domain.membership.domain.vo.RawPassword;
 import com.ice.studyroom.global.exception.BusinessException;
+import com.ice.studyroom.global.type.ActionType;
 import com.ice.studyroom.global.type.StatusCode;
 import com.ice.studyroom.domain.membership.domain.util.MembershipLogUtil;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -19,6 +24,8 @@ public class MemberPasswordService {
 
 	private final PasswordEncryptor passwordEncryptor;
 	private final MemberRepository memberRepository;
+	private final MemberEmailService memberEmailService;
+	private final EmailVerificationService emailVerificationService;
 
 	/**
 	 * 회원의 비밀번호를 변경합니다.
@@ -38,6 +45,40 @@ public class MemberPasswordService {
 		EncodedPassword encoded = passwordEncryptor.encrypt(newPassword);
 		member.changePassword(encoded);
 		memberRepository.save(member);
+	}
+
+	/**
+	 * 비밀번호를 재설정합니다. (비로그인 상태)
+	 * 이메일 인증 완료 후에만 실행 가능합니다.
+	 *
+	 * @param email 비밀번호를 재설정할 이메일
+	 * @param newPassword 새로운 비밀번호
+	 * @param newPasswordConfirm 새로운 비밀번호 확인
+	 * @throws BusinessException 비밀번호 불일치, 인증 미완료, 존재하지 않는 회원
+	 */
+	@Transactional
+	public void resetPassword(Email email, RawPassword newPassword, RawPassword newPasswordConfirm) {
+		// 1. 비밀번호 일치 확인
+		validateConfirmationMatch(newPassword, newPasswordConfirm);
+
+		// 2. 이메일 존재 확인
+		memberEmailService.ensureEmailExists(email);
+
+		// 3. 인증 완료 여부 확인
+		emailVerificationService.ensureEmailAuthenticated(email.getValue());
+
+		// 4. 비밀번호 변경
+		Member member = memberRepository.findByEmail(email)
+			.orElseThrow(() -> new MemberNotFoundException(email.getValue(), ActionType.PASSWORD_RESET));
+
+		EncodedPassword encoded = passwordEncryptor.encrypt(newPassword);
+		member.changePassword(encoded);
+		memberRepository.save(member);
+
+		// 5. 인증 완료 상태 삭제 (재사용 방지)
+		emailVerificationService.deleteVerificationStatus(email.getValue());
+
+		MembershipLogUtil.log("비밀번호 재설정 완료", "email: " + email.getValue());
 	}
 
 	/**
@@ -95,7 +136,7 @@ public class MemberPasswordService {
 	private void validateConfirmationMatch(RawPassword newPass, RawPassword confirm) {
 		if (!newPass.equals(confirm)) {
 			MembershipLogUtil.logWarn("비밀번호 변경 실패 - 새로운 비밀번호 간의 불일치 발생");
-			throw new BusinessException(StatusCode.BAD_REQUEST, "새로운 비밀번호가 서로 일치하지 않습니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "비밀번호가 일치하지않습니다.");
 		}
 	}
 }

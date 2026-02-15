@@ -8,6 +8,7 @@ import com.ice.studyroom.domain.membership.domain.service.manage.MemberPasswordS
 import com.ice.studyroom.domain.membership.domain.vo.EncodedPassword;
 import com.ice.studyroom.domain.membership.domain.vo.RawPassword;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
+import com.ice.studyroom.domain.membership.presentation.dto.request.*;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -22,11 +23,6 @@ import com.ice.studyroom.global.security.jwt.JwtTokenProvider;
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.service.MemberDomainService;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
-import com.ice.studyroom.domain.membership.presentation.dto.request.EmailVerificationRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.MemberEmailVerificationRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.UpdatePasswordRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberEmailResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLookupResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberResponse;
@@ -128,6 +124,19 @@ public class MembershipService {
 		return "비밀번호가 성공적으로 변경되었습니다.";
 	}
 
+	public String resetPassword(PasswordResetRequest request) {
+		MembershipLogUtil.log("비밀번호 재설정 요청", "email: " + request.email());
+
+		memberPasswordService.resetPassword(
+			Email.of(request.email()),
+			RawPassword.of(request.newPassword()),
+			RawPassword.of(request.newPasswordConfirm())
+		);
+
+		MembershipLogUtil.log("비밀번호 재설정 완료", "email: " + request.email());
+		return "비밀번호가 성공적으로 변경되었습니다.";
+	}
+
 	public MemberLookupResponse lookUpMember(String authorizationHeader) {
 		String email = tokenService.extractEmailFromAccessToken(authorizationHeader);
 		MembershipLogUtil.log("회원 정보 조회 요청", "email: " + email);
@@ -166,7 +175,7 @@ public class MembershipService {
 	public MemberEmailResponse checkEmailVerification(MemberEmailVerificationRequest request) {
 		MembershipLogUtil.log("이메일 인증 확인 요청", "email: " + request.email());
 
-		emailVerificationService.verifiedCode(request.email(), request.code());
+		emailVerificationService.verifyCode(request.email(), request.code());
 		MembershipLogUtil.log("이메일 인증 확인 성공", "email: " + request.email());
 
 		return MemberEmailResponse.of("인증이 완료되었습니다.");
