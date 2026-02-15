@@ -33,7 +33,7 @@ class EmailVerificationServiceTest {
 
 	@BeforeEach
 	void beforeEach(){
-		emailVerificationService = new EmailVerificationService(emailService, new VerificationCodeCacheService(cacheService));
+		emailVerificationService = new EmailVerificationService(emailService, cacheService);
 	}
 
 	@Test
@@ -75,7 +75,7 @@ class EmailVerificationServiceTest {
 		when(cacheService.exists(email)).thenReturn(true);
 		when(cacheService.get(email)).thenReturn(validCode);
 
-		emailVerificationService.verifiedCode(email, validCode);
+		emailVerificationService.verifyCode(email, validCode);
 
 		verify(cacheService, times(1)).exists(email);
 		verify(cacheService, times(1)).get(email);
@@ -92,7 +92,7 @@ class EmailVerificationServiceTest {
 		when(cacheService.get(email)).thenReturn(wrongCode);
 
 		BusinessException exception = assertThrows(BusinessException.class, () -> {
-			emailVerificationService.verifiedCode(email, validCode);
+			emailVerificationService.verifyCode(email, validCode);
 		});
 
 		assertEquals(StatusCode.INVALID_VERIFICATION_CODE, exception.getStatusCode());
@@ -111,7 +111,7 @@ class EmailVerificationServiceTest {
 		when(cacheService.exists(email)).thenReturn(false);
 
 		BusinessException exception = assertThrows(BusinessException.class, () -> {
-			emailVerificationService.verifiedCode(email, authCode);
+			emailVerificationService.verifyCode(email, authCode);
 		});
 
 		assertEquals(StatusCode.INVALID_VERIFICATION_CODE, exception.getStatusCode());
