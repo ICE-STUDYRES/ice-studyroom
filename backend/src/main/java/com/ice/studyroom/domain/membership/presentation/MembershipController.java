@@ -2,6 +2,7 @@ package com.ice.studyroom.domain.membership.presentation;
 
 import java.time.Duration;
 
+import com.ice.studyroom.domain.membership.presentation.dto.request.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
@@ -17,11 +18,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ice.studyroom.global.security.jwt.JwtToken;
 import com.ice.studyroom.domain.membership.application.MembershipService;
-import com.ice.studyroom.domain.membership.presentation.dto.request.EmailVerificationRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.MemberCreateRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.MemberEmailVerificationRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.MemberLoginRequest;
-import com.ice.studyroom.domain.membership.presentation.dto.request.UpdatePasswordRequest;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberEmailResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLoginResponse;
 import com.ice.studyroom.domain.membership.presentation.dto.response.MemberLookupResponse;
@@ -175,5 +171,29 @@ public class MembershipController {
 		return ResponseEntity
 			.status(HttpStatus.OK)
 			.body(ResponseDto.of(membershipService.checkEmailVerification(request)));
+	}
+
+	@Operation(summary = "비밀번호 재설정 이메일 인증번호 검증")
+	@ApiResponse(responseCode = "200", description = "인증 성공")
+	@ApiResponse(responseCode = "401", description = "유효하지 않은 코드")
+	@PostMapping("/password-reset/email-verification/confirm")
+	public ResponseEntity<ResponseDto<MemberEmailResponse>> confirmPasswordResetEmail(
+		@Valid @RequestBody MemberEmailVerificationRequest request) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(membershipService.checkEmailVerification(request)));
+	}
+
+	@Operation(summary = "비밀번호 재설정", description = "이메일 인증 완료 후 새로운 비밀번호로 변경합니다.")
+	@ApiResponse(responseCode = "200", description = "비밀번호 변경 성공")
+	@ApiResponse(responseCode = "400", description = "이메일 인증 미완료 또는 잘못된 형식의 비밀번호")
+	@ApiResponse(responseCode = "404", description = "존재하지 않는 이메일")
+	@ApiResponse(responseCode = "500", description = "비밀번호 변경 실패")
+	@PatchMapping("/password-reset")
+	public ResponseEntity<ResponseDto<String>> resetPassword(
+		@Valid @RequestBody PasswordResetRequest request) {
+		return ResponseEntity
+			.status(HttpStatus.OK)
+			.body(ResponseDto.of(membershipService.resetPassword(request)));
 	}
 }
