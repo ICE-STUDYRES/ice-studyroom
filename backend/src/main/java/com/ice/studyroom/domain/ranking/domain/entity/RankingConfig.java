@@ -25,4 +25,15 @@ public class RankingConfig extends BaseTimeEntity {
 
 	@Column(name = "start_at", nullable = false)
 	private LocalDateTime startAt;
+
+	// 학기간 스냅샷 스케쥴러를 위해 필요
+	@Column(name = "end_at")
+	private LocalDateTime endAt;
+
+	@Column(nullable = false)
+	private boolean processed = false;
+
+	public void markProcessed() {
+		this.processed = true;
+	}
 }
