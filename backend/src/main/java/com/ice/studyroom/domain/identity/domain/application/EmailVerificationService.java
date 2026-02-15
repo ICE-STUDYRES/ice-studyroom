@@ -60,7 +60,7 @@ public class EmailVerificationService {
 
 		if (savedCode == null || !savedCode.equals(authCode)) {
 			log.warn("이메일 인증 실패 - 잘못된 인증 코드 - email: {}", email);
-			throw new BusinessException(StatusCode.INVALID_VERIFICATION_CODE, "유효하지 않은 인증코드입니다.");
+			throw new BusinessException(StatusCode.INVALID_VERIFICATION_CODE, "인증번호 정보를 다시 확인해주세.");
 		}
 
 		log.info("이메일 인증 성공 - email: {}", email);

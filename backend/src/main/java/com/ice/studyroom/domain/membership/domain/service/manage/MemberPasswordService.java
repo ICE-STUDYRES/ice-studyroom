@@ -136,7 +136,7 @@ public class MemberPasswordService {
 	private void validateConfirmationMatch(RawPassword newPass, RawPassword confirm) {
 		if (!newPass.equals(confirm)) {
 			MembershipLogUtil.logWarn("비밀번호 변경 실패 - 새로운 비밀번호 간의 불일치 발생");
-			throw new BusinessException(StatusCode.BAD_REQUEST, "새로운 비밀번호가 서로 일치하지 않습니다.");
+			throw new BusinessException(StatusCode.BAD_REQUEST, "비밀번호가 일치하지않습니다.");
 		}
 	}
 }
