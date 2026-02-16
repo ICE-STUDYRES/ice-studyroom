@@ -82,8 +82,8 @@ const MainPage = () => {
           socket.emit("request-ranking");
 
           if (accessToken && currentMemberId) {
-            console.log('개인 채널 입장: member:${currentMemberId}');
-            socket.emit("join", 'member:${currentMemberId}');
+            console.log(`개인 채널 입장: member:${currentMemberId}`);
+            socket.emit("join", `member:${currentMemberId}`);
           }
         });
 
