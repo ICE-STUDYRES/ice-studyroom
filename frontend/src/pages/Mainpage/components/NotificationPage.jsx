@@ -3,14 +3,21 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '../Mainpage/handlers/UserContext';
 
 const NotificationPage = () => {
   const navigate = useNavigate();
 
+  {/* 유저 정보 가져오기 (초기엔 null일 수 있으므로 안전하게 접근) */}
+  const userData = useUser();
+
+  {/* 닉네임 설정 (없으면 빈 문자열 ""로 처리) */}
+  const nickname = userDate?.nickname || "";
+
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  {/* 문구 생성 함수 */}
+  {/* 문구 생성 함수-서버에서 받은 알림 정보(notification)와 사용자 이름(name)을 받음 */}
   const makeNotificationMessage = (notification,name) => {
     const { eventType, rank, previousRank, gapWithUpper, gapToEnter } = notification;
 
@@ -21,7 +28,7 @@ const NotificationPage = () => {
         return `[${name}님] 현재 ${rank}위입니다. ${rank - 1}위까지 점수 차는 ${gapWithUpper}점입니다.`;
       case "RANK_OUT_RANGE":
         return `[${name}님] 현재 ${rank}위입니다. 순위권 진입까지 ${gapToEnter}점이 필요합니다.`;
-      case "TOP6_10_RANK_CHANGED":
+      case "TOP5_ENTER":
         return `[${name}님] ${previousRank}위에서 ${rank}위로 진입했습니다!`;
       case "TOP5_RANK_CHANGED":
         return `[${name}님] ${previousRank}위 → ${rank}위로 순위가 상승했습니다!`;
@@ -96,7 +103,7 @@ const NotificationPage = () => {
 
             {/* 리스트 영역 */}
             <div className="flex-1 space-y-4 overflow-y-auto mb-6">
-              {notifications.map((noti) => (
+              {notifications.map((noti, nickname) => (
                 <div key={noti.id} className="bg-blue-100 p-5 rounded-2xl flex items-center justify-between shadow-sm relative min-h-[80px]">
                   <p className="text-gray-800 text-[15px] font-semibold leading-relaxed text-center w-full px-6 break-keep">
                     {makeNotificationMessage(noti)}
