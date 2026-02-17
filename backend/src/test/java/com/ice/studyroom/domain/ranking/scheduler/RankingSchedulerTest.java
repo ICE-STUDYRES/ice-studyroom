@@ -23,9 +23,6 @@ class RankingSchedulerTest {
 	@Mock
 	private RankingSnapshotJob snapshotJob;
 
-	@Mock
-	private RankingConfigRepository rankingConfigRepository;
-
 	@InjectMocks
 	private RankingScheduler scheduler;
 
@@ -63,81 +60,22 @@ class RankingSchedulerTest {
 	}
 
 	@Test
-	void semester_config없으면_아무일도안함() {
-
-		given(rankingConfigRepository.findByPeriod(RankingPeriod.SEMESTER))
-			.willReturn(null);
-
-		scheduler.checkSemesterSnapshot();
-
-		verify(snapshotJob, never()).execute(any(), any());
-	}
-
-	@Test
-	void semester_endAt없으면_아무일도안함() {
-
-		RankingConfig config = mock(RankingConfig.class);
-		given(config.getEndAt()).willReturn(null);
-
-		given(rankingConfigRepository.findByPeriod(RankingPeriod.SEMESTER))
-			.willReturn(config);
-
-		scheduler.checkSemesterSnapshot();
-
-		verify(snapshotJob, never()).execute(any(), any());
-	}
-
-	@Test
-	void semester_종료전이면_실행안함() {
-
-		RankingConfig config = mock(RankingConfig.class);
-		given(config.getEndAt())
-			.willReturn(LocalDateTime.now().plusDays(1));
-		given(config.isProcessed()).willReturn(false);
-
-		given(rankingConfigRepository.findByPeriod(RankingPeriod.SEMESTER))
-			.willReturn(config);
-
-		scheduler.checkSemesterSnapshot();
-
-		verify(snapshotJob, never()).execute(any(), any());
-	}
-
-	@Test
-	void semester_종료됐고_미처리면_실행됨() {
-
-		RankingConfig config = mock(RankingConfig.class);
-		given(config.getEndAt())
-			.willReturn(LocalDateTime.now().minusDays(1));
-		given(config.isProcessed()).willReturn(false);
-
-		given(rankingConfigRepository.findByPeriod(RankingPeriod.SEMESTER))
-			.willReturn(config);
-
-		scheduler.checkSemesterSnapshot();
+	void firstSemesterSnapshot_호출되면_execute_호출됨() {
+		scheduler.firstSemesterSnapshot();
 
 		verify(snapshotJob).execute(
-			eq(RankingPeriod.SEMESTER),
-			any()
+				eq(RankingPeriod.SEMESTER),
+				matches("\\d{4}-1")
 		);
-
-		verify(config).markProcessed();
 	}
 
 	@Test
-	void semester_이미처리됐으면_실행안함() {
+	void secondSemesterSnapshot_호출되면_execute_호출됨() {
+		scheduler.secondSemesterSnapshot();
 
-		RankingConfig config = mock(RankingConfig.class);
-		given(config.getEndAt())
-			.willReturn(LocalDateTime.now().minusDays(1));
-		given(config.isProcessed()).willReturn(true);
-
-		given(rankingConfigRepository.findByPeriod(RankingPeriod.SEMESTER))
-			.willReturn(config);
-
-		scheduler.checkSemesterSnapshot();
-
-		verify(snapshotJob, never()).execute(any(), any());
+		verify(snapshotJob).execute(
+				eq(RankingPeriod.SEMESTER),
+				matches("\\d{4}-2")
+		);
 	}
-
 }
