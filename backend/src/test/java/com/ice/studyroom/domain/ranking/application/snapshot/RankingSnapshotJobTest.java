@@ -19,7 +19,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class RankingSnapshotJobUnitTest {
+class RankingSnapshotJobTest {
 
 	@Mock
 	private RankingStore rankingStore;

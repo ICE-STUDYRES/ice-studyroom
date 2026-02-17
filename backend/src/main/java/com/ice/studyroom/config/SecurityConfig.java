@@ -71,7 +71,8 @@ public class SecurityConfig {
 					"/api/schedules/**",
 					"/api/reservations/**",
 					"/api/v2/chatbot/**",
-					"/api/notifications/**"
+					"/api/notifications/**",
+					"/api/rankings/**"
 				).authenticated()
 
 				// Swagger 관련 경로 허용
