@@ -1,16 +1,13 @@
 package com.ice.studyroom.domain.ranking.scheduler;
 
 import com.ice.studyroom.domain.ranking.application.snapshot.RankingSnapshotJob;
-import com.ice.studyroom.domain.ranking.domain.entity.RankingConfig;
 import com.ice.studyroom.domain.ranking.domain.type.RankingPeriod;
-import com.ice.studyroom.domain.ranking.infrastructure.persistence.RankingConfigRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.YearMonth;
 
 @Configuration
@@ -19,7 +16,6 @@ import java.time.YearMonth;
 public class RankingScheduler {
 
 	private final RankingSnapshotJob snapshotJob;
-	private final RankingConfigRepository rankingConfigRepository;
 
 	// 주간 - 일요일 23:59:59
 	@Scheduled(cron = "59 59 23 ? * SUN")
@@ -48,25 +44,22 @@ public class RankingScheduler {
 		);
 	}
 
-	// 학기간 -
-	@Scheduled(cron = "0 0 0 * * ?")
-	public void checkSemesterSnapshot() {
-
-		RankingConfig config =
-			rankingConfigRepository.findByPeriod(RankingPeriod.SEMESTER);
-
-		if (config == null || config.getEndAt() == null) return;
-
-		if (!config.isProcessed()
-			&& LocalDateTime.now().isAfter(config.getEndAt())) {
-
-			snapshotJob.execute(
+	// 1학기 - 매년 7월 1일 00:00
+	@Scheduled(cron = "0 0 0 1 7 ?")
+	public void firstSemesterSnapshot() {
+		snapshotJob.execute(
 				RankingPeriod.SEMESTER,
-				config.getEndAt().toLocalDate().toString()
-			);
+				LocalDate.now().getYear() + "-1"
+		);
+	}
 
-			config.markProcessed(); // 처리 완료 표시
-		}
+	// 2학기 - 매년 11월 1일 00:00
+	@Scheduled(cron = "0 0 0 1 11 ?")
+	public void secondSemesterSnapshot() {
+		snapshotJob.execute(
+				RankingPeriod.SEMESTER,
+				LocalDate.now().getYear() + "-2"
+		);
 	}
 
 
