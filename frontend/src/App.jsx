@@ -18,6 +18,7 @@ import CodeVerify from './pages/PasswordReset/components/CodeVerify';
 import ResetPassword from './pages/PasswordReset/components/ResetPassword';
 import ResetComplete from './pages/PasswordReset/components/ResetComplete';
 import './main.css';
+import NotificationPage from './pages/Mainpage/components/NotificationPage.jsx';
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
             <Route path="/password-reset/code" element={<CodeVerify />} />
             <Route path="/password-reset/new" element={<ResetPassword />} />
             <Route path="/password-reset/complete" element={<ResetComplete />} />
+            <Route path="/notifications" element={<NotificationPage />} />
             {/* 홈 페이지 버튼 연결 완료 후 제거 예정 */}
             <Route path="/chatbot" element={<Chatbot />} />
           </Routes>
