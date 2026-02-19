@@ -85,8 +85,36 @@ public class RankingQueryService {
 		return result;
 	}
 
-	private String maskName(String name) {
-		if (name.length() <= 2) return name;
-		return name.charAt(0) + "*" + name.charAt(name.length() - 1);
+	String maskName(String name) {
+
+		if (name == null || name.isBlank()) {
+			return "";
+		}
+
+		name = name.trim();
+		int length = name.length();
+
+		// 1글자
+		if (length == 1) {
+			return "*";
+		}
+
+		// 2글자
+		if (length == 2) {
+			return name.charAt(0) + "*";
+		}
+
+		// 3글자 이상
+		StringBuilder masked = new StringBuilder();
+		masked.append(name.charAt(0));
+
+		for (int i = 0; i < length - 2; i++) {
+			masked.append("*");
+		}
+
+		masked.append(name.charAt(length - 1));
+
+		return masked.toString();
 	}
+
 }
