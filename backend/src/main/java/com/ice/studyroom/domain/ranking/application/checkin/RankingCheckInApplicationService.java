@@ -10,8 +10,10 @@ import com.ice.studyroom.domain.reservation.domain.entity.Reservation;
 import com.ice.studyroom.domain.reservation.domain.type.ReservationStatus;
 import com.ice.studyroom.domain.schedule.domain.entity.Schedule;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RankingCheckInApplicationService {
@@ -39,6 +41,9 @@ public class RankingCheckInApplicationService {
 
 		// 랭킹 점수가 발생하지 않은 경우에는 랭킹 갱신 및 이벤트 처리가 필요 없으므로 return
 		if (score <= 0) {
+			log.debug("[RANKING] 점수 미발생 - reservationId: {}, memberId: {}",
+					reservation.getId(),
+					reservation.getMember().getId());
 			return;
 		}
 
@@ -47,43 +52,59 @@ public class RankingCheckInApplicationService {
 		// 이벤트 판단용 기준
 		RankingPeriod eventPeriod = RankingPeriod.WEEKLY;
 
-		// 점수 반영 전 rank
-		Integer previousRank = rankingStore.getRank(eventPeriod, memberId);
+        try {
 
-		// 기간별 전체 점수 반영
-		for (RankingPeriod period : RankingPeriod.values()) {
-			rankingStore.increaseScore(period, memberId, score);
-		}
+			log.info("[RANKING] 점수 반영 시작 - memberId: {}, score: {}",
+					memberId, score);
 
-		// 점수 반영 후 rank
-		Integer currentRank = rankingStore.getRank(eventPeriod, memberId);
+            // 점수 반영 전 rank
+            Integer previousRank = rankingStore.getRank(eventPeriod, memberId);
 
-		// 이전 랭킹이 없던 사용자의 경우 이벤트 발행 X
-		if (previousRank == null || currentRank == null) {
-			return;
-		}
+            // 기간별 전체 점수 반영
+            for (RankingPeriod period : RankingPeriod.values()) {
+                rankingStore.increaseScore(period, memberId, score);
+            }
 
-		Integer gapWithUpper = null;
-		Integer upperScore = rankingStore.getUpperScore(eventPeriod, memberId);
-		Integer myScore = rankingStore.getScore(eventPeriod, memberId);
+            // 점수 반영 후 rank
+            Integer currentRank = rankingStore.getRank(eventPeriod, memberId);
 
-		if (upperScore != null && myScore != null) {
-			gapWithUpper = upperScore - myScore;
-		}
+            // 이전 랭킹이 없던 사용자의 경우 이벤트 발행 X
+            if (previousRank == null || currentRank == null) {
+				log.debug("[RANKING] 기존 랭킹 없음 - memberId: {}", memberId);
 
-		// Context 생성
-		Member member = reservation.getMember();
+                return;
+            }
 
-		RankingContext context = new RankingContext(
-			memberId,
-			member.getName(),
-			member.getEmail().getValue(),
-			previousRank,
-			currentRank,
-			gapWithUpper
-		);
+            Integer gapWithUpper = null;
+            Integer upperScore = rankingStore.getUpperScore(eventPeriod, memberId);
+            Integer myScore = rankingStore.getScore(eventPeriod, memberId);
 
-		// 이벤트 트리거
-		rankingEventTriggerService.trigger(context);
-	}
+            if (upperScore != null && myScore != null) {
+                gapWithUpper = upperScore - myScore;
+            }
+
+            // Context 생성
+            Member member = reservation.getMember();
+
+            RankingContext context = new RankingContext(
+                memberId,
+                member.getName(),
+                member.getEmail().getValue(),
+                previousRank,
+                currentRank,
+                gapWithUpper
+            );
+
+            // 이벤트 트리거
+            rankingEventTriggerService.trigger(context);
+
+			log.info("[RANKING] ✅ 점수 반영 완료 - memberId: {}, 이전: {}, 현재: {}",
+					memberId, previousRank, currentRank);
+
+        } catch (Exception e) {
+
+			log.error("[RANKING] ❌ 점수 반영 중 오류 발생 - memberId: {}, score: {}",
+					memberId, score, e);
+        }
+    }
 }
