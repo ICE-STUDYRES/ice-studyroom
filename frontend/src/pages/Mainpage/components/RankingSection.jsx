@@ -1,26 +1,28 @@
+{/* 월간/학기/연간: RestAPI로 데이터 받을 예정 */}
+{/* 주간: WebSocket으로 데이터 받을 예정 */}
+
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-{/* MainPage가 소켓으로 실시간 받아온 주간 랭킹, 로그인 여부 */}
+{/* MainPage가 WebSocket으로 실시간 받아온 주간 랭킹, 로그인 여부 */}
 const RankingSection = ({ weeklyData, isLoggedIn }) => {
-  const [activeTab, setActiveTab] = useState('weekly');
 
-  {/* API로 받아올 데이터 */}
+  const [activeTab, setActiveTab] = useState('WEEKLY');
   const [apiRankingData, setApiRankingData] = useState([]);
-
   const [loading, setLoading] = useState(false);
 
-  {/* 탭 설정 (키: 내부용, 라벨: 화면 표시용 */}
+  {/* 탭 설정 (label: 화면 표시용) */}
   const tabs = [
-    { key: 'weekly', label: '주간' },
-    { key: 'monthly', label: '월간' },
-    { key: 'semester', label: '학기' },
-    { key: 'yearly', label: '연간' },
+    { key: 'WEEKLY', label: '주간' },
+    { key: 'MONTHLY', label: '월간' },
+    { key: 'SEMESTER', label: '학기' },
+    { key: 'YEARLY', label: '연간' },
   ];
 
-  {/* 탭 변경 시 데이터 가져오기(주간은 소켓이라 제외) */}
+  {/* 탭 변경 시 데이터 가져오기 (주간은 소켓이라 제외) */}
   useEffect(() => {
     {/* 주간 탭이면 API 호출 안 함 (부모가 준 weeklyData 사용) */}
-    if (activeTab === 'weekly') return;
+    if (activeTab === 'WEEKLY') return;
 
     {/* 로그인 안 했으면 API 호출 안 함 */}
     if (!isLoggedIn) return;
@@ -30,25 +32,34 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
       setApiRankingData([]);
 
       try {
-        //나중에 여기에 await fetch(`~`)
-        console.log(`${activeTab} 랭킹 데이터 요청 중...`);
+        const token = sessionStorage.getItem('accessToken');
+        
+        const response = await axios.get(`/api/rankings?period=${activeTab}`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+        });
 
-        await new Promise(resolve => setTimeout(resolve, 500));
-
-        const dummyData = [
-          { rank: 1, memberName: "임*연" },
-          { rank: 2, memberName: "김*수" },
-          { rank: 3, memberName: "박*산" },
-          { rank: 4, memberName: "김*영" },
-          { rank: 5, memberName: "임*준" },
-        ];
-        setApiRankingData(dummyData);
+        if (response.data.code === "S200") {
+          setApiRankingData(response.data.data);
+        }
       } catch (error) {
-        console.error("랭킹 로드 실패:", error);
+        const errorCode = error.response?.data?.code;
+
+        if (errorCode === "UNAUTHORIZED") {
+          console.error("인증 실패: 로그인이 필요하거나 토큰이 만료되었습니다.");
+        } else if (errorCode === "C400") {
+          console.error("잘못된 요청: 허용되지 않는 파라미터입니다.");
+        } else if (errorCode === "E500") {
+          console.error("서버 오류: 백엔드 서버에 문제가 발생했습니다.");
+        } else {
+          console.error(`${activeTab} 랭킹 데이터 로드 실패:`, error);
+        }
       } finally {
         setLoading(false);
       }
     };
+    
     fetchOtherRankings();
   }, [activeTab, isLoggedIn]);
 
@@ -57,7 +68,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
   };
 
   {/* 현재 보여줄 데이터 결정 */}
-  const displayData = activeTab === 'weekly' ? weeklyData : apiRankingData;
+  const displayData = activeTab === 'WEEKLY' ? weeklyData : apiRankingData;
 
   return (
     <div className="px-4 pb-4 mt-4">
@@ -82,14 +93,14 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
       
       <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm min-h-[180px] flex items-center justify-center">
         {/* 주간 탭이거나, 로그인이 되어있으면 노란 박스 */}
-        {activeTab === 'weekly' || isLoggedIn ? (
+        {activeTab === 'WEEKLY' || isLoggedIn ? (
           <div className="w-full bg-yellow-200 border-4 border-yellow-400 rounded-xl py-6 flex flex-col items-center justify-center gap-2">
              {loading ? (
                 <p className="text-gray-500 text-sm animate-pulse">랭킹 데이터를 불러오는 중...</p>
              ) : displayData && displayData.length > 0 ? (
                 displayData.slice(0, 5).map((user, index) => (
                   <div key={index} className="font-bold text-gray-800 text-base">
-                    {user.rank}위: {user.memberName}
+                    {user.rank}위: {user.name}
                   </div>
                 ))
              ) : (
