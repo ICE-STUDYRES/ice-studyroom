@@ -3,23 +3,21 @@
 import { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-
-const DUMMY_CODE = "123456";
+import axios from "axios";
 
 const CodeVerify = () => {
-  const [code, setCode] = useState("");
-  const [error, setError] = useState("");
-
   const navigate = useNavigate();
 
+  const [code, setCode] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
   const location = useLocation();
-  //페이지 이동하면서 email 값을 같이 들고 이동,그 값을 다음 페이지에서 받기 위해 useLocation()을 씀
 
-  // 이전 페이지에서 전달한 이메일을 꺼내서 email 변수에 저장
+  /* 앞 페이지에서 받아온 이메일 */
   const email = location.state?.email;
-  //navigate()로 전달한 데이터 상자=>location.state: {email:"test@hufs.ac.kr"}가 들어있음
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setError("");
 
     if (!code.trim()) {
@@ -27,12 +25,30 @@ const CodeVerify = () => {
       return;
     }
 
-    if (code !== DUMMY_CODE) {
-      setError("인증번호 정보를 다시 확인해주세요.");
-      return;
-    }
+    setIsLoading(true);
 
-    navigate("/password-reset/new");
+    try {
+      const response = await axios.post("/api/users/password-reset/email-verification/confirm", {
+        email: email,
+        code: code
+      });
+
+      if (response.data.code === "S200") {
+        navigate("/password-reset/new", { state: { email } });
+      }
+    } catch (error) {
+      const errorCode = error.response?.data?.code;
+
+      if (errorCode === "C400") {
+        setError("인증번호 정보를 다시 확인해주세요.");
+      } else if (errorCode === "E500") {
+        setError("서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      } else {
+        setError("인증번호 검증에 실패했습니다. 다시 시도해주세요.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleBack = () => {
@@ -75,7 +91,9 @@ const CodeVerify = () => {
             setError("");
           }}
           placeholder="인증번호를 입력하세요"
-          className="w-full p-3 rounded-lg bg-blue-50 focus:ring-2 focus:ring-blue-500 outline-none"
+          className={`w-full p-3 rounded-lg outline-none bg-blue-50
+            ${error ? "ring-2 ring-red-400" : "focus:ring-2 focus:ring-blue-500"}
+          `}
         />
 
         {/* 에러 메시지 */}
@@ -88,9 +106,12 @@ const CodeVerify = () => {
         {/* 다음 버튼 */}
         <button
           onClick={handleNext}
-          className="w-full mt-6 p-3 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600"
+          disabled={isLoading}
+          className={`w-full mt-6 p-3 rounded-lg text-white font-medium transition-colors ${
+            isLoading ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+          }`}
         >
-          다음
+          {isLoading ? '확인 중...' : '다음'}
         </button>
       </div>
     </div>
