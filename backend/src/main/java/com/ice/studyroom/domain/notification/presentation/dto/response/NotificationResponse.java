@@ -10,17 +10,17 @@ import java.time.LocalDateTime;
 @Builder
 public class NotificationResponse {
 
+	private Long id;
 	private String eventType;
-
 	private int rank;
 	private Integer previousRank;
 	private Integer gapWithUpper;
-
 	private boolean isRead;
 	private LocalDateTime createdAt;
 
 	public static NotificationResponse from(Notification notification) {
 		return NotificationResponse.builder()
+			.id(notification.getId())
 			.eventType(notification.getEventType().name())
 			.rank(notification.getRank())
 			.previousRank(notification.getPreviousRank())
