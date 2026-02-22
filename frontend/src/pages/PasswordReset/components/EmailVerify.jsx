@@ -3,38 +3,53 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
-
-const DUMMY_EMAILS = [
-  "test@hufs.ac.kr"
-];
+import axios from "axios";
 
 const EmailVerify = () => {
+  const navigate = useNavigate();
+
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
-
-  const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleBack = () => {
     navigate("/auth/signin");
   }
 
-  const handleNext = () => {
+  const handleNext = async () => {
     setError("");
 
-    //1.이메일 미입력
+    /* 이메일 미입력 시 */
     if (!email.trim()) {
       setError("이메일을 입력해주세요.");
       return;
     }
 
-    //2.더미 DB에 이메일 없음
-    if (!DUMMY_EMAILS.includes(email)) {
-      setError("등록되지 않은 이메일입니다.");
-      return;
-    }
+    setIsLoading(true);
 
-    //3.성공->인증번호 입력 페이지 이동
-    navigate("/password-reset/code", { state: { email } });
+    try {
+      const response = await axios.post("/api/password-reset/email-verification", {
+        email: email
+      });
+
+      if (response.data.code === "S200") {
+        navigate("/password-reset/code", { state: { email } });
+      }
+    } catch (error) {
+      const errorCode = error.response?.data?.code;
+
+      if (errorCode === "B400") {
+        setError("올바른 이메일 형식이 아닙니다.");
+      } else if (errorCode === "C404") {
+        setError("이메일 정보를 확인해주세요.");
+      } else if (errorCode === "E500") {
+        setError("서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      } else {
+        setError("알 수 없는 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -75,12 +90,14 @@ const EmailVerify = () => {
             setError("");
           }}
           placeholder="이메일을 입력하세요"
-          className="w-full p-3 rounded-lg bg-blue-50 focus:ring-2 focus:ring-blue-500 outline-none"
+          className={`w-full p-3 rounded-lg bg-blue-50 outline-none ${
+            error ? "ring-2 ring-red-400" : "focus:ring-2 focus:ring-blue-500"
+          }`}
         />
 
         {/* 에러 메시지 */}
         {error && (
-          <p className="text-red-500 text-sm mt-2">
+          <p className="text-red-500 text-xs mt-2">
             {error}
           </p>
         )}
@@ -88,9 +105,12 @@ const EmailVerify = () => {
         {/* 버튼 */}
         <button
           onClick={handleNext}
-          className="w-full mt-6 p-3 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition-colors"
+          disabled={isLoading}
+          className={`w-full mt-6 p-3 rounded-lg text-white font-medium transition-colors ${
+            isLoading ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
+          }`}
         >
-          다음
+            {isLoading ? "인증 번호 발송 중..." : '다음'}
         </button>
       </div>
     </div>
