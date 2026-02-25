@@ -4,14 +4,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-{/* MainPage가 WebSocket으로 실시간 받아온 주간 랭킹, 로그인 여부 */}
+/* MainPage가 WebSocket으로 실시간 받아온 주간 랭킹, 로그인 여부 */
 const RankingSection = ({ weeklyData, isLoggedIn }) => {
 
   const [activeTab, setActiveTab] = useState('WEEKLY');
   const [apiRankingData, setApiRankingData] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  {/* 탭 설정 (label: 화면 표시용) */}
+  /* 탭 설정 (label: 화면 표시용) */
   const tabs = [
     { key: 'WEEKLY', label: '주간' },
     { key: 'MONTHLY', label: '월간' },
@@ -19,12 +19,12 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
     { key: 'YEARLY', label: '연간' },
   ];
 
-  {/* 탭 변경 시 데이터 가져오기 (주간은 소켓이라 제외) */}
+  /* 탭 변경 시 데이터 가져오기 (주간은 소켓이라 제외) */
   useEffect(() => {
-    {/* 주간 탭이면 API 호출 안 함 (부모가 준 weeklyData 사용) */}
+    /* 주간 탭이면 API 호출 안 함 (부모가 준 weeklyData 사용) */
     if (activeTab === 'WEEKLY') return;
 
-    {/* 로그인 안 했으면 API 호출 안 함 */}
+    /* 로그인 안 했으면 API 호출 안 함 */
     if (!isLoggedIn) return;
 
     const fetchOtherRankings = async () => {
@@ -47,11 +47,11 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
         const errorCode = error.response?.data?.code;
 
         if (errorCode === "UNAUTHORIZED") {
-          console.error("인증 실패: 로그인이 필요하거나 토큰이 만료되었습니다.");
+          console.error("UNAUTHORIZED: 로그인 세션이 만료되었거나 유효하지 않습니다.");
         } else if (errorCode === "C400") {
           console.error("잘못된 요청: 허용되지 않는 파라미터입니다.");
         } else if (errorCode === "E500") {
-          console.error("서버 오류: 백엔드 서버에 문제가 발생했습니다.");
+          console.error("Internal Server Error.");
         } else {
           console.error(`${activeTab} 랭킹 데이터 로드 실패:`, error);
         }
@@ -67,7 +67,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
     setActiveTab(tabKey);
   };
 
-  {/* 현재 보여줄 데이터 결정 */}
+  /* 현재 보여줄 데이터 결정 */
   const displayData = activeTab === 'WEEKLY' ? weeklyData : apiRankingData;
 
   return (
