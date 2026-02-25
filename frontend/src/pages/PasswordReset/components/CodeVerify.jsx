@@ -20,6 +20,7 @@ const CodeVerify = () => {
   const handleNext = async () => {
     setError("");
 
+    /* 인증번호 미입력 시 */
     if (!code.trim()) {
       setError("인증번호를 입력해주세요.");
       return;
@@ -40,11 +41,11 @@ const CodeVerify = () => {
       const errorCode = error.response?.data?.code;
 
       if (errorCode === "C400") {
-        setError("인증번호 정보를 다시 확인해주세요.");
+        setError("유효하지 않은 인증코드입니다.");
       } else if (errorCode === "E500") {
-        setError("서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+        setError("Internal Server Error.");
       } else {
-        setError("인증번호 검증에 실패했습니다. 다시 시도해주세요.");
+        setError("알 수 없는 오류가 발생했습니다. 잠시후 다시 시도해주세요.");
       }
     } finally {
       setIsLoading(false);
@@ -111,7 +112,7 @@ const CodeVerify = () => {
             isLoading ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
           }`}
         >
-          {isLoading ? '확인 중...' : '다음'}
+          {isLoading ? '인증번호 확인 중...' : '다음'}
         </button>
       </div>
     </div>
