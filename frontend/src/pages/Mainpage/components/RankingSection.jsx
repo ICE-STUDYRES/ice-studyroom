@@ -100,7 +100,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
              ) : displayData && displayData.length > 0 ? (
                 displayData.slice(0, 5).map((user, index) => (
                   <div key={index} className="font-bold text-gray-800 text-base">
-                    {user.rank}위: {user.name}
+                    {user.rank}위: {user.name} //실시간을 name으로 바꿔주신다고 함
                   </div>
                 ))
              ) : (
