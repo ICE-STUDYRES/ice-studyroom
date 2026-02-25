@@ -1,4 +1,4 @@
-{/* RestAPI로 데이터 받을 예정 */}
+{/* 알림페이지 */}
 
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
@@ -18,7 +18,7 @@ const NotificationPage = () => {
 
   /* 문구 생성 함수 - 서버에서 받은 알림 정보(notification)와 사용자 이름(name)을 받음 */
   const makeNotificationMessage = (notification,name) => {
-    const { id, eventType, rank, previousRank, gapWithUpper, gapToEnter } = notification;
+    const { eventType, rank, previousRank, gapWithUpper, gapToEnter } = notification;
 
     switch (eventType) {
       case "RANK_TOP":
@@ -27,7 +27,7 @@ const NotificationPage = () => {
         return `[${name}님] 현재 ${rank}위입니다. ${rank - 1}위까지 점수 차는 ${gapWithUpper}점입니다.`;
       case "RANK_OUT_RANGE":
         return `[${name}님] 현재 ${rank}위입니다. 순위권 진입까지 ${gapToEnter}점이 필요합니다.`;
-      case "TOP5_ENTER":
+      case "TOP6_10_RANK_CHANGED":
         return `[${name}님] ${previousRank}위에서 ${rank}위로 진입했습니다!`;
       case "TOP5_RANK_CHANGED":
         return `[${name}님] ${previousRank}위 → ${rank}위로 순위가 상승했습니다!`;
@@ -63,9 +63,11 @@ const NotificationPage = () => {
 
       } catch (error) {
         if (error.response?.data?.code === "C401") {
-          console.error("토큰 만료 등 인증 실패");
+          console.error("Unauthorized: 인증이 필요하거나 토큰이 만료되었습니다.");
+        } else if (error.response?.data?.code === "E500") {
+          console.error("Internal Server Error:", error);
         } else {
-          console.error("알림 로드 실패:", error);
+          console.error("알림 데이터 로드 실패:", error);
         }
       } finally {
         setLoading(false);
@@ -99,14 +101,16 @@ const NotificationPage = () => {
 
     } catch (error) {
       const errerCode = error.response?.data?.code;
+
       if (errerCode === "C404") {
-        alert("알림이 존재하지 않습니다.");
+        alert("Not Found.");
       } else if (errerCode === "C403") {
-        alert("이 알림을 삭제할 권한이 없습니다.");
+        alert("Forbidden.");
+      } else if (errerCode === "E500") {
+        alert("Internal Server Error.");
       } else {
-        alert("서버 오류로 알림 삭제에 실패했습니다.");
+        console.error("알림 단건 삭제 실패:", error);
       }
-      console.error("알림 단건 삭제 실패:", error);
     }
   };
 
@@ -126,12 +130,13 @@ const NotificationPage = () => {
 
     } catch (error) {
       if (error.response?.data?.code === "C401") {
-        alert("인증이 만료되었습니다. 다시 로그인해주세요.");
+        alert("Unauthorized.");
         navigate('/auth/signin');
+      } else if (error.response?.data?.code === "E500") {
+        alert("Internal Server Error.");
       } else {
-        alert("전체 알림 삭제에 실패했습니다.");
+        console.error("전체 알림 삭제 실패:", error);
       }
-      console.error("전체 알림 삭제 실패:", error);
     }
   };
 
@@ -142,7 +147,7 @@ const NotificationPage = () => {
       <div className="w-full max-w-[480px] flex flex-col flex-1">
         
         {notifications.length === 0 ? (
-          // 알림 없음 화면
+          /* 알림 없음 화면 */
           <div className="flex-1 flex flex-col items-center justify-center gap-6 pb-20">
             <h2 className="text-2xl font-bold text-gray-900">알림이 없습니다.</h2>
             <button
