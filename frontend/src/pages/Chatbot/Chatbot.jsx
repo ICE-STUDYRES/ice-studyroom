@@ -298,11 +298,26 @@ const ChatbotPage = () => {
             )}
 
             {modalType === "support" && (
-              <div className="text-sm text-gray-600">
-                <p>{answerCard?.support?.managerName}</p>
-                <p>{answerCard?.support?.managerPhone}</p>
+              <div className="text-sm text-gray-600 space-y-2">
+                <p>
+                  <span className="font-medium">담당자:</span> 김정통
+                </p>
+
+                <p>
+                  <span className="font-medium">
+                    정보통신공학과 스터디룸 오픈채팅:
+                  </span>{" "}
+                  <a
+                    href="https://open.kakao.com/o/giOS427b"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 underline"
+                  >
+                    바로가기
+                  </a>
+                </p>
               </div>
-            )}
+            )}      
 
             <button
               className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition"
