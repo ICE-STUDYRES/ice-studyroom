@@ -13,6 +13,7 @@ import NotificationBell from './components/NotificationBell';
 import NotificationPage from './components/NotificationPage';
 import {useNavigate} from 'react-router-dom';
 import { io } from 'socket.io-client';
+import { useUser } from "./handlers/UserContext";
 
 const MainPage = () => {
   const navigate = useNavigate();
