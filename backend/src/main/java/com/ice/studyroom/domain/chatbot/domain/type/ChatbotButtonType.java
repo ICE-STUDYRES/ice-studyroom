@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.chatbot.domain.event.type;
+package com.ice.studyroom.domain.chatbot.domain.type;
 
 public enum ChatbotButtonType {
 	EVIDENCE,

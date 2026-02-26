@@ -30,6 +30,13 @@ const ChatbotPage = () => {
   const [modalType, setModalType] = useState(null);
   const bottomRef = useRef(null);
 
+  /* 진행 중 요청 취소용 id */
+  const requestIdRef = useRef(0);
+  const cancelOngoingRequest = () => {
+    requestIdRef.current++;
+    setLoading(false);
+  };
+
   /* 로그인 체크 */
   useEffect(() => {
     const token = sessionStorage.getItem("accessToken");
@@ -41,7 +48,7 @@ const ChatbotPage = () => {
     }
   }, [navigate]);
 
-  /* 스크롤 자동 이동 */
+  /* 스크롤 */
   const scrollToBottom = () => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -51,7 +58,7 @@ const ChatbotPage = () => {
     return () => clearTimeout(timer);
   }, [messages, selectedCategory, showCategoryButtons]);
 
-  /* 사용자 이벤트 로그 전송 */
+  /* 이벤트 전송 */
   const sendChatbotEvent = async ({
     eventType,
     categoryId = null,
@@ -111,6 +118,7 @@ const ChatbotPage = () => {
 
   /* 카테고리 선택 */
   const handleCategorySelect = async (category) => {
+    cancelOngoingRequest();
     setMessages((prev) => [...prev, { text: category.name, isUser: true }]);
     setSelectedCategory(category.id);
     setLastSelectedCategory(category.id);
@@ -148,6 +156,7 @@ const ChatbotPage = () => {
 
   /* FAQ 선택 */
   const handleFaqSelect = async ({ categoryId, questionId, text }) => {
+    const currentRequestId = ++requestIdRef.current;
     setMessages((prev) => [...prev, { text, isUser: true }]);
     setSelectedCategory(null);
     setLoading(true);
@@ -160,17 +169,21 @@ const ChatbotPage = () => {
 
     try {
       const res = await fetchChatbotAnswer({ categoryId, questionId });
+      if (currentRequestId !== requestIdRef.current) return;
       const answer = res.data.data;
       setAnswerCard(answer);
 
       await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (currentRequestId !== requestIdRef.current) return;
 
       setMessages((prev) => [
         ...prev,
         { text: answer.summary, isUser: false, showActions: true },
       ]);
     } catch (e) {
+      if (currentRequestId !== requestIdRef.current) return;
       await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (currentRequestId !== requestIdRef.current) return;
       setMessages((prev) => [
         ...prev,
         {
@@ -180,16 +193,18 @@ const ChatbotPage = () => {
       ]);
       console.error("답변 API 호출 실패", e);
     } finally {
-      setLoading(false);
+      if (currentRequestId === requestIdRef.current) {
+        setLoading(false);
+      }
     }
   };
 
   /* 카테고리 초기화 */
   const handleResetCategory = () => {
+    cancelOngoingRequest();
     setSelectedCategory(null);
     setLastSelectedCategory(null);
     setShowCategoryButtons(true);
-    
     sendChatbotEvent({
       eventType: "CATEGORY_CHANGE",
       categoryId: lastSelectedCategory,
@@ -199,6 +214,7 @@ const ChatbotPage = () => {
   /* 대표질문 다시보기 */
   const handleShowFaqAgain = () => {
     if (!lastSelectedCategory) return;
+    cancelOngoingRequest();
     setSelectedCategory(lastSelectedCategory);
     setShowCategoryButtons(false);
 
@@ -266,10 +282,10 @@ const ChatbotPage = () => {
         />
       </div>
 
-      {/* 공통 모달 */}
+      {/* 모달 */}
       {modalType && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="relative bg-white rounded-2xl shadow-xl p-6 w-[340px]">
+          <div className="relative bg-white rounded-2xl shadow-xl p-6 w-[340px] max-h-[70vh] flex flex-col">
             <h3 className="mb-4 font-semibold">
               {modalType === "evidence" && "근거"}
               {modalType === "links" && "관련 링크"}
@@ -277,11 +293,13 @@ const ChatbotPage = () => {
             </h3>
 
             {modalType === "evidence" && (
-              <ul className="text-sm text-gray-600 space-y-2">
-                {answerCard?.evidence?.snippets?.map((s, i) => (
-                  <li key={i}>• {s}</li>
-                ))}
-              </ul>
+              <div className="flex-1 overflow-y-auto pr-2">
+                <ul className="text-sm text-gray-600 space-y-2">
+                  {answerCard?.evidence?.snippets?.map((s, i) => (
+                    <li key={i}>• {s}</li>
+                  ))}
+                </ul>
+              </div>
             )}
 
             {modalType === "links" && (
@@ -296,9 +314,23 @@ const ChatbotPage = () => {
             )}
 
             {modalType === "support" && (
-              <div className="text-sm text-gray-600">
-                <p>{answerCard?.support?.managerName}</p>
-                <p>{answerCard?.support?.managerPhone}</p>
+              <div className="text-sm text-gray-600 space-y-2">
+                <p>
+                  <span className="font-medium">담당자:</span> 김정통
+                </p>
+                <p>
+                  <span className="font-medium">
+                    정보통신공학과 스터디룸 오픈채팅:
+                  </span>{" "}
+                  <a
+                    href="https://open.kakao.com/o/giOS427b"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-500 underline"
+                  >
+                    바로가기
+                  </a>
+                </p>
               </div>
             )}
 

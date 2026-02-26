@@ -4,7 +4,7 @@ import { X } from "lucide-react";
 export const NoticePopup = ({ showNotice, handleCloseNotice, showPenaltyPopup, setShowPenaltyPopup }) => {
   if (!showNotice) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50" onClick={handleCloseNotice}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-[100]" onClick={handleCloseNotice}>
           <div className="bg-white w-full max-w-2xl rounded-t-lg p-6 transform animate-slide-up" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <div className="flex gap-4">
@@ -58,7 +58,7 @@ export const NoticePopup = ({ showNotice, handleCloseNotice, showPenaltyPopup, s
 export const PasswordChangePopup = ({ showPasswordChangePopup, handleClosePasswordChangePopup, handlePasswordChange, handlePasswordChangeInputChange, passwordChangeForm, passwordChangeError }) => {
   if (!showPasswordChangePopup) return null;
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleClosePasswordChangePopup}>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]" onClick={handleClosePasswordChangePopup}>
         <div className="bg-white rounded-lg w-96 p-6" onClick={e => e.stopPropagation()}>
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold">비밀번호 변경</h2>
