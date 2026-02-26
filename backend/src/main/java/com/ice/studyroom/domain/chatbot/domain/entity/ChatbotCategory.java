@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.chatbot.domain.category;
+package com.ice.studyroom.domain.chatbot.domain.entity;
 
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 import jakarta.persistence.Column;

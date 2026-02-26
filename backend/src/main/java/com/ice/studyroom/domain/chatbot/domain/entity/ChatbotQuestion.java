@@ -1,6 +1,5 @@
-package com.ice.studyroom.domain.chatbot.domain.question;
+package com.ice.studyroom.domain.chatbot.domain.entity;
 
-import com.ice.studyroom.domain.chatbot.domain.category.ChatbotCategory;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;

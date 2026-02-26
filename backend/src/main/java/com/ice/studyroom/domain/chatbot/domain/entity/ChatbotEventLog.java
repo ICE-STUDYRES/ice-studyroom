@@ -1,7 +1,7 @@
-package com.ice.studyroom.domain.chatbot.domain.event;
+package com.ice.studyroom.domain.chatbot.domain.entity;
 
-import com.ice.studyroom.domain.chatbot.domain.event.type.ChatbotButtonType;
-import com.ice.studyroom.domain.chatbot.domain.event.type.ChatbotEventType;
+import com.ice.studyroom.domain.chatbot.domain.type.ChatbotButtonType;
+import com.ice.studyroom.domain.chatbot.domain.type.ChatbotEventType;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import java.time.LocalDateTime;

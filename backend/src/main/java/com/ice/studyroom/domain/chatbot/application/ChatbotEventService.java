@@ -1,7 +1,7 @@
 package com.ice.studyroom.domain.chatbot.application;
 
-import com.ice.studyroom.domain.chatbot.domain.event.ChatbotEventLog;
-import com.ice.studyroom.domain.chatbot.domain.event.ChatbotEventLogRepository;
+import com.ice.studyroom.domain.chatbot.domain.entity.ChatbotEventLog;
+import com.ice.studyroom.domain.chatbot.infrastructure.persistence.ChatbotEventLogRepository;
 import com.ice.studyroom.domain.chatbot.presentation.dto.request.ChatbotEventRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

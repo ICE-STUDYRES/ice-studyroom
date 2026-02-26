@@ -7,10 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.ice.studyroom.domain.chatbot.presentation.dto.response.GetCategoryResponse;
 import com.ice.studyroom.domain.chatbot.presentation.dto.response.GetCategoryQuestionsResponse;
-import com.ice.studyroom.domain.chatbot.domain.category.ChatbotCategoryRepository;
+import com.ice.studyroom.domain.chatbot.infrastructure.persistence.ChatbotCategoryRepository;
 import com.ice.studyroom.domain.chatbot.domain.exception.ChatbotCategoryNotFoundException;
-import com.ice.studyroom.domain.chatbot.domain.question.ChatbotQuestion;
-import com.ice.studyroom.domain.chatbot.domain.question.ChatbotQuestionRepository;
+import com.ice.studyroom.domain.chatbot.domain.entity.ChatbotQuestion;
+import com.ice.studyroom.domain.chatbot.infrastructure.persistence.ChatbotQuestionRepository;
 
 import lombok.RequiredArgsConstructor;
 
