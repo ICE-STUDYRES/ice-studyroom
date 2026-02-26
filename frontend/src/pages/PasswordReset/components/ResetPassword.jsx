@@ -1,16 +1,26 @@
 {/* 새 비밀번호 입력 페이지 */}
 
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import axios from "axios";
 
 const PasswordReset = () => {
   const navigate = useNavigate();
+
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = () => {
+  const location = useLocation();
+
+  /* 앞 페이지에서 받아온 이메일 */
+  const email = location.state?.email;
+
+  const handleSubmit = async () => {
+    setError("");
+
     if (!password || !confirmPassword) {
       setError("비밀번호를 모두 입력해주세요.");
       return;
@@ -21,7 +31,37 @@ const PasswordReset = () => {
       return;
     }
 
-    navigate("/password-reset/complete");
+    /* 이메일 정보가 날아갔을 경우 */
+    if (!email) {
+      setError("이메일 정보가 없습니다. 처음부터 다시 시도해주세요.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await axios.patch("/api/users/password-reset", {
+        email: email,
+        password: password
+      });
+
+      if (response.data.code === "S200") {
+        navigate("/password-reset/complete");
+      }
+
+    } catch (error) {
+      const errorCode = error.response?.data?.code;
+
+      if (errorCode === "B400") {
+        setError("올바른 비밀번호 형식이 아닙니다.");
+      } else if (errorCode === "E500") {
+        setError("서버에 문제가 발생했습니다. 잠시 후 다시 시도해주세요.");
+      } else {
+        setError("비밀번호 재설정에 실패했습니다. 다시 시도해주세요.");
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -58,7 +98,10 @@ const PasswordReset = () => {
           type="password"
           placeholder="새 비밀번호 입력"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          onChange={(e) => {
+            setPassword(e.target.value);
+            setError("");
+          }}
           className="w-full p-3 rounded-lg bg-blue-50 outline-none focus:ring-2 focus:ring-blue-500"
         />
 
@@ -70,7 +113,10 @@ const PasswordReset = () => {
           type="password"
           placeholder="비밀번호 다시 입력"
           value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
+          onChange={(e) => {
+            setConfirmPassword(e.target.value);
+            setError("");
+          }}
           className={`w-full p-3 rounded-lg outline-none bg-blue-50
             ${error ? "ring-2 ring-red-400" : "focus:ring-2 focus:ring-blue-500"}
           `}
@@ -86,9 +132,10 @@ const PasswordReset = () => {
         {/* 버튼 */}
         <button
           onClick={handleSubmit}
+          disabled={isLoading}
           className="w-full mt-6 p-3 rounded-lg bg-blue-500 text-white font-medium hover:bg-blue-600 transition"
         >
-          다음
+          {isLoading ? '변경 중...' : '다음'}
         </button>
       </div>
     </div>

@@ -13,6 +13,7 @@ import NotificationBell from './components/NotificationBell';
 import NotificationPage from './components/NotificationPage';
 import {useNavigate} from 'react-router-dom';
 import { io } from 'socket.io-client';
+import { useUser } from "./handlers/UserContext";
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -51,11 +52,8 @@ const MainPage = () => {
       
       const accessToken = sessionStorage.getItem('accessToken');
 
-      {/* 테스트 Id(서버 연결하면 지움) */}
-      const currentMemberId = 1;
-      //{/* UserContext에서 전체 유저 데이터를 꺼내옴 */}
-      //const userData = useUser();
-      //const currentMemberId = userData?.id;
+      const userData = useUser();
+      const currentMemberId = userData?.id;
 
       {/* 알림 빨간 점 상태 관리 */}
       const [hasUnread, setHasUnread] = useState(false);
@@ -71,35 +69,34 @@ const MainPage = () => {
 
       useEffect(() => {
         {/* 소켓 서버 연결(로그인 여부 상관없이 연결) */}
-        const socket = io("http://localhost:3001/ranking", { 
+        const socket = io(`${import.meta.env.VITE_SOCKET_URL}/ranking`, {
           transports: ["websocket"]
-        });
+      });
 
         socket.on("connect", () => {
           console.log("소켓 연결 성공");
 
-          {/* 랭킹 데이터 요청(누구나 받음) */}
-          socket.emit("request-ranking");
+          {/* 1. 주간 랭킹 Room 입장 (누구나 받음) */}
+          socket.emit("join", "WEEKLY");
 
+          {/* 2. 개인 알림 Room 입장 (로그인 회원만) */}
           if (accessToken && currentMemberId) {
             console.log(`개인 채널 입장: member:${currentMemberId}`);
             socket.emit("join", `member:${currentMemberId}`);
           }
         });
 
-        {/* 랭킹 업데이트, 백에서 보내준 이벤트 이름 ranking-update라고 가정 */}
-        socket.on("ranking-update", (data) => {
+        {/* 3. 랭킹 업데이트 수신 */}
+        socket.on("weekly-ranking-update", (data) => {
           console.log("실시간 랭킹 업데이트:", data);
-          setWeeklyRanking(data); //받아온 데이터를 state에 저장
-        })
-
-        {/* 개인 알림 업데이트, 백에서 보내준 이벤트 이름 personal-notification라고 가정 */}
-        if (accessToken) {
-          socket.on("personal-notification", (data) => {
+          setWeeklyRanking(data);
+        });
+        
+        {/* 4. 개인 알림 업데이트 수신 */}
+        socket.on("personal-notification", (data) => {
           console.log("실시간 알림 도착:", data);
           setHasUnread(true);  
-          });
-        }
+        });
 
         {/* 컴포넌트 사라질 때 소켓 끊기 */}
         return () => socket.disconnect();
@@ -315,7 +312,7 @@ const MainPage = () => {
         </div>
       </div>
 
-      {/* Ranking Section(데이터 전달) */}
+      {/* Ranking Section */}
       <RankingSection
       isLoggedIn={!!accessToken}
       weeklyData={weeklyRanking}

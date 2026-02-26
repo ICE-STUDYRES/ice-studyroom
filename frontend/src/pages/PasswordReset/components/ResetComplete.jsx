@@ -7,7 +7,7 @@ const PasswordResetComplete = () => {
   const navigate = useNavigate();
 
   const handleConfirm = () => {
-    // 확인 버튼 클릭 시 로그인 페이지로 이동
+    /* 확인 버튼 클릭 시 로그인 페이지로 이동 */
     navigate("/auth/signin");
   };
 
