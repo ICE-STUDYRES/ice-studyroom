@@ -27,7 +27,7 @@ public class ChatbotQueryService {
             .categories(
                 categoryRepository.findAll().stream()
                     .map(c -> GetCategoryResponse.CategoryItem.builder()
-                        .categoryId(c.getCategoryId())
+                        .categoryId(c.getId())
                         .label(c.getLabel())
                         .build())
                     .toList()
@@ -48,7 +48,7 @@ public class ChatbotQueryService {
             .questions(
                 questions.stream()
                     .map(q -> GetCategoryQuestionsResponse.QuestionItem.builder()
-                        .questionId(q.getQuestionId())
+                        .questionId(q.getId())
                         .content(q.getContent())
                         .clickCount(includeClickCount ? q.getClickCount() : null)
                         .build())

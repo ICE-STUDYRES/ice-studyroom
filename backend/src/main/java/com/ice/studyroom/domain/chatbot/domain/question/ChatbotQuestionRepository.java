@@ -12,11 +12,11 @@ public interface ChatbotQuestionRepository extends JpaRepository<ChatbotQuestion
     @Query("""
         SELECT q
         FROM ChatbotQuestion q
-        WHERE q.category.categoryId = :categoryId
-        ORDER BY q.questionId ASC
+        WHERE q.category.id = :categoryId
+        ORDER BY q.id ASC
     """)
     List<ChatbotQuestion> findQuestionsByCategoryId(@Param("categoryId") String categoryId);
 
-	Optional<ChatbotQuestion> findByQuestionIdAndCategory_CategoryId(Long questionId, String categoryId);
+	Optional<ChatbotQuestion> findByIdAndCategory_Id(Long questionId, String categoryId);
 
 }

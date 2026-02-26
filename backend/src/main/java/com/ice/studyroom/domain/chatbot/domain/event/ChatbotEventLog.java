@@ -16,8 +16,7 @@ import java.time.LocalDateTime;
 public class ChatbotEventLog {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "event_id")
-	private Long eventLogId;
+	private Long id;
 
 	@Column(nullable = false)
 	private String categoryId;
