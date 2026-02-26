@@ -68,9 +68,9 @@ const MainPage = () => {
 
       useEffect(() => {
         {/* 소켓 서버 연결(로그인 여부 상관없이 연결) */}
-        const socket = io("http://localhost:3001/ranking", { 
+        const socket = io(`${import.meta.env.VITE_SOCKET_URL}/ranking`, {
           transports: ["websocket"]
-        });
+      });
 
         socket.on("connect", () => {
           console.log("소켓 연결 성공");
