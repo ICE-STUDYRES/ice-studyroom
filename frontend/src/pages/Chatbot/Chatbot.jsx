@@ -269,7 +269,7 @@ const ChatbotPage = () => {
       {/* 공통 모달 */}
       {modalType && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="relative bg-white rounded-2xl shadow-xl p-6 w-[340px]">
+          <div className="relative bg-white rounded-2xl shadow-xl p-6 w-[340px] max-h-[70vh] flex flex-col">
             <h3 className="mb-4 font-semibold">
               {modalType === "evidence" && "근거"}
               {modalType === "links" && "관련 링크"}
@@ -277,11 +277,13 @@ const ChatbotPage = () => {
             </h3>
 
             {modalType === "evidence" && (
-              <ul className="text-sm text-gray-600 space-y-2">
-                {answerCard?.evidence?.snippets?.map((s, i) => (
-                  <li key={i}>• {s}</li>
-                ))}
-              </ul>
+              <div className="flex-1 overflow-y-auto pr-2">
+                <ul className="text-sm text-gray-600 space-y-2">
+                  {answerCard?.evidence?.snippets?.map((s, i) => (
+                    <li key={i}>• {s}</li>
+                  ))}
+                </ul>
+              </div> 
             )}
 
             {modalType === "links" && (
