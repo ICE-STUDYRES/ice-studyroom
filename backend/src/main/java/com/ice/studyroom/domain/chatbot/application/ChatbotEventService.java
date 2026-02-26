@@ -12,14 +12,14 @@ public class ChatbotEventService {
 	private final ChatbotEventLogRepository eventLogRepository;
 
 	public void logEvent(ChatbotEventRequest request){
-		ChatbotEventLog eventLog = new ChatbotEventLog(
-			request.eventType(),
-			request.buttonType(),
-			request.categoryId(),
-			request.questionId(),
-			request.screen(),
-			request.occurredAt()
-		);
+		ChatbotEventLog eventLog = ChatbotEventLog.builder()
+			.eventType(request.eventType())
+			.buttonType(request.buttonType())
+			.categoryId(request.categoryId())
+			.questionId(request.questionId())
+			.screen(request.screen())
+			.occurredAt(request.occurredAt())
+			.build();
 		eventLogRepository.save(eventLog);
 	}
 }
