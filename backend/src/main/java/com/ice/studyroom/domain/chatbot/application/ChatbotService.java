@@ -1,11 +1,11 @@
 package com.ice.studyroom.domain.chatbot.application;
 
-import com.ice.studyroom.domain.chatbot.domain.category.ChatbotCategory;
-import com.ice.studyroom.domain.chatbot.domain.category.ChatbotCategoryRepository;
+import com.ice.studyroom.domain.chatbot.domain.entity.ChatbotCategory;
+import com.ice.studyroom.domain.chatbot.infrastructure.persistence.ChatbotCategoryRepository;
 import com.ice.studyroom.domain.chatbot.domain.exception.ChatbotCategoryNotFoundException;
 import com.ice.studyroom.domain.chatbot.domain.exception.ChatbotQuestionNotFoundException;
-import com.ice.studyroom.domain.chatbot.domain.question.ChatbotQuestion;
-import com.ice.studyroom.domain.chatbot.domain.question.ChatbotQuestionRepository;
+import com.ice.studyroom.domain.chatbot.domain.entity.ChatbotQuestion;
+import com.ice.studyroom.domain.chatbot.infrastructure.persistence.ChatbotQuestionRepository;
 import com.ice.studyroom.domain.chatbot.domain.service.AnswerGenerator;
 import com.ice.studyroom.domain.chatbot.presentation.dto.request.AnswerRequest;
 import com.ice.studyroom.domain.chatbot.presentation.dto.response.AnswerResponse;
@@ -21,7 +21,7 @@ public class ChatbotService {
 	private final ChatbotCategoryRepository categoryRepository;
 
 	public AnswerResponse getAnswer(AnswerRequest request) {
-		ChatbotQuestion question = questionRepository.findByQuestionIdAndCategory_CategoryId(
+		ChatbotQuestion question = questionRepository.findByIdAndCategory_Id(
 				request.questionId(), request.categoryId())
 			.orElseThrow(() -> new ChatbotQuestionNotFoundException(request.questionId()));
 

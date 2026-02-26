@@ -1,8 +1,8 @@
 package com.ice.studyroom.domain.chatbot.presentation.dto.request;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.ice.studyroom.domain.chatbot.domain.event.type.ChatbotButtonType;
-import com.ice.studyroom.domain.chatbot.domain.event.type.ChatbotEventType;
+import com.ice.studyroom.domain.chatbot.domain.type.ChatbotButtonType;
+import com.ice.studyroom.domain.chatbot.domain.type.ChatbotEventType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;

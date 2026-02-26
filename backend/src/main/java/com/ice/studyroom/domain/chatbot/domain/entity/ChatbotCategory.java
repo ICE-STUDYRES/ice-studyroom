@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.chatbot.domain.category;
+package com.ice.studyroom.domain.chatbot.domain.entity;
 
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 import jakarta.persistence.Column;
@@ -16,8 +16,7 @@ import lombok.NoArgsConstructor;
 public class ChatbotCategory extends BaseTimeEntity {
 
     @Id
-    @Column(name = "category_id", length = 30, nullable = false)
-    private String categoryId;
+    private String id;
 
     @Column(name = "label", length = 50, nullable = false)
     private String label;

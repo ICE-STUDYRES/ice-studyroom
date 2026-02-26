@@ -39,6 +39,8 @@ public class OpenAiAnswerGenerator implements AnswerGenerator {
 				당신은 ICE 스터디룸 도우미입니다.
 				제공된 정책 문서를 참고하여 학생 친구에게 말하듯 친근하고 자연스러운 한국어로 답변하세요.
 				딱딱한 나열식 표현보다는 대화체로 핵심만 간결하게 설명해주세요.
+				반드시 1문장 이내로 질문에 대한 답만 답하시오.
+				부가적인 설명은 하지 마시오.
 				마크다운 형식(**, 번호 목록 등)은 사용하지 마세요.
 				""")
 			.input(questionContent)
@@ -96,6 +98,7 @@ public class OpenAiAnswerGenerator implements AnswerGenerator {
 			.flatMap(item -> item.getResults().stream())
 			.map(r -> extractRelevantPart(r.getText(), questionContent))
 			.filter(s -> !s.isEmpty())
+			.limit(1)
 			.collect(Collectors.toList());
 	}
 
@@ -126,6 +129,13 @@ public class OpenAiAnswerGenerator implements AnswerGenerator {
 		}
 
 		String relevant = bestPart.isEmpty() ? text : bestPart;
-		return relevant.trim().length() <= 300 ? relevant.trim() : relevant.trim().substring(0, 300) + "...";
+		int answerIdx = relevant.indexOf("답변:");
+		if (answerIdx >= 0) {
+			relevant = relevant.substring(answerIdx + 3).trim();
+		} else {
+			return "";
+		}
+
+		return relevant.trim();
 	}
 }
