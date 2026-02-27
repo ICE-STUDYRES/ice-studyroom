@@ -12,6 +12,6 @@ public class VerificationCodeCacheService {
 	private final CacheService cacheService;
 
 	public String getVerificationCode(String email) {
-		return cacheService.get(email);
+		return cacheService.get("verification:code:" + email);
 	}
 }
