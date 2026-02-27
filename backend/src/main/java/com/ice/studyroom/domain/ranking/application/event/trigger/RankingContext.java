@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.ranking.application.event;
+package com.ice.studyroom.domain.ranking.application.event.trigger;
 
 public record RankingContext(
 

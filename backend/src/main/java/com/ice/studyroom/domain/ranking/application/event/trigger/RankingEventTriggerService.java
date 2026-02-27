@@ -1,5 +1,7 @@
-package com.ice.studyroom.domain.ranking.application.event;
+package com.ice.studyroom.domain.ranking.application.event.trigger;
 
+import com.ice.studyroom.domain.ranking.application.event.publisher.EventIdGenerator;
+import com.ice.studyroom.domain.ranking.application.event.publisher.RankingEventPublisher;
 import com.ice.studyroom.domain.ranking.application.event.assembler.WeeklyRankingAssembler;
 import com.ice.studyroom.domain.ranking.application.event.dto.RankingListUpdatedEvent;
 import com.ice.studyroom.domain.ranking.application.event.dto.RankingUserChangedEvent;
@@ -15,7 +17,6 @@ import com.ice.studyroom.domain.ranking.domain.service.RankingEventPolicy;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.UUID;
 
 @Slf4j
 @Service
