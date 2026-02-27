@@ -2,6 +2,7 @@ package com.ice.studyroom.domain.ranking.application.query;
 
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.infrastructure.persistence.MemberRepository;
+import com.ice.studyroom.domain.ranking.application.event.assembler.WeeklyRankingAssembler;
 import com.ice.studyroom.domain.ranking.domain.service.RankingEntry;
 import com.ice.studyroom.domain.ranking.domain.service.RankingStore;
 import com.ice.studyroom.domain.ranking.domain.type.RankingPeriod;
@@ -20,8 +21,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class RankingQueryService {
 
-	private final RankingStore rankingStore;
-	private final MemberRepository memberRepository;
+	private final WeeklyRankingAssembler weeklyRankingAssembler;
 
 	public List<RankingResponse> getTop5(RankingPeriod period) {
 
@@ -30,91 +30,13 @@ public class RankingQueryService {
 				"WEEKLY는 REST 조회 대상이 아닙니다.");
 		}
 
-		List<RankingEntry> entries = rankingStore.getAllRankings(period);
-
-		if (entries.isEmpty()) {
-			return List.of();
-		}
-
-		List<RankingEntry> top5 = entries.stream()
-			.limit(5)
+		return weeklyRankingAssembler.buildTop5(period)
+			.stream()
+			.map(dto -> new RankingResponse(
+				dto.rank(),
+				dto.name(),
+				dto.score()
+			))
 			.toList();
-
-		List<Long> memberIds = top5.stream()
-			.map(RankingEntry::memberId)
-			.toList();
-
-		Map<Long, Member> memberMap =
-			memberRepository.findAllById(memberIds)
-				.stream()
-				.collect(Collectors.toMap(Member::getId, m -> m));
-
-		return buildResponses(top5, memberMap);
 	}
-
-	private List<RankingResponse> buildResponses(
-		List<RankingEntry> entries,
-		Map<Long, Member> memberMap
-	) {
-
-		List<RankingResponse> result = new ArrayList<>();
-
-		int previousScore = -1;
-		int currentRank = 0;
-
-		for (int i = 0; i < entries.size(); i++) {
-
-			RankingEntry entry = entries.get(i);
-
-			if (entry.score() != previousScore) {
-				currentRank = i + 1;
-				previousScore = entry.score();
-			}
-
-			Member member = memberMap.get(entry.memberId());
-
-			result.add(
-				new RankingResponse(
-					currentRank,
-					maskName(member.getName()),
-					entry.score()
-				)
-			);
-		}
-
-		return result;
-	}
-
-	String maskName(String name) {
-
-		if (name == null || name.isBlank()) {
-			return "";
-		}
-
-		name = name.trim();
-		int length = name.length();
-
-		// 1글자
-		if (length == 1) {
-			return "*";
-		}
-
-		// 2글자
-		if (length == 2) {
-			return name.charAt(0) + "*";
-		}
-
-		// 3글자 이상
-		StringBuilder masked = new StringBuilder();
-		masked.append(name.charAt(0));
-
-		for (int i = 0; i < length - 2; i++) {
-			masked.append("*");
-		}
-
-		masked.append(name.charAt(length - 1));
-
-		return masked.toString();
-	}
-
 }

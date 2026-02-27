@@ -2,7 +2,8 @@ package com.ice.studyroom.domain.ranking.application.checkin;
 
 import com.ice.studyroom.domain.membership.domain.entity.Member;
 import com.ice.studyroom.domain.membership.domain.vo.Email;
-import com.ice.studyroom.domain.ranking.application.event.RankingEventTriggerService;
+import com.ice.studyroom.domain.ranking.application.event.trigger.RankingContext;
+import com.ice.studyroom.domain.ranking.application.event.trigger.RankingEventTriggerService;
 import com.ice.studyroom.domain.ranking.domain.service.RankingScoreCalculator;
 import com.ice.studyroom.domain.ranking.domain.service.RankingStore;
 import com.ice.studyroom.domain.ranking.domain.type.RankingPeriod;
@@ -137,8 +138,8 @@ class RankingCheckInApplicationServiceTest {
 
 		service.handleCheckIn(reservation, ReservationStatus.ENTRANCE);
 
-		ArgumentCaptor<com.ice.studyroom.domain.ranking.application.event.RankingContext> captor =
-			ArgumentCaptor.forClass(com.ice.studyroom.domain.ranking.application.event.RankingContext.class);
+		ArgumentCaptor<RankingContext> captor =
+			ArgumentCaptor.forClass(RankingContext.class);
 
 		verify(rankingEventTriggerService).trigger(captor.capture());
 

@@ -1,4 +1,4 @@
-package com.ice.studyroom.domain.ranking.application.event;
+package com.ice.studyroom.domain.ranking.application.event.policy;
 
 public enum RankingEventType {
 
