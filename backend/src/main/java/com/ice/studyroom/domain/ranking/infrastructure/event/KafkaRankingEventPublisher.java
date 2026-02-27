@@ -1,41 +1,57 @@
 package com.ice.studyroom.domain.ranking.infrastructure.event;
 
+import com.ice.studyroom.domain.ranking.application.event.dto.RankingListUpdatedEvent;
+import com.ice.studyroom.domain.ranking.application.event.dto.RankingUserChangedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Component;
 
-import com.ice.studyroom.domain.ranking.application.event.RankingEmailEvent;
-import com.ice.studyroom.domain.ranking.application.event.RankingEventPublisher;
+import com.ice.studyroom.domain.ranking.application.event.publisher.RankingEventPublisher;
 
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class KafkaRankingEventPublisher implements RankingEventPublisher {
 
-	private final KafkaTemplate<String, RankingEmailEvent> kafkaTemplate;
+	private final KafkaTemplate<String, Object> kafkaTemplate;
 
-	private static final String TOPIC = "ranking.mail";
+	private static final String USER_TOPIC = "RANKING_USER_CHANGED_EVENT";
+	private static final String LIST_TOPIC = "RANKING_LIST_UPDATED_EVENT";
 
 	@Override
-	public void publish(RankingEmailEvent event) {
-		kafkaTemplate.send(TOPIC, event)
-			.whenComplete((result, ex) -> {
+	public void publishUserChanged(RankingUserChangedEvent event) {
 
-				if (ex != null) {
+		kafkaTemplate.send(USER_TOPIC,
+						event.memberId().toString(),
+						event
+				).whenComplete((result, ex) -> {
 
-					log.error("[RANKING] ❌ Kafka 전송 실패 - topic: {}, eventId: {}",
-						TOPIC,
-						event.eventId(),
-						ex);
+					if (ex != null) {
+						log.error("[RANKING] ❌ USER_CHANGED_EVENT 전송 실패 - eventId: {}",
+								event.eventId(), ex);
+					} else {
+						log.info("[RANKING] ✅ USER_CHANGED_EVENT 전송 성공 - eventId: {}",
+								event.eventId());
+					}
+				});
+	}
 
-				} else {
+	@Override
+	public void publishListUpdated(RankingListUpdatedEvent event) {
 
-					log.info("[RANKING] ✅ Kafka 전송 성공 - topic: {}, eventId: {}",
-						TOPIC,
-						event.eventId());
-				}
-			});
+		kafkaTemplate.send(LIST_TOPIC,
+						event.periodKey(),
+						event
+				).whenComplete((result, ex) -> {
+
+					if (ex != null) {
+						log.error("[RANKING] ❌ LIST_UPDATED_EVENT 전송 실패 - eventId: {}",
+								event.eventId(), ex);
+					} else {
+						log.info("[RANKING] ✅ LIST_UPDATED_EVENT 전송 성공 - eventId: {}",
+								event.eventId());
+					}
+				});
 	}
 }

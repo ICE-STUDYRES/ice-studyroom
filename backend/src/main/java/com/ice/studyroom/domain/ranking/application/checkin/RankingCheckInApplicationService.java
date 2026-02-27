@@ -1,8 +1,8 @@
 package com.ice.studyroom.domain.ranking.application.checkin;
 
 import com.ice.studyroom.domain.membership.domain.entity.Member;
-import com.ice.studyroom.domain.ranking.application.event.RankingContext;
-import com.ice.studyroom.domain.ranking.application.event.RankingEventTriggerService;
+import com.ice.studyroom.domain.ranking.application.event.trigger.RankingContext;
+import com.ice.studyroom.domain.ranking.application.event.trigger.RankingEventTriggerService;
 import com.ice.studyroom.domain.ranking.domain.service.RankingScoreCalculator;
 import com.ice.studyroom.domain.ranking.domain.service.RankingStore;
 import com.ice.studyroom.domain.ranking.domain.type.RankingPeriod;
