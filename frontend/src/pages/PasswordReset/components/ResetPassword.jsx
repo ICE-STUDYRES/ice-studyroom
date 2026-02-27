@@ -42,7 +42,8 @@ const PasswordReset = () => {
     try {
       const response = await axios.patch("/api/users/password-reset", {
         email: email,
-        password: password
+        newPassword: password,
+        newPasswordConfirm: confirmPassword
       });
 
       if (response.data.code === "S200") {
