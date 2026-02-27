@@ -1,6 +1,5 @@
-package com.ice.studyroom.domain.chatbot.domain.question;
+package com.ice.studyroom.domain.chatbot.domain.entity;
 
-import com.ice.studyroom.domain.chatbot.domain.category.ChatbotCategory;
 import com.ice.studyroom.global.entity.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -15,8 +14,7 @@ public class ChatbotQuestion extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "question_id")
-    private Long questionId;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", nullable = false)
