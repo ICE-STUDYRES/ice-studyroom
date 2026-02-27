@@ -77,7 +77,7 @@ const MainPage = () => {
           console.log("소켓 연결 성공");
 
           {/* 1. 주간 랭킹 Room 입장 (누구나 받음) */}
-          socket.emit("join", "WEEKLY");
+          socket.emit("join", "weekly");
 
           {/* 2. 개인 알림 Room 입장 (로그인 회원만) */}
           if (accessToken && currentMemberId) {
