@@ -9,17 +9,10 @@ import java.util.UUID;
 public class EventIdGenerator {
 
 	public String generate(String periodKey) {
-
-		String date = LocalDate.now().toString(); // yyyy-MM-dd
 		String shortUuid = UUID.randomUUID()
 			.toString()
-			.replace("-", "")
 			.substring(0, 4);
 
-		return periodKey.toLowerCase()
-			+ "-"
-			+ date
-			+ "-uuid-"
-			+ shortUuid;
+		return periodKey + "-uuid-" + shortUuid;
 	}
 }
