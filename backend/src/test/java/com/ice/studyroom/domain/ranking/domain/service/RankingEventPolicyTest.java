@@ -1,6 +1,6 @@
 package com.ice.studyroom.domain.ranking.domain.service;
 
-import com.ice.studyroom.domain.ranking.application.event.RankingEventType;
+import com.ice.studyroom.domain.ranking.application.event.policy.RankingEventType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
