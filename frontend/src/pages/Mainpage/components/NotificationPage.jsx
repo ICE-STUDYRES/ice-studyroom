@@ -79,64 +79,58 @@ const NotificationPage = () => {
 
   /* 2. API 조회: 단건 알림 읽음(삭제) 처리 (PATCH) */
   const handleDelete = async (noti) => {
-
     const targetId = noti.id;
-    
+
     if (!targetId) {
       alert("알림 고유 ID를 찾을 수 없습니다.");
       return;
     }
 
+    /* 낙관적 업데이트: API 응답 전에 먼저 화면에서 제거 */
+    setNotifications(prev => prev.filter(n => n.id !== targetId));
+
     try {
       const token = sessionStorage.getItem('accessToken');
-      
+
       const response = await axios.patch(`/api/notifications/${targetId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (response.data.code === "S200") {
-        /*성공 시 화면에서 삭제 */
-        setNotifications(prev => prev.filter(n => n.id !== targetId));
+      if (response.data.code !== "S200") {
+        /* 실패 시 복원 */
+        setNotifications(prev => [...prev, noti].sort((a, b) => b.id - a.id));
       }
 
     } catch (error) {
-      const errerCode = error.response?.data?.code;
-
-      if (errerCode === "C404") {
-        alert("Not Found.");
-      } else if (errerCode === "C403") {
-        alert("Forbidden.");
-      } else if (errerCode === "E500") {
-        alert("Internal Server Error.");
-      } else {
-        console.error("알림 단건 삭제 실패:", error);
-      }
+      /* 실패 시 복원 */
+      setNotifications(prev => [...prev, noti].sort((a, b) => b.id - a.id));
+      console.error("알림 단건 삭제 실패:", error.response?.data?.code, error.message);
     }
   };
 
   /* 3. API 조회: 전체 알림 읽음(삭제) 처리 (PATCH) */
   const handleClearAll = async () => {
+    const prev = notifications;
+
+    /* 낙관적 업데이트: 즉시 전체 삭제 */
+    setNotifications([]);
+
     try {
       const token = sessionStorage.getItem('accessToken');
-      
+
       const response = await axios.patch('/api/notifications', {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (response.data.code === "S200") {
-        /* 성공 시 화면에서 전체 삭제 */
-        setNotifications([]);
+      if (response.data.code !== "S200") {
+        /* 실패 시 복원 */
+        setNotifications(prev);
       }
 
     } catch (error) {
-      if (error.response?.data?.code === "C401") {
-        alert("Unauthorized.");
-        navigate('/auth/signin');
-      } else if (error.response?.data?.code === "E500") {
-        alert("Internal Server Error.");
-      } else {
-        console.error("전체 알림 삭제 실패:", error);
-      }
+      /* 실패 시 복원 */
+      setNotifications(prev);
+      console.error("전체 알림 삭제 실패:", error.response?.data?.code, error.message);
     }
   };
 
