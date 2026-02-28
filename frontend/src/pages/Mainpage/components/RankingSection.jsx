@@ -70,7 +70,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
   const displayData = activeTab === 'WEEKLY' ? weeklyData : apiRankingData;
 
   return (
-    <div className="px-4 pb-4 mt-4">
+    <div className="px-4 pb-16 mt-4">
       <h2 className="text-lg font-bold mb-3 text-gray-900">Ranking Top 5</h2>
       {/* 탭 버튼 영역 */}
       <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-xl">
