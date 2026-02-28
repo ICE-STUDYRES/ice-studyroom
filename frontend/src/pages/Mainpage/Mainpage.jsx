@@ -51,6 +51,7 @@ const MainPage = () => {
       } = useTokenHandler();
       
       const accessToken = sessionStorage.getItem('accessToken');
+      //const accessToken = 'testToken';
 
       const userData = useUser();
       const currentMemberId = userData?.id;
@@ -151,49 +152,53 @@ const MainPage = () => {
 
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
-      {/* Header */}
-      <div className="bg-white px-4 py-3 flex items-center justify-between border-b">
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={() => {
-              window.location.reload();
-            }}
-            className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <Home className="w-5 h-5 text-gray-700" />
-          </button>
-          <h1 className="font-semibold text-gray-900">정보통신공학과</h1>
-        </div>
-        {accessToken ? (
-          <div className="flex items-center">
-
-            <NotificationBell
-                hasUnread={hasUnread} //빨간 점 상태 전달
-                onClick={handleBellClick} //클릭 시 실행할 함수 전달
-            />
-
-            <ProfileDropdown
-              userName={loginForm.email}
-              userEmail={loginForm.email}
-              onLogout={handleLogout}
-              onPasswordChange={handlePasswordChangeClick}
-            />
+      {/* 고정 */}
+      <div className="sticky top-0 z-50 flex flex-col w-full">
+        {/* Header */}
+        <div className="sticky top-0 z-50 bg-white px-4 py-3 flex items-center justify-between border-b">
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => {
+                window.location.reload();
+              }}
+              className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <Home className="w-5 h-5 text-gray-700" />
+            </button>
+            <h1 className="font-semibold text-gray-900">정보통신공학과</h1>
           </div>
-        ) : (
-          <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700" onClick={handleLoginClick}>
-            <LogIn className="w-4 h-4" />
-            <span>로그인</span>
-          </button>
-        )}
+
+          {accessToken ? (
+            <div className="flex items-center">
+
+              <NotificationBell
+                  hasUnread={hasUnread} //빨간 점 상태 전달
+                  onClick={handleBellClick} //클릭 시 실행할 함수 전달
+              />
+
+              <ProfileDropdown
+                userName={loginForm.email}
+                userEmail={loginForm.email}
+                onLogout={handleLogout}
+                onPasswordChange={handlePasswordChangeClick}
+              />
+            </div>
+          ) : (
+            <button className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700" onClick={handleLoginClick}>
+              <LogIn className="w-4 h-4" />
+              <span>로그인</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Welcome Message */}
-      <div className="bg-white border-b">
-        <div className="px-4 py-3">
-          <p className="text-sm text-gray-600">환영합니다!</p>
-          <p className="text-sm text-gray-600">스터디룸 예약을 확인하고 QR코드를 스캔하여 입장해 주세요.</p>
+        <div className="bg-white border-b">
+          <div className="px-4 py-3">
+            <p className="text-sm text-gray-600">환영합니다!</p>
+            <p className="text-sm text-gray-600">스터디룸 예약을 확인하고 QR코드를 스캔하여 입장해 주세요.</p>
+          </div>
         </div>
-      </div>
 
       {/* 예약 및 패널티 현황 */}
       <div className="px-4 py-4">
@@ -331,7 +336,7 @@ const MainPage = () => {
         handlePasswordChange={handlePasswordChange} 
         handlePasswordChangeInputChange={handlePasswordChangeInputChange} 
         passwordChangeForm={passwordChangeForm} 
-        passwordChangeError={passwordChangeError} 
+        passwordChangeError={passwordChangeError}
       />
       {/* Chatbot 버튼 추가 */}
       <ChatbotButton />

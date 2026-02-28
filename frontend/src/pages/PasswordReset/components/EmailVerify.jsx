@@ -110,7 +110,7 @@ const EmailVerify = () => {
             isLoading ? 'bg-blue-300 cursor-not-allowed' : 'bg-blue-500 hover:bg-blue-600'
           }`}
         >
-            {isLoading ? "인증 번호 발송 중..." : '다음'}
+          다음
         </button>
       </div>
     </div>
