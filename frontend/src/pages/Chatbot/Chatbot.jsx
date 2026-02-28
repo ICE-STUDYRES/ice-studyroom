@@ -9,11 +9,7 @@ import ChatbotButtons from "./components/ChatbotButtons";
 import ChatbotFaqButtons from "./components/ChatbotFaqButtons";
 import ChatbotFooter from "./components/ChatbotFooter";
 import ChatMessage from "./components/ChatMessage";
-
-const initialMessages = [
-  { text: "안녕하세요! 정보통신공학과 스터디룸 챗봇입니다.", isUser: false },
-  { text: "궁금한 내용을 선택하시면 바로 안내해드릴게요!", isUser: false },
-];
+import ChatbotIntro from "./components/ChatbotIntro";
 
 const ChatbotPage = () => {
   const navigate = useNavigate();
@@ -21,7 +17,7 @@ const ChatbotPage = () => {
 
   const [categories, setCategories] = useState([]);
   const [faqsByCategory, setFaqsByCategory] = useState({});
-  const [messages, setMessages] = useState(initialMessages);
+  const [messages, setMessages] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [answerCard, setAnswerCard] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -29,13 +25,7 @@ const ChatbotPage = () => {
   const [lastSelectedCategory, setLastSelectedCategory] = useState(null);
   const [modalType, setModalType] = useState(null);
   const bottomRef = useRef(null);
-
-  /* 진행 중 요청 취소용 id */
   const requestIdRef = useRef(0);
-  const cancelOngoingRequest = () => {
-    requestIdRef.current++;
-    setLoading(false);
-  };
 
   /* 로그인 체크 */
   useEffect(() => {
@@ -48,23 +38,47 @@ const ChatbotPage = () => {
     }
   }, [navigate]);
 
+  /* 순차 등장: 헤더 → 로봇 → 인트로 → 카테고리 버튼 8개 */
+  const [showRobot, setShowRobot] = useState(false);
+  const [showIntro, setShowIntro] = useState(false);
+  const [showInitialMessages, setShowInitialMessages] = useState(false);
+  const [showButtons, setShowButtons] = useState(false);
+
+  useEffect(() => {
+    const step1 = setTimeout(() => setShowRobot(true));
+    const step2 = setTimeout(() => setShowIntro(true));
+    const step3 = setTimeout(() => setShowInitialMessages(true), 50);
+    const step4 = setTimeout(() => setShowButtons(true), 500);
+
+    return () => {
+      clearTimeout(step1);
+      clearTimeout(step2);
+      clearTimeout(step3);
+      clearTimeout(step4);
+    };
+  }, []);
+
   /* 스크롤 */
   const scrollToBottom = () => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    bottomRef.current?.scrollIntoView({ 
+    behavior: "smooth",
+    block: "end",
+   });
   };
 
   useEffect(() => {
     const timer = setTimeout(scrollToBottom, 80);
     return () => clearTimeout(timer);
-  }, [messages, selectedCategory, showCategoryButtons]);
+  }, [messages, selectedCategory, showCategoryButtons, showInitialMessages]);
+
+  /* 진행 중 요청 취소 */
+  const cancelOngoingRequest = () => {
+    requestIdRef.current++;
+    setLoading(false);
+  };
 
   /* 이벤트 전송 */
-  const sendChatbotEvent = async ({
-    eventType,
-    categoryId = null,
-    questionId = null,
-    buttonType = null,
-  }) => {
+  const sendChatbotEvent = async ({ eventType, categoryId = null, questionId = null, buttonType = null }) => {
     try {
       const accessToken = sessionStorage.getItem("accessToken");
       await axios.post(
@@ -124,10 +138,7 @@ const ChatbotPage = () => {
     setLastSelectedCategory(category.id);
     setShowCategoryButtons(false);
 
-    await sendChatbotEvent({
-      eventType: "CATEGORY_SELECT",
-      categoryId: category.id,
-    });
+    await sendChatbotEvent({ eventType: "CATEGORY_SELECT", categoryId: category.id });
 
     try {
       const accessToken = sessionStorage.getItem("accessToken");
@@ -161,11 +172,7 @@ const ChatbotPage = () => {
     setSelectedCategory(null);
     setLoading(true);
 
-    await sendChatbotEvent({
-      eventType: "QUESTION_CLICK",
-      categoryId,
-      questionId,
-    });
+    await sendChatbotEvent({ eventType: "QUESTION_CLICK", categoryId, questionId });
 
     try {
       const res = await fetchChatbotAnswer({ categoryId, questionId });
@@ -176,26 +183,16 @@ const ChatbotPage = () => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
       if (currentRequestId !== requestIdRef.current) return;
 
-      setMessages((prev) => [
-        ...prev,
-        { text: answer.summary, isUser: false, showActions: true },
-      ]);
+      setMessages((prev) => [...prev, { text: answer.summary, isUser: false, showActions: true }]);
     } catch (e) {
       if (currentRequestId !== requestIdRef.current) return;
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      if (currentRequestId !== requestIdRef.current) return;
       setMessages((prev) => [
         ...prev,
-        {
-          text: "답변을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.",
-          isUser: false,
-        },
+        { text: "답변을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.", isUser: false },
       ]);
       console.error("답변 API 호출 실패", e);
     } finally {
-      if (currentRequestId === requestIdRef.current) {
-        setLoading(false);
-      }
+      if (currentRequestId === requestIdRef.current) setLoading(false);
     }
   };
 
@@ -205,10 +202,7 @@ const ChatbotPage = () => {
     setSelectedCategory(null);
     setLastSelectedCategory(null);
     setShowCategoryButtons(true);
-    sendChatbotEvent({
-      eventType: "CATEGORY_CHANGE",
-      categoryId: lastSelectedCategory,
-    });
+    sendChatbotEvent({ eventType: "CATEGORY_CHANGE", categoryId: lastSelectedCategory });
   };
 
   /* 대표질문 다시보기 */
@@ -218,19 +212,19 @@ const ChatbotPage = () => {
     setSelectedCategory(lastSelectedCategory);
     setShowCategoryButtons(false);
 
-    sendChatbotEvent({
-      eventType: "QUESTION_RELOAD",
-      categoryId: lastSelectedCategory,
-    });
+    sendChatbotEvent({ eventType: "QUESTION_RELOAD", categoryId: lastSelectedCategory });
   };
 
   if (!isAuthorized) return null;
   return (
     <div className="chat-container min-h-screen bg-blue-50 flex items-center justify-center">
-      <div className="w-full max-w-[460px] h-[98vh] bg-white rounded-xl shadow-md flex flex-col overflow-hidden">
+      <div className="w-full max-w-[480px] h-screen bg-white flex flex-col">
         <ChatbotHeader />
         <div className="flex-1 px-4 py-4 chat-scroll bg-[#F9FAFC] overflow-y-auto">
-          <ChatbotRobot />
+          {/* 로봇 */}
+          {showRobot && <ChatbotRobot />}
+          {/* 인트로 */}
+          {showIntro && <ChatbotIntro />}
 
           {messages.map((msg, idx) => (
             <ChatMessage
@@ -252,17 +246,19 @@ const ChatbotPage = () => {
             </ChatMessage>
           ))}
 
+          {/* Thinking */}
           {loading && (
-            <div className="text-sm text-gray-400 mt-2">
-              답변을 생각하는 중입니다...
+            <div className="thinking flex justify-start items-center gap-2 mt-2 mb-2">
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-0"></span>
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-150"></span>
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce delay-300"></span>
+              <span className="text-gray-500 text-sm ml-2">답변을 생각하는 중입니다...</span>
             </div>
           )}
 
-          {showCategoryButtons && categories.length > 0 && (
-            <ChatbotButtons
-              categories={categories}
-              onSelect={handleCategorySelect}
-            />
+          {/* 카테고리 버튼 */}
+          {showButtons && showCategoryButtons && categories.length > 0 && (
+            <ChatbotButtons categories={categories} onSelect={handleCategorySelect} />
           )}
 
           {!showCategoryButtons && selectedCategory && (
@@ -276,14 +272,11 @@ const ChatbotPage = () => {
           <div ref={bottomRef} />
         </div>
 
-        <ChatbotFooter
-          onResetCategory={handleResetCategory}
-          onShowFaqAgain={handleShowFaqAgain}
-        />
+        <ChatbotFooter onResetCategory={handleResetCategory} onShowFaqAgain={handleShowFaqAgain} />
       </div>
 
       {/* 모달 */}
-      {modalType && (
+      {modalType && answerCard && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="relative bg-white rounded-2xl shadow-xl p-6 w-[340px] max-h-[70vh] flex flex-col">
             <h3 className="mb-4 font-semibold">
@@ -316,18 +309,14 @@ const ChatbotPage = () => {
             {modalType === "support" && (
               <div className="text-sm text-gray-600 space-y-2">
                 <p>
-                  <span className="font-medium">담당자:</span> 김정통
+                  <span className="font-medium">담당자:</span>김정통
                 </p>
                 <p>
-                  <span className="font-medium">
-                    정보통신공학과 스터디룸 오픈채팅:
-                  </span>{" "}
-                  <a
-                    href="https://open.kakao.com/o/giOS427b"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-blue-500 underline"
-                  >
+                  <span className="font-medium">담당자 연락처:</span>010-1234-5678
+                </p>
+                <p>
+                  <span className="font-medium">정보통신공학과 스터디룸 오픈채팅:</span>{" "}
+                  <a href="https://open.kakao.com/o/giOS427b" target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
                     바로가기
                   </a>
                 </p>
