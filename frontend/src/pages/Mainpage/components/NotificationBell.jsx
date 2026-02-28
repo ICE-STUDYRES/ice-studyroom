@@ -7,7 +7,7 @@ const NotificationBell = ({ hasUnread, onClick }) => {
       onClick={onClick} 
       className="relative p-2 mr-2 hover:bg-gray-100 rounded-full transition-colors"
     >
-      <Bell className="w-6 h-6 text-gray-700" />
+      <Bell className="w-5 h-5 text-gray-700" />
       
       {/* MainPage에서 hasUnread=true를 줬을 때만 빨간 점 표시 */}
       {hasUnread && (
