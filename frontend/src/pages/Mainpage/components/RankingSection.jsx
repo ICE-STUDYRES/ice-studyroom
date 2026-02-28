@@ -29,7 +29,6 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
 
     const fetchOtherRankings = async () => {
       setLoading(true);
-      setApiRankingData([]);
 
       try {
         const token = sessionStorage.getItem('accessToken');
@@ -95,17 +94,16 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
         {/* 주간 탭이거나, 로그인이 되어있으면 노란 박스 */}
         {activeTab === 'WEEKLY' || isLoggedIn ? (
           <div className="w-full bg-yellow-200 border-4 border-yellow-400 rounded-xl py-6 flex flex-col items-center justify-center gap-2">
-             {loading ? (
-                <p className="text-gray-500 text-sm animate-pulse">랭킹 데이터를 불러오는 중...</p>
-             ) : displayData && displayData.length > 0 ? (
-                displayData.slice(0, 5).map((user, index) => (
-                  <div key={index} className="font-bold text-gray-800 text-base">
-                    {user.rank}위: {user.name} //실시간을 name으로 바꿔주신다고 함
-                  </div>
-                ))
-             ) : (
-                <p className="text-gray-500 text-sm">랭킹 데이터가 없습니다.</p>
-             )}
+             {displayData && displayData.length > 0 ? (
+              displayData.slice(0, 5).map((user, index) => (
+                <div key={index} className="font-bold text-gray-800 text-base">
+                  {user.rank}위: {user.name}
+                </div>
+              ))
+            ) : (
+              /* 로딩 중이라도 아직 데이터가 없으면 이 문구가 뜹니다 */
+              <p className="text-gray-500 text-sm">랭킹 데이터가 없습니다.</p>
+            )}
 
           </div>
         ) : (
