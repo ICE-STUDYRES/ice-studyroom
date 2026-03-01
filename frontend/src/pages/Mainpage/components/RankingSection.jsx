@@ -115,7 +115,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
                 > 
                   {/* 데이터의 rank가 1일 때만 왕관 */}
                   {user.rank === 1 && (
-                    <span className="absolute -top-4 left-6 text-2xl drop-shadow-md select-none">
+                    <span className="absolute -top-4 left-8 text-2xl drop-shadow-md select-none">
                       👑
                     </span>
                   )}
@@ -136,7 +136,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
               ))
             ) : (
               /* 로딩 중이라도 아직 데이터가 없으면 이 문구가 뜸 */
-              <div className="w-full min-h-[350px] rounded-[32px] bg-[#D7EAFF] border border-red-50 flex flex-col items-center justify-center transition-all">
+              <div className="w-full min-h-[350px] rounded-[32px] bg-[#EBF2FC] border border-red-50 flex flex-col items-center justify-center transition-all">
 
                 {/* 부엉이 이미지 */}
                 <img 
