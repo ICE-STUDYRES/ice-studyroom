@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import chatbotImg from "../../../assets/images/chatbot/Chatbot.png";
 
 const ChatbotButton = () => {
   const navigate = useNavigate();
@@ -86,7 +87,7 @@ const ChatbotButton = () => {
           `}
         >
           <img
-            src="src/assets/images/chatbot/Chatbot.png"
+            src={chatbotImg}
             alt="챗봇"
             className={`
               w-8 h-8 sm:w-9 sm:h-9 object-contain
