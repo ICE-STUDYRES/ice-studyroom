@@ -1,4 +1,4 @@
-import robot from "../../../assets/images/chatbot/Chatbot Hi.png";
+import robot from "../../../assets/images/chatbot/Chatbot hi.png";
 
 const ChatbotRobot = () => {
   return (

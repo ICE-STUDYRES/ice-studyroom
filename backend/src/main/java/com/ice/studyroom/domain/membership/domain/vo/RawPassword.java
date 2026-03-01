@@ -33,7 +33,7 @@ public class RawPassword {
 		}
 
 		// 비밀번호 정규식: 소문자 + 숫자 + 특수문자 하나 이상 포함, 8자 이상
-		String passwordRegex = "^(?=.*[a-z])(?=.*\\d)(?=.*[@$!%*?&])[a-z\\d@$!%*?&]{8,}$";
+		String passwordRegex = "^(?=.*[A-Za-z])(?=.*\\d)(?=.*[@$!%*#?&])[A-Za-z\\d@$!%*#?&]{8,}$";
 
 		if (!value.matches(passwordRegex)) {
 			throw new BusinessException(StatusCode.BAD_REQUEST,
