@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import OwlIcon from '../../../assets/images/Owl.png';
 
 /* MainPage가 WebSocket으로 실시간 받아온 주간 랭킹, 로그인 여부 */
 const RankingSection = ({ weeklyData, isLoggedIn }) => {
@@ -71,50 +72,100 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
 
   return (
     <div className="px-4 pb-16 mt-4">
-      <h2 className="text-lg font-bold mb-3 text-gray-900">Ranking Top 5</h2>
-      {/* 탭 버튼 영역 */}
-      <div className="flex gap-2 mb-4 bg-gray-100 p-1 rounded-xl">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => handleTabClick(tab.key)}
-            className={`
-              flex-1 py-1.5 text-sm font-medium rounded-lg transition-all
-              ${activeTab === tab.key 
-                ? 'bg-[#EBF8FF] text-[#3182CE] shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'}
-            `}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <h2 className="text-lg font-bold mb-3 text-gray-900 text-center">Ranking Top 5</h2>
+
+      {/* 회색 테두리 */}
+      <div className="bg-white rounded-[32px] border border-gray-300 p-6 shadow-sm min-h-[400px]">
+
+        {/* 탭 버튼 영역 */}
+        <div className="flex w-full mb-8 gap-4">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => handleTabClick(tab.key)}
+              className={`
+                flex-1 pb-3 text-sm font-bold transition-all relative
+                ${activeTab === tab.key 
+                  ? 'text-[#3182CE]'
+                  : 'text-gray-400'}
+              `}
+            >
+              {tab.label}
+
+              {/* 모든 탭 아래에 회색 선 표시 */}
+              <div className="absolute bottom-0 left-0 w-full h-[2px] bg-gray-200 rounded-full" />
+
+              {/* 활성화된 탭 하단에만 파란색 강조선 표시 */}
+              {activeTab === tab.key && (
+                <div className="absolute bottom-0 left-0 w-full h-[4px] bg-[#3182CE] rounded-full z-10" />
+              )}
+            </button>
+          ))}
+        </div>
       
-      <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm min-h-[180px] flex items-center justify-center">
-        {/* 주간 탭이거나, 로그인이 되어있으면 노란 박스 */}
+        {/* 주간 탭이거나, 로그인이 되어있으면 */}
         {activeTab === 'WEEKLY' || isLoggedIn ? (
-          <div className="w-full bg-yellow-200 border-4 border-yellow-400 rounded-xl py-6 flex flex-col items-center justify-center gap-2">
-             {displayData && displayData.length > 0 ? (
+
+          <div className="w-full flex flex-col gap-3">
+            {displayData && displayData.length > 0 ? (
               displayData.slice(0, 5).map((user, index) => (
-                <div key={index} className="font-bold text-gray-800 text-base">
-                  {user.rank}위: {user.name}
+                <div 
+                  key={user.rank || index} 
+                  className="relative flex items-center bg-[#EBF4FF] rounded-[24px] px-8 py-5 shadow-sm transition-all"
+                > 
+                  {/* 데이터의 rank가 1일 때만 왕관 */}
+                  {user.rank === 1 && (
+                    <span className="absolute -top-4 left-6 text-2xl drop-shadow-md select-none">
+                      👑
+                    </span>
+                  )}
+
+                  {/* 왼쪽 - 순위 */}
+                  <div className="w-16 font-extrabold text-[#1A202C] text-lg">
+                    {user.rank}위
+                  </div>
+
+                  {/* 중앙 - 이름 */}
+                  <div className="flex-1 text-center font-bold text-[#2D3748] text-lg">
+                    {user.name}
+                  </div>
+
+                  {/* 오른쪽 - 레이아웃 균형을 위한 빈 공간 */}
+                  <div className="w-16"></div>
                 </div>
               ))
             ) : (
-              /* 로딩 중이라도 아직 데이터가 없으면 이 문구가 뜹니다 */
-              <p className="text-gray-500 text-sm">랭킹 데이터가 없습니다.</p>
-            )}
+              /* 로딩 중이라도 아직 데이터가 없으면 이 문구가 뜸 */
+              <div className="w-full min-h-[350px] rounded-[32px] bg-[#D7EAFF] border border-red-50 flex flex-col items-center justify-center transition-all">
 
+                {/* 부엉이 이미지 */}
+                <img 
+                  src={OwlIcon} 
+                  alt="Owl" 
+                  className="w-16 h-16 mb-2 object-contain" 
+                />
+
+                <p className="text-base font-bold text-[#000000]">랭킹 데이터가 없습니다.</p>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="w-full py-12 rounded-xl bg-[#FFF5F5] border border-red-100 flex flex-col items-center justify-center">
-            <p className="text-sm font-bold text-[#991B1B]">로그인 후 이용해주세요.</p>
+          <div className="w-full min-h-[350px] rounded-[32px] bg-[#FFF5F5] border border-red-50 flex flex-col items-center justify-center transition-all">
+
+            {/* 부엉이 이미지 */}
+            <img 
+              src={OwlIcon} 
+              alt="Owl" 
+              className="w-16 h-16 mb-2 object-contain" 
+            />
+
+            <p className="text-base font-bold text-[#991B1B]">로그인 후 이용해주세요.</p>
           </div>
         )}
+
       </div>
     </div>
   );
 };
 
 export default RankingSection;
-
