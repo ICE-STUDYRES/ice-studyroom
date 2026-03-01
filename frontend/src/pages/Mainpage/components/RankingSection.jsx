@@ -69,7 +69,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
 
   /* 현재 보여줄 데이터 결정 */
   const displayData = activeTab === 'WEEKLY' ? weeklyData : apiRankingData;
-
+  
   return (
     <div className="px-4 pb-16 mt-4">
       <h2 className="text-lg font-bold mb-3 text-gray-900 text-center">Ranking Top 5</h2>
@@ -102,7 +102,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
             </button>
           ))}
         </div>
-      
+        
         {/* 주간 탭이거나, 로그인이 되어있으면 */}
         {activeTab === 'WEEKLY' || isLoggedIn ? (
 
@@ -115,18 +115,18 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
                 > 
                   {/* 데이터의 rank가 1일 때만 왕관 */}
                   {user.rank === 1 && (
-                    <span className="absolute -top-4 left-8 text-2xl drop-shadow-md select-none">
+                    <span className="absolute -top-4 left-1/2 transform -translate-x-1/2 text-2xl drop-shadow-md select-none">
                       👑
                     </span>
                   )}
 
                   {/* 왼쪽 - 순위 */}
-                  <div className="w-16 font-extrabold text-[#1A202C] text-lg">
+                  <div className="w-16 font-extrabold text-[#1A202C] text-sm">
                     {user.rank}위
                   </div>
 
                   {/* 중앙 - 이름 */}
-                  <div className="flex-1 text-center font-bold text-[#2D3748] text-lg">
+                  <div className="flex-1 text-center font-bold text-[#2D3748] text-sm">
                     {user.name}
                   </div>
 
