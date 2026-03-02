@@ -15,7 +15,7 @@ import {useNavigate} from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useUser } from "./handlers/UserContext";
 // 네트워크 문제 해결되면 삭제
-import ServiceBlockModal from "./components/ServiceBlockModal";
+import ServiceBlockModal from "./components/NetworkBlockModal.jsx";
 
 const MainPage = () => {
   const navigate = useNavigate();
