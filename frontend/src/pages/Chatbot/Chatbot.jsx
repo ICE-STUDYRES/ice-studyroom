@@ -309,10 +309,10 @@ const ChatbotPage = () => {
             {modalType === "support" && (
               <div className="text-sm text-gray-600 space-y-2">
                 <p>
-                  <span className="font-medium">담당자:</span>김정통
+                  <span className="font-medium">담당자 1:</span> 김주희 (010-3358-4658)
                 </p>
                 <p>
-                  <span className="font-medium">담당자 연락처:</span>010-1234-5678
+                  <span className="font-medium">담당자 2:</span> 박다영 (010-9333-0491)
                 </p>
                 <p>
                   <span className="font-medium">정보통신공학과 스터디룸 오픈채팅:</span>{" "}
