@@ -316,7 +316,7 @@ const ChatbotPage = () => {
                 </p>
                 <p>
                   <span className="font-medium">정보통신공학과 스터디룸 오픈채팅:</span>{" "}
-                  <a href="https://open.kakao.com/o/giOS427b" target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
+                  <a href="https://open.kakao.com/o/g7sppaji" target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">
                     바로가기
                   </a>
                 </p>
