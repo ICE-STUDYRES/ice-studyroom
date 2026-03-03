@@ -14,8 +14,8 @@ import NotificationPage from './components/NotificationPage';
 import {useNavigate} from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useUser } from "./handlers/UserContext";
-// 네트워크 문제 해결되면 삭제
-import ServiceBlockModal from "./components/NetworkBlockModal.jsx";
+// 네트워크 문제 발생시 아래 주석 코드 활성화
+// import ServiceBlockModal from "./components/NetworkBlockModal.jsx";
 
 const MainPage = () => {
   const navigate = useNavigate();
@@ -154,8 +154,8 @@ const MainPage = () => {
 
   return (
     <div className="max-w-[480px] w-full mx-auto min-h-screen bg-gray-50">
-      {/* 네트워크 문제 해결되면 삭제 */}
-      <ServiceBlockModal />      
+      {/* 네트워크 문제 발생 시 아래 주석 코드 활성화*/}
+        {/*<ServiceBlockModal />*/}
       {/* 고정 */}
       <div className="sticky top-0 z-50 flex flex-col w-full">
         {/* Header */}
