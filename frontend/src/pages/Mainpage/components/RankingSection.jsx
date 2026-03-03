@@ -20,15 +20,38 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
     { key: 'YEARLY', label: '연간' },
   ];
 
-  /* 탭 변경 시 데이터 가져오기 (주간은 소켓이라 제외) */
+  /* 로그인 시 모든 탭 데이터 미리 로드 */
   useEffect(() => {
-    /* 주간 탭이면 API 호출 안 함 (부모가 준 weeklyData 사용) */
-    if (activeTab === 'WEEKLY') return;
-
-    /* 로그인 안 했으면 API 호출 안 함 */
     if (!isLoggedIn) return;
 
-    /* 이미 캐시된 데이터가 있으면 재요청 안 함 */
+    const prefetchAll = async () => {
+      const token = sessionStorage.getItem('accessToken');
+      const periods = ['MONTHLY', 'SEMESTER', 'YEARLY'];
+
+      const results = await Promise.all(
+        periods.map(period =>
+          axios.get(`/api/rankings?period=${period}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => null)
+        )
+      );
+
+      const newCache = {};
+      periods.forEach((period, i) => {
+        if (results[i]?.data?.code === 'S200') {
+          newCache[period] = results[i].data.data;
+        }
+      });
+      setTabCache(newCache);
+    };
+
+    prefetchAll();
+  }, [isLoggedIn]);
+
+  /* 탭 변경 시 캐시 없을 때만 개별 로드 */
+  useEffect(() => {
+    if (activeTab === 'WEEKLY') return;
+    if (!isLoggedIn) return;
     if (tabCache[activeTab]) return;
 
     const fetchOtherRankings = async () => {
@@ -38,9 +61,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
         const token = sessionStorage.getItem('accessToken');
 
         const response = await axios.get(`/api/rankings?period=${activeTab}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.data.code === "S200") {
@@ -62,7 +83,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
         setLoading(false);
       }
     };
-    
+
     fetchOtherRankings();
   }, [activeTab, isLoggedIn, tabCache]);
 
