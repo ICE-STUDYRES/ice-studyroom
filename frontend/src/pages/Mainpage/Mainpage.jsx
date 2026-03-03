@@ -64,6 +64,23 @@ const MainPage = () => {
       {/* 랭킹 리스트 관리 */}
       const [weeklyRanking, setWeeklyRanking] = useState([]);
 
+      useEffect(() => {
+        const fetchInitialRanking = async () => {
+          try {
+            const token = sessionStorage.getItem('accessToken');
+            if (!token) return;
+            const response = await fetch('/api/rankings?period=MONTHLY', {
+              headers: { Authorization: `Bearer ${token}` }
+            });
+            const result = await response.json();
+            if (result.code === 'S200' && result.data?.length > 0) {
+              setWeeklyRanking(result.data);
+            }
+          } catch (e) {}
+        };
+        fetchInitialRanking();
+      }, []);
+
       const [recentReservation, setRecentReservation] = useState({
         date: null,
         roomNumber: null,
