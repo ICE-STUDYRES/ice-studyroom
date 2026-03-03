@@ -9,7 +9,7 @@ import OwlIcon from '../../../assets/images/Owl.png';
 const RankingSection = ({ weeklyData, isLoggedIn }) => {
 
   const [activeTab, setActiveTab] = useState('WEEKLY');
-  const [apiRankingData, setApiRankingData] = useState([]);
+  const [tabCache, setTabCache] = useState({});
   const [loading, setLoading] = useState(false);
 
   /* 탭 설정 (label: 화면 표시용) */
@@ -28,12 +28,15 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
     /* 로그인 안 했으면 API 호출 안 함 */
     if (!isLoggedIn) return;
 
+    /* 이미 캐시된 데이터가 있으면 재요청 안 함 */
+    if (tabCache[activeTab]) return;
+
     const fetchOtherRankings = async () => {
       setLoading(true);
 
       try {
         const token = sessionStorage.getItem('accessToken');
-        
+
         const response = await axios.get(`/api/rankings?period=${activeTab}`, {
           headers: {
             Authorization: `Bearer ${token}`
@@ -41,7 +44,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
         });
 
         if (response.data.code === "S200") {
-          setApiRankingData(response.data.data);
+          setTabCache(prev => ({ ...prev, [activeTab]: response.data.data }));
         }
       } catch (error) {
         const errorCode = error.response?.data?.code;
@@ -61,14 +64,14 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
     };
     
     fetchOtherRankings();
-  }, [activeTab, isLoggedIn]);
+  }, [activeTab, isLoggedIn, tabCache]);
 
   const handleTabClick = (tabKey) => {
     setActiveTab(tabKey);
   };
 
   /* 현재 보여줄 데이터 결정 */
-  const displayData = activeTab === 'WEEKLY' ? weeklyData : apiRankingData;
+  const displayData = activeTab === 'WEEKLY' ? weeklyData : (tabCache[activeTab] || []);
   
   return (
     <div className="px-4 pb-16 mt-4">
@@ -107,7 +110,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
         {activeTab === 'WEEKLY' || isLoggedIn ? (
 
           <div className="w-full flex flex-col gap-3">
-            {!loading && displayData && displayData.length > 0 ? (
+            {displayData && displayData.length > 0 ? (
               displayData.slice(0, 5).map((user, index) => (
                 <div 
                   key={user.rank || index} 
@@ -134,8 +137,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
                   <div className="w-16"></div>
                 </div>
               ))
-            ) : (
-              /* 로딩 중이라도 아직 데이터가 없으면 이 문구가 뜸 */
+            ) : !loading ? (
               <div className="w-full min-h-[350px] rounded-[32px] bg-[#EBF2FC] border border-red-50 flex flex-col items-center justify-center transition-all">
 
                 {/* 부엉이 이미지 */}
@@ -147,7 +149,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
 
                 <p className="text-base font-bold text-[#000000]">랭킹 데이터가 없습니다.</p>
               </div>
-            )}
+            ) : null}
           </div>
         ) : (
           <div className="w-full min-h-[350px] rounded-[32px] bg-[#FFF5F5] border border-red-50 flex flex-col items-center justify-center transition-all">
