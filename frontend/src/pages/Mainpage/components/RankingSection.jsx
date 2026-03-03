@@ -107,7 +107,7 @@ const RankingSection = ({ weeklyData, isLoggedIn }) => {
         {activeTab === 'WEEKLY' || isLoggedIn ? (
 
           <div className="w-full flex flex-col gap-3">
-            {displayData && displayData.length > 0 ? (
+            {!loading && displayData && displayData.length > 0 ? (
               displayData.slice(0, 5).map((user, index) => (
                 <div 
                   key={user.rank || index} 
