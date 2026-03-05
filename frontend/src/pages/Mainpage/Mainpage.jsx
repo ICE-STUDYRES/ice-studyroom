@@ -91,20 +91,20 @@ const MainPage = () => {
         {/* 소켓 서버 연결(로그인 여부 상관없이 연결) */}
         const socket = io(`${import.meta.env.VITE_SOCKET_URL}/ranking`, {
           transports: ["websocket"]
-      });
+        });
 
         socket.on("connect", () => {
           console.log("소켓 연결 성공");
 
           {/* 1. 주간 랭킹 Room 입장 (누구나 받음) */}
           socket.emit("join", "weekly");
-
-          {/* 2. 개인 알림 Room 입장 (로그인 회원만) */}
-          if (accessToken && currentMemberId) {
-            console.log(`개인 채널 입장: member:${currentMemberId}`);
-            socket.emit("join", `member:${currentMemberId}`);
-          }
         });
+
+        {/* 2. 개인 알림 Room 입장 (로그인 회원만) */}
+        if (accessToken && currentMemberId) {
+          console.log(`개인 채널 입장: member:${currentMemberId}`);
+          socket.emit("join", `member:${currentMemberId}`);
+        }
 
         {/* 3. 랭킹 업데이트 수신 */}
         socket.on("weekly-ranking-update", (data) => {
