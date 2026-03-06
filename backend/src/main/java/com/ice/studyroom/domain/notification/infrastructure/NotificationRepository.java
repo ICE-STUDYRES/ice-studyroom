@@ -43,5 +43,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     """)
 	int markAllAsRead(@Param("memberId") Long memberId);
 
+	boolean existsByEventId(String eventId);
 }
 
