@@ -47,20 +47,21 @@ public class RedisRankingStore implements RankingStore {
 	@Override
 	public Integer getUpperScore(RankingPeriod period, Long memberId) {
 
-		Long currentRank = redisTemplate.opsForZSet()
-			.reverseRank(key(period), memberId.toString());
+		Integer myScore = getScore(period, memberId);
 
-		if (currentRank == null || currentRank == 0) {
-			return null; // 랭킹 없음 or 1위
+		if (myScore == null) {
+			return null;
 		}
 
-		// 바로 위 순위 (score 기준으로 더 높은 점수)
+		// 점수가 높은 사람들 중에서
 		Set<ZSetOperations.TypedTuple<String>> upper =
 			redisTemplate.opsForZSet()
-				.reverseRangeWithScores(
+				.rangeByScoreWithScores(
 					key(period),
-					currentRank - 1,
-					currentRank - 1
+					myScore + 1,
+					Double.POSITIVE_INFINITY,
+					0,
+					1
 				);
 
 		if (upper == null || upper.isEmpty()) {
