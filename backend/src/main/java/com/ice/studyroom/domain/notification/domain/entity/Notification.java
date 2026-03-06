@@ -39,9 +39,34 @@ public class Notification extends BaseTimeEntity {
 	@Column(name = "gap_with_upper")
 	private Integer gapWithUpper;
 
+	@Column(name = "event_id", nullable = false, unique = true)
+	private String eventId;
+
 
 	public void markAsRead() {
 		this.isRead = true;
+	}
+
+	public static Notification create(
+		Long memberId,
+		NotificationEventType eventType,
+		int rank,
+		Integer previousRank,
+		int score,
+		Integer gapWithUpper,
+		String eventId
+	) {
+		Notification n = new Notification();
+		n.memberId = memberId;
+		n.eventType = eventType;
+		n.rank = rank;
+		n.previousRank = previousRank;
+		n.score = score;
+		n.gapWithUpper = gapWithUpper;
+		n.eventId = eventId;
+		n.isRead = false;
+
+		return n;
 	}
 
 }
