@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.ranking.application.event.trigger;
 
+import com.ice.studyroom.domain.notification.application.NotificationCommandService;
 import com.ice.studyroom.domain.ranking.application.event.assembler.WeeklyRankingAssembler;
 import com.ice.studyroom.domain.ranking.application.event.publisher.EventIdGenerator;
 import com.ice.studyroom.domain.ranking.application.event.publisher.RankingEventPublisher;
@@ -22,12 +23,13 @@ class RankingEventTriggerServiceTest {
 	private final RankingStore rankingStore = mock(RankingStore.class);
 	private final WeeklyRankingAssembler assembler = mock(WeeklyRankingAssembler.class);
 	private final EventIdGenerator idGenerator = mock(EventIdGenerator.class);
+	private final NotificationCommandService notificationCommandService = mock(NotificationCommandService.class);
 
 	private final RankingEventTriggerService service =
-		new RankingEventTriggerService(policy, publisher, rankingStore, assembler, idGenerator);
+		new RankingEventTriggerService(policy, publisher, rankingStore, assembler, idGenerator, notificationCommandService);
 
 	@Test
-	@DisplayName("순위 변화가 있으면 USER_CHANGED와 LIST_UPDATED 이벤트를 발행한다")
+	@DisplayName("순위 변화가 있으면 알림 저장 후 USER_CHANGED와 LIST_UPDATED 이벤트를 발행한다")
 	void trigger_when_rank_changed_publish_events() {
 
 		// given
@@ -53,6 +55,9 @@ class RankingEventTriggerServiceTest {
 		service.trigger(context);
 
 		// then
+		verify(notificationCommandService, times(1))
+			.saveFromRankingEvent(any());
+
 		verify(publisher, times(1)).publishUserChanged(any());
 		verify(publisher, times(1)).publishListUpdated(any());
 	}
@@ -73,6 +78,9 @@ class RankingEventTriggerServiceTest {
 		service.trigger(context);
 
 		// then
+		verify(notificationCommandService, never())
+			.saveFromRankingEvent(any());
+
 		verify(publisher, never()).publishUserChanged(any());
 		verify(publisher, never()).publishListUpdated(any());
 	}
