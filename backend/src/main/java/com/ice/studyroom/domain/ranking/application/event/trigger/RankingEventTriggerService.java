@@ -1,5 +1,6 @@
 package com.ice.studyroom.domain.ranking.application.event.trigger;
 
+import com.ice.studyroom.domain.notification.application.NotificationCommandService;
 import com.ice.studyroom.domain.ranking.application.event.publisher.EventIdGenerator;
 import com.ice.studyroom.domain.ranking.application.event.publisher.RankingEventPublisher;
 import com.ice.studyroom.domain.ranking.application.event.assembler.WeeklyRankingAssembler;
@@ -28,6 +29,7 @@ public class RankingEventTriggerService {
 	private final RankingStore rankingStore;
 	private final WeeklyRankingAssembler weeklyRankingAssembler;
 	private final EventIdGenerator eventIdGenerator;
+	private final NotificationCommandService notificationCommandService;
 
 	private static final RankingPeriod EVENT_PERIOD = RankingPeriod.WEEKLY;
 	private static final ZoneId KST = ZoneId.of("Asia/Seoul");
@@ -61,6 +63,7 @@ public class RankingEventTriggerService {
 									context.gapWithUpper()
 							);
 
+					notificationCommandService.saveFromRankingEvent(userEvent);
 					rankingEventPublisher.publishUserChanged(userEvent);
 
 					// 2. 전체 리스트 이벤트 생성
